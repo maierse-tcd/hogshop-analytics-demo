@@ -42,38 +42,27 @@ export const SubscriptionManagementDialog = ({
         timestamp: new Date().toISOString(),
       });
 
-      const { data, error } = await supabase.functions.invoke(
-        "cancel-subscription",
-        {
-          body: {},
-        }
-      );
+      // No backend call — just update person properties in PostHog
+      updateSubscriptionStatus({
+        active: false,
+        cancelled: true,
+      });
+      // Explicitly ensure the person property reflects the change
+      (posthog as any).setPersonProperties?.({ subscription_active: false });
 
-      if (error) throw error;
+      toast({
+        title: "Subscription Cancelled",
+        description: "We’ll stop shipping your monthly Hedgehog Food boxes.",
+      });
 
-      if (data?.success) {
-        toast({
-          title: "Subscription Cancelled",
-          description: "Your subscription has been successfully cancelled.",
-        });
+      // Track successful cancellation
+      posthog.capture("subscription_cancelled", {
+        timestamp: new Date().toISOString(),
+        cancellation_date: new Date().toISOString(),
+      });
 
-        // Track successful cancellation
-        posthog.capture("subscription_cancelled", {
-          timestamp: new Date().toISOString(),
-          cancellation_date: new Date().toISOString(),
-        });
-
-        // Update subscription status in PostHog
-        updateSubscriptionStatus({
-          active: false,
-          cancelled: true,
-        });
-
-        onCancelled?.();
-        onOpenChange(false);
-      } else {
-        throw new Error(data?.error || "Failed to cancel subscription");
-      }
+      onCancelled?.();
+      onOpenChange(false);
     } catch (error) {
       console.error("Cancellation error:", error);
       
