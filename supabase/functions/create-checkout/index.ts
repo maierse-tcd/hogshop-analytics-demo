@@ -24,11 +24,13 @@ serve(async (req) => {
   }
 
   try {
-    const { items } = await req.json();
+    const { items, customer_email, customer_name } = await req.json();
     
     if (!items || items.length === 0) {
       throw new Error("No items in cart");
     }
+
+    console.log("Creating checkout for:", customer_email);
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
@@ -77,7 +79,15 @@ serve(async (req) => {
       cancel_url: `${req.headers.get("origin")}/`,
       allow_promotion_codes: true,
       billing_address_collection: "required",
-      customer_email: undefined, // Let Stripe collect email
+      customer_email: customer_email || undefined,
+      ...(customer_name && {
+        custom_fields: [{
+          key: "customer_name",
+          label: { type: "custom", custom: "Full Name" },
+          type: "text",
+          optional: false,
+        }]
+      }),
     });
 
     return new Response(JSON.stringify({ url: session.url }), {

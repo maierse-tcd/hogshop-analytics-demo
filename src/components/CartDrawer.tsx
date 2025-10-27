@@ -3,29 +3,62 @@ import { Button } from "@/components/ui/button";
 import { ShoppingCart, Trash2, Plus, Minus } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { RegistrationDialog } from "@/components/RegistrationDialog";
+import { posthog } from "@/lib/posthog";
 
 export const CartDrawer = () => {
   const { items, removeFromCart, updateQuantity, totalItems, totalPrice, clearCart } = useCart();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [showRegistration, setShowRegistration] = useState(false);
   const { toast } = useToast();
 
-  const handleCheckout = async () => {
+  const handleCheckoutClick = () => {
     if (items.length === 0) return;
     
+    // Check if user info is already stored
+    const userInfo = localStorage.getItem("hedgehog_user");
+    if (userInfo) {
+      const { email, name } = JSON.parse(userInfo);
+      proceedToCheckout(email, name);
+    } else {
+      setShowRegistration(true);
+    }
+  };
+
+  const handleRegistrationComplete = (email: string, name: string) => {
+    // Store user info in localStorage for future checkouts
+    localStorage.setItem("hedgehog_user", JSON.stringify({ email, name }));
+    
+    // Identify user in PostHog immediately
+    posthog.identify(email, {
+      email,
+      name,
+      identified_at: new Date().toISOString(),
+    });
+    
+    setShowRegistration(false);
+    proceedToCheckout(email, name);
+  };
+
+  const proceedToCheckout = async (email: string, name: string) => {
     setIsCheckingOut(true);
     try {
       const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { items },
+        body: { 
+          items,
+          customer_email: email,
+          customer_name: name,
+        },
       });
 
       if (error) throw error;
 
       if (data?.url) {
-        // Track checkout event
+        // Store user info in session for success page
+        sessionStorage.setItem("checkout_user", JSON.stringify({ email, name }));
         window.open(data.url, "_blank");
       }
     } catch (error) {
@@ -41,8 +74,15 @@ export const CartDrawer = () => {
   };
 
   return (
-    <Sheet>
-      <SheetTrigger asChild>
+    <>
+      <RegistrationDialog
+        open={showRegistration}
+        onOpenChange={setShowRegistration}
+        onComplete={handleRegistrationComplete}
+      />
+      
+      <Sheet>
+        <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="rounded-full relative">
           <ShoppingCart className="h-5 w-5" />
           {totalItems > 0 && (
@@ -133,7 +173,7 @@ export const CartDrawer = () => {
               <Button 
                 className="w-full" 
                 size="lg"
-                onClick={handleCheckout}
+                onClick={handleCheckoutClick}
                 disabled={isCheckingOut}
               >
                 {isCheckingOut ? "Processing..." : "Proceed to Checkout"}
@@ -143,5 +183,6 @@ export const CartDrawer = () => {
         </div>
       </SheetContent>
     </Sheet>
+    </>
   );
 };

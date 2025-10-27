@@ -2,7 +2,6 @@ import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import { CartDrawer } from "./CartDrawer";
-import { RegistrationDialog } from "./RegistrationDialog";
 import { Link } from "react-router-dom";
 
 export const Header = () => {
@@ -34,7 +33,6 @@ export const Header = () => {
         </div>
         
         <div className="flex items-center gap-2">
-          <RegistrationDialog />
           <Button
             variant="ghost"
             size="icon"

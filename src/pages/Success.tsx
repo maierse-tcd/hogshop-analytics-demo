@@ -18,28 +18,53 @@ const Success = () => {
   useEffect(() => {
     const identifyUser = async () => {
       if (sessionId && !identified) {
-        try {
-          // Fetch session details from Stripe to get customer email
-          const { data, error } = await supabase.functions.invoke("get-session", {
-            body: { session_id: sessionId },
-          });
+        // Try to get user info from session storage first
+        const storedUser = sessionStorage.getItem("checkout_user");
+        let userEmail = "";
+        let userName = "";
 
-          if (!error && data?.customer_email) {
-            // Identify user in PostHog with their email
-            posthog.identify(data.customer_email, {
-              email: data.customer_email,
-              name: data.customer_name,
-              purchase_session_id: sessionId,
+        if (storedUser) {
+          const userData = JSON.parse(storedUser);
+          userEmail = userData.email;
+          userName = userData.name;
+          
+          // Identify immediately with stored data
+          posthog.identify(userEmail, {
+            email: userEmail,
+            name: userName,
+            purchase_session_id: sessionId,
+          });
+          console.log("PostHog: User identified from session", userEmail);
+          
+          // Clear the session storage
+          sessionStorage.removeItem("checkout_user");
+        } else {
+          // Fallback: fetch from Stripe
+          try {
+            const { data, error } = await supabase.functions.invoke("get-session", {
+              body: { session_id: sessionId },
             });
-            console.log("PostHog: User identified", data.customer_email);
+
+            if (!error && data?.customer_email) {
+              userEmail = data.customer_email;
+              userName = data.customer_name;
+              
+              posthog.identify(userEmail, {
+                email: userEmail,
+                name: userName,
+                purchase_session_id: sessionId,
+              });
+              console.log("PostHog: User identified from Stripe", userEmail);
+            }
+          } catch (error) {
+            console.error("Failed to identify user:", error);
           }
-        } catch (error) {
-          console.error("Failed to identify user:", error);
         }
 
         trackEvent("purchase_completed", {
           session_id: sessionId,
           total_amount: totalPrice,
+          customer_email: userEmail,
         });
         clearCart();
         setIdentified(true);
