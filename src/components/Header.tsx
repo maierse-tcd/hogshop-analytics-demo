@@ -164,7 +164,14 @@ export const Header = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setShowLoginDialog(true)}
+                onClick={() => {
+                  posthog.capture('login_signup_clicked', {
+                    source: 'header',
+                    discount_variant: signupVariant || 'control',
+                    has_discount_badge: signupVariant === '10percent' || signupVariant === '15percent'
+                  });
+                  setShowLoginDialog(true);
+                }}
                 className="gap-2"
               >
                 <LogIn className="h-4 w-4" />
