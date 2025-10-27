@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 import { trackEvent, posthog } from "@/lib/posthog";
-import { useFeatureFlagEnabled } from "posthog-js/react";
+import { useFeatureFlagEnabled, useFeatureFlagVariantKey } from "posthog-js/react";
 import { ArrowRight, X } from "lucide-react";
 import { Newsletter } from "@/components/Newsletter";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -65,6 +65,7 @@ const Index = () => {
   // Use PostHog React hook for feature flags
   const showNewsletterFlag = useFeatureFlagEnabled('show_newsletter');
   const halloweenHeroFlag = useFeatureFlagEnabled('hero_banner_halloween');
+  const newsletterSubVariant = useFeatureFlagVariantKey('newsletter_sub');
   const [hasSubscribed, setHasSubscribed] = useState(false);
   const [showNewsletterModal, setShowNewsletterModal] = useState(false);
   
@@ -149,16 +150,51 @@ const Index = () => {
             <div className="flex flex-col sm:flex-row gap-3 justify-center pt-6">
               <Button size="lg" className="gap-2 h-12 px-8 text-base font-semibold" onClick={() => {
                 document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' });
-                trackEvent("hero_cta_clicked", { cta: "shop_now" });
+                trackEvent("hero_cta_clicked", { 
+                  cta: "shop_now",
+                  experiment: "newsletter_sub",
+                  variant: newsletterSubVariant || "control"
+                });
               }}>
                 Shop Now <ArrowRight className="h-5 w-5" />
               </Button>
-              <Button size="lg" variant="outline" className="h-12 px-8 text-base font-semibold" onClick={() => {
-                window.location.href = "/about";
-                trackEvent("hero_cta_clicked", { cta: "learn_more" });
-              }}>
-                Learn More About Us
-              </Button>
+              
+              {/* A/B Test: Newsletter CTA vs Learn More */}
+              {newsletterSubVariant === 'test' ? (
+                // Test Variant: Newsletter CTA
+                <Button 
+                  size="lg" 
+                  variant="outline" 
+                  className="h-12 px-8 text-base font-semibold gap-2" 
+                  onClick={() => {
+                    setShowNewsletterModal(true);
+                    trackEvent("hero_cta_clicked", { 
+                      cta: "newsletter_signup",
+                      experiment: "newsletter_sub",
+                      variant: "test"
+                    });
+                  }}
+                >
+                  🎉 Get 15% Off Newsletter
+                </Button>
+              ) : (
+                // Control Variant: Learn More
+                <Button 
+                  size="lg" 
+                  variant="outline" 
+                  className="h-12 px-8 text-base font-semibold" 
+                  onClick={() => {
+                    window.location.href = "/about";
+                    trackEvent("hero_cta_clicked", { 
+                      cta: "learn_more",
+                      experiment: "newsletter_sub",
+                      variant: newsletterSubVariant || "control"
+                    });
+                  }}
+                >
+                  Learn More About Us
+                </Button>
+              )}
             </div>
           </div>
         </div>
