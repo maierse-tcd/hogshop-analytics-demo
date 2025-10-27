@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -28,11 +28,12 @@ export const SubscriptionManagementDialog = ({
   const [isCancelling, setIsCancelling] = useState(false);
   const [showSurvey, setShowSurvey] = useState(false);
   const { toast } = useToast();
+  const surveyContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Force PostHog to rescan for survey targets when modal opens
   useEffect(() => {
     if (open) {
-      // Give PostHog time to detect the "subscription" text element
+      // Give PostHog time to detect the modal content
       setTimeout(() => {
         posthog.reloadFeatureFlags();
         console.log("PostHog: Modal opened, rescanning for survey targets");
@@ -43,15 +44,22 @@ export const SubscriptionManagementDialog = ({
   const handleCancel = async () => {
     setShowSurvey(true);
     
-    // Show PostHog survey
+    // Show PostHog survey immediately inside the dialog
     posthog.getActiveMatchingSurveys((surveys) => {
-      const cancelSurvey = surveys.find(
-        (survey) => survey.name === "subscription_cancellation"
-      );
-      
+      const cancelSurvey = surveys.find((survey) => survey.name === "subscription_cancellation");
       if (cancelSurvey) {
-        // PostHog will automatically show the survey in a popup
-        console.log("PostHog: Showing cancellation survey", cancelSurvey.id);
+        const render = (posthog as any).renderSurvey as ((id: string, selector?: string) => void) | undefined;
+        if (typeof render === "function") {
+          const selector = "#ph-survey-container";
+          try {
+            render(cancelSurvey.id, selector);
+            console.log("PostHog: Rendered cancellation survey in container", { id: cancelSurvey.id, selector });
+          } catch (e) {
+            console.warn("PostHog: renderSurvey failed, proceeding with default behavior", e);
+          }
+        } else {
+          console.warn("PostHog: renderSurvey not available in this SDK version");
+        }
       } else {
         console.log("PostHog: No cancellation survey found, proceeding with cancellation");
       }
@@ -130,20 +138,23 @@ export const SubscriptionManagementDialog = ({
         <DialogHeader>
           <DialogTitle>Cancel Subscription</DialogTitle>
           <DialogDescription>
-            Are you sure you want to cancel your subscription?
+            Cancelling will stop monthly deliveries of your Hedgehog Food subscription. This is a product subscription (not a service), so we’ll simply stop shipping future boxes.
           </DialogDescription>
         </DialogHeader>
 
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Your subscription will be cancelled immediately and you'll lose access to premium features.
+            We’ll stop shipping your monthly Hedgehog Food box right away. This isn’t a service subscription—no further shipments will be sent.
           </AlertDescription>
         </Alert>
 
         {showSurvey && (
-          <div className="py-4 text-center text-sm text-muted-foreground">
-            Please help us improve by answering a quick survey...
+          <div className="py-4">
+            <div className="text-center text-sm text-muted-foreground mb-2">
+              Please help us improve by answering a quick survey...
+            </div>
+            <div id="ph-survey-container" ref={surveyContainerRef} />
           </div>
         )}
 
