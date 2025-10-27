@@ -11,7 +11,7 @@ export const initPostHog = () => {
     const POSTHOG_HOST = 
       import.meta.env.VITE_POSTHOG_HOST || 
       import.meta.env.NEXT_PUBLIC_POSTHOG_HOST || 
-      "https://us.i.posthog.com";
+      "https://eu.i.posthog.com";
     
     if (!POSTHOG_KEY) {
       console.warn("PostHog: No API key provided. Tracking disabled.");
