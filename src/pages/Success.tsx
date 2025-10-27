@@ -13,10 +13,18 @@ const Success = () => {
   const navigate = useNavigate();
   const { clearCart, totalPrice } = useCart();
   const sessionId = searchParams.get("session_id");
+  const trackedParam = searchParams.get("tracked");
   const [trackingComplete, setTrackingComplete] = useState(false);
 
   useEffect(() => {
     const identifyUser = async () => {
+      // Short-circuit if server-side tracking indicated via URL
+      if (trackedParam === "1") {
+        console.log("PostHog: Server-side tracking confirmed via URL; skipping client tracking.");
+        setTrackingComplete(true);
+        return;
+      }
+
       // Allow tracking if we have a session_id OR a pending basket flag
       const basketFlag = localStorage.getItem("checkout_basket") || sessionStorage.getItem("checkout_basket");
       let hasPending = false;

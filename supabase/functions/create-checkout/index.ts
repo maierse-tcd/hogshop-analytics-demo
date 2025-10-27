@@ -72,11 +72,14 @@ serve(async (req) => {
     const hasSubscription = items.some((item: any) => item.is_subscription);
     const mode = hasSubscription ? "subscription" : "payment";
 
+    const origin = req.headers.get("origin") || "http://localhost:3000";
+    const functionsBase = `${Deno.env.get("SUPABASE_URL")}/functions/v1`;
+
     const session = await stripe.checkout.sessions.create({
       line_items: lineItems,
       mode,
-      success_url: `${req.headers.get("origin")}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.get("origin")}/`,
+      success_url: `${functionsBase}/track-success?session_id={CHECKOUT_SESSION_ID}&redirect=${encodeURIComponent(origin + "/success")}`,
+      cancel_url: `${origin}/`,
       allow_promotion_codes: true,
       billing_address_collection: "required",
       customer_email: customer_email || undefined,

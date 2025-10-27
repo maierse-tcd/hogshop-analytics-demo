@@ -91,6 +91,7 @@ serve(async (req) => {
       const redirectUrl = new URL(redirect);
       // Preserve provided session id for any client-side usage
       redirectUrl.searchParams.set("session_id", sessionId);
+      redirectUrl.searchParams.set("tracked", "1");
       return new Response(null, {
         status: 302,
         headers: {
