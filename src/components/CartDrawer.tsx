@@ -7,7 +7,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { RegistrationDialog } from "@/components/RegistrationDialog";
-import { posthog } from "@/lib/posthog";
+import { posthog, trackEvent, setUserProperties, setUserPropertiesOnce } from "@/lib/posthog";
 
 export const CartDrawer = () => {
   const { items, removeFromCart, updateQuantity, totalItems, totalPrice, clearCart } = useCart();
@@ -46,6 +46,34 @@ export const CartDrawer = () => {
   const proceedToCheckout = async (email: string, name: string) => {
     setIsCheckingOut(true);
     try {
+      // Prepare basket data for PostHog
+      const basketItems = items.map(item => ({
+        id: item.id,
+        title: item.title,
+        price: item.price,
+        quantity: item.quantity,
+        is_subscription: item.is_subscription,
+      }));
+      
+      // Track checkout initiation with basket properties
+      trackEvent("checkout_initiated", {
+        items_count: totalItems,
+        basket_value: totalPrice,
+        items: basketItems,
+      });
+      
+      // Set user properties for current basket
+      setUserProperties({
+        items_basket: basketItems,
+        basket_value: totalPrice,
+        last_checkout_date: new Date().toISOString(),
+      });
+      
+      // Initialize overall_CLTV to 0 if it doesn't exist (won't overwrite existing value)
+      setUserPropertiesOnce({
+        overall_CLTV: 0,
+      });
+
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: { 
           items,
@@ -57,8 +85,12 @@ export const CartDrawer = () => {
       if (error) throw error;
 
       if (data?.url) {
-        // Store user info in session for success page
+        // Store user info and basket data in session for success page
         sessionStorage.setItem("checkout_user", JSON.stringify({ email, name }));
+        sessionStorage.setItem("checkout_basket", JSON.stringify({ 
+          items: basketItems, 
+          total: totalPrice 
+        }));
         window.open(data.url, "_blank");
       }
     } catch (error) {

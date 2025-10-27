@@ -4,7 +4,7 @@ import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
-import { trackEvent } from "@/lib/posthog";
+import { trackEvent, setUserProperties, updateCLTV } from "@/lib/posthog";
 import { posthog } from "@/lib/posthog";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -61,11 +61,39 @@ const Success = () => {
           }
         }
 
+        // Get basket data from session storage
+        const storedBasket = sessionStorage.getItem("checkout_basket");
+        let basketItems = [];
+        let basketValue = totalPrice;
+        
+        if (storedBasket) {
+          const basketData = JSON.parse(storedBasket);
+          basketItems = basketData.items;
+          basketValue = basketData.total;
+          sessionStorage.removeItem("checkout_basket");
+        }
+
+        // Track purchase completion
         trackEvent("purchase_completed", {
           session_id: sessionId,
-          total_amount: totalPrice,
+          total_amount: basketValue,
           customer_email: userEmail,
+          items: basketItems,
         });
+        
+        // Update user properties with completed purchase
+        setUserProperties({
+          last_purchase_date: new Date().toISOString(),
+          last_purchase_amount: basketValue,
+          items_basket: basketItems,
+          basket_value: basketValue,
+        });
+        
+        // Update overall customer lifetime value
+        updateCLTV(basketValue);
+        
+        console.log("PostHog: Purchase tracked and CLTV updated by", basketValue);
+        
         clearCart();
         setIdentified(true);
       }

@@ -85,6 +85,64 @@ export const identifyUser = (userId: string, properties?: Record<string, any>) =
 };
 
 /**
+ * Set user properties in PostHog
+ * Use this to update profile properties
+ */
+export const setUserProperties = (properties: Record<string, any>) => {
+  if (typeof window !== "undefined") {
+    try {
+      posthog.setPersonProperties(properties);
+      console.log("PostHog user properties set:", properties);
+    } catch (error) {
+      console.error("PostHog set properties error:", error);
+    }
+  }
+};
+
+/**
+ * Set user properties only once (won't overwrite existing values)
+ * Useful for initializing properties
+ */
+export const setUserPropertiesOnce = (properties: Record<string, any>) => {
+  if (typeof window !== "undefined") {
+    try {
+      posthog.setPersonPropertiesForFlags(properties);
+      console.log("PostHog user properties set once:", properties);
+    } catch (error) {
+      console.error("PostHog set once error:", error);
+    }
+  }
+};
+
+/**
+ * Increment overall CLTV by adding the purchase amount
+ * Since PostHog JS doesn't have increment, we track cumulative value manually
+ */
+export const updateCLTV = (purchaseAmount: number) => {
+  if (typeof window !== "undefined") {
+    try {
+      // Get current CLTV from person properties
+      const currentProperties = posthog.get_distinct_id() ? posthog.getFeatureFlag('$stored_person_properties') as any : {};
+      const currentCLTV = (currentProperties?.overall_CLTV || 0);
+      const newCLTV = currentCLTV + purchaseAmount;
+      
+      // Set the new cumulative value
+      posthog.setPersonProperties({
+        overall_CLTV: newCLTV,
+      });
+      
+      console.log("PostHog CLTV updated:", { previous: currentCLTV, added: purchaseAmount, new: newCLTV });
+    } catch (error) {
+      console.error("PostHog CLTV update error:", error);
+      // Fallback: just set the purchase amount
+      posthog.setPersonProperties({
+        overall_CLTV: purchaseAmount,
+      });
+    }
+  }
+};
+
+/**
  * Captures an exception to PostHog with rich metadata
  * Use this for consistent error formatting across the app
  */
