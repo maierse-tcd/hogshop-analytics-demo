@@ -1,6 +1,7 @@
-import { Moon, Sun, ShoppingCart } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
+import { CartDrawer } from "./CartDrawer";
 
 export const Header = () => {
   const { theme, setTheme } = useTheme();
@@ -38,10 +39,7 @@ export const Header = () => {
             <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
             <span className="sr-only">Toggle theme</span>
           </Button>
-          <Button variant="ghost" size="icon" className="rounded-full relative">
-            <ShoppingCart className="h-5 w-5" />
-            <span className="sr-only">Shopping cart</span>
-          </Button>
+          <CartDrawer />
         </div>
       </div>
     </header>

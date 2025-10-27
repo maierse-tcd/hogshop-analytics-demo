@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
 import { ProductCard } from "@/components/ProductCard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useEffect } from "react";
+import { trackEvent } from "@/lib/posthog";
 
 interface Product {
   id: string;
@@ -12,6 +14,9 @@ interface Product {
   image_url: string;
   stock: number;
   category: string;
+  is_subscription: boolean;
+  subscription_interval?: string;
+  subscription_interval_count?: number;
 }
 
 const Index = () => {
@@ -27,6 +32,12 @@ const Index = () => {
       return data as Product[];
     },
   });
+
+  useEffect(() => {
+    trackEvent("products_viewed", {
+      product_count: products?.length || 0,
+    });
+  }, [products]);
 
   return (
     <div className="min-h-screen bg-background">
