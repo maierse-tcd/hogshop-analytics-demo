@@ -73,9 +73,11 @@ export const CartDrawer = () => {
       }));
       
       // Track checkout initiation with basket properties
-      trackEvent("checkout_initiated", {
+      trackEvent("checkout_started", {
         items_count: totalItems,
         basket_value: totalPrice,
+        revenue: totalPrice,
+        currency: "USD",
         items: basketItems,
       });
       
@@ -198,7 +200,15 @@ export const CartDrawer = () => {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
-                      onClick={() => removeFromCart(item.id)}
+                      onClick={() => {
+                        trackEvent("remove_from_cart", {
+                          product_id: item.id,
+                          product_name: item.title,
+                          price: item.price,
+                          quantity: item.quantity,
+                        });
+                        removeFromCart(item.id);
+                      }}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

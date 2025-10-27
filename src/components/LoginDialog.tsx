@@ -30,6 +30,12 @@ export const LoginDialog = ({ open, onOpenChange, onLoginSuccess, discountPercen
       identifyUser(email, { name, email });
       initializeCLTV();
       
+      // Track login event
+      trackEvent('user_logged_in', {
+        login_method: 'email',
+        timestamp: new Date().toISOString()
+      });
+      
       onLoginSuccess(email, name);
       onOpenChange(false);
       setEmail("");

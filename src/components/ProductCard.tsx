@@ -72,12 +72,14 @@ export const ProductCard = ({
       subscription_interval 
     });
     
-    trackEvent("product_added_to_cart", {
+    trackEvent("add_to_cart", {
       product_id: id,
       product_name: title,
       price,
       category,
       is_subscription,
+      quantity: 1,
+      source: "product_card"
     });
   };
 

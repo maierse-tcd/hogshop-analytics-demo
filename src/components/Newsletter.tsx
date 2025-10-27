@@ -15,7 +15,12 @@ export const Newsletter = ({ variant = "card", onSubscribed }: NewsletterProps) 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (email) {
-      trackEvent("newsletter_signup", { email, source: "hero", variant });
+      trackEvent("newsletter_subscribed", { 
+        email, 
+        source: variant === "banner" ? "hero_banner" : "newsletter_card",
+        variant,
+        subscribed_at: new Date().toISOString()
+      });
       toast.success("Thanks for subscribing! Check your inbox for your 15% discount code.");
       localStorage.setItem("newsletter_subscribed", "true");
       onSubscribed?.(email);

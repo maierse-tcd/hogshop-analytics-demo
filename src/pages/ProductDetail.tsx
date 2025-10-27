@@ -43,6 +43,19 @@ const ProductDetail = () => {
         .single();
       
       if (error) throw error;
+      
+      // Track product view
+      if (data) {
+        trackEvent("product_viewed", {
+          product_id: data.id,
+          product_name: data.title,
+          price: data.price,
+          category: data.category,
+          is_subscription: data.is_subscription,
+          source: "product_detail_page"
+        });
+      }
+      
       return data;
     },
   });
@@ -64,11 +77,13 @@ const ProductDetail = () => {
       subscription_interval: product.subscription_interval,
     });
 
-    trackEvent("product_added_to_cart", {
+    trackEvent("add_to_cart", {
       product_id: product.id,
       product_name: product.title,
       price: product.price,
       category: product.category,
+      quantity: 1,
+      source: "product_detail_page"
     });
   };
 
