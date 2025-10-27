@@ -1,20 +1,44 @@
-import { Moon, Sun, LogIn, LogOut } from "lucide-react";
+import { Moon, Sun, LogIn, LogOut, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import { CartDrawer } from "./CartDrawer";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { LoginDialog } from "./LoginDialog";
+import { SubscriptionManagementDialog } from "./SubscriptionManagementDialog";
 import { posthog } from "@/lib/posthog";
 import { useFeatureFlagEnabled, useFeatureFlagVariantKey } from "posthog-js/react";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Header = () => {
   const { theme, setTheme } = useTheme();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState("");
   const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
+  const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
   const signupVariant = useFeatureFlagVariantKey('increase_signup');
   const halloweenMode = useFeatureFlagEnabled('hero_banner_halloween');
+
+  const checkSubscriptionStatus = async () => {
+    if (!isLoggedIn) return;
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data, error } = await supabase.functions.invoke("check-subscription");
+      
+      if (!error && data?.subscribed) {
+        setHasActiveSubscription(true);
+        console.log("Active subscription found");
+      } else {
+        setHasActiveSubscription(false);
+      }
+    } catch (error) {
+      console.error("Failed to check subscription status:", error);
+    }
+  };
 
   useEffect(() => {
     const email = localStorage.getItem("user_email");
@@ -25,12 +49,23 @@ export const Header = () => {
     }
   }, []);
 
+  useEffect(() => {
+    if (isLoggedIn) {
+      checkSubscriptionStatus();
+    }
+  }, [isLoggedIn]);
+
   const handleLogout = () => {
     localStorage.removeItem("user_email");
     localStorage.removeItem("user_name");
     posthog.reset();
     setIsLoggedIn(false);
     setUserName("");
+    setHasActiveSubscription(false);
+  };
+
+  const handleSubscriptionCancelled = () => {
+    setHasActiveSubscription(false);
   };
 
   const handleLoginSuccess = (email: string, name: string) => {
@@ -91,6 +126,19 @@ export const Header = () => {
             }`}>
               {halloweenMode ? '📦 Shipping' : 'Shipping'}
             </Link>
+            {isLoggedIn && hasActiveSubscription && (
+              <button
+                onClick={() => setShowSubscriptionDialog(true)}
+                className={`text-sm font-medium transition-colors ${
+                  halloweenMode 
+                    ? 'text-[hsl(var(--halloween-orange))]/80 hover:text-[hsl(var(--halloween-orange))]' 
+                    : 'text-muted-foreground hover:text-foreground'
+                } flex items-center gap-1`}
+              >
+                <CreditCard className="h-3.5 w-3.5" />
+                Subscription
+              </button>
+            )}
           </nav>
         </div>
         
@@ -155,6 +203,11 @@ export const Header = () => {
           onOpenChange={setShowLoginDialog}
           onLoginSuccess={handleLoginSuccess}
           discountPercent={signupVariant === '10percent' ? 10 : signupVariant === '15percent' ? 15 : undefined}
+        />
+        <SubscriptionManagementDialog
+          open={showSubscriptionDialog}
+          onOpenChange={setShowSubscriptionDialog}
+          onCancelled={handleSubscriptionCancelled}
         />
       </div>
     </header>
