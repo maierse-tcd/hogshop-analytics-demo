@@ -11,7 +11,7 @@ export const initPostHog = () => {
     const POSTHOG_HOST = 
       import.meta.env.VITE_POSTHOG_HOST || 
       import.meta.env.NEXT_PUBLIC_POSTHOG_HOST || 
-      "https://eu.i.posthog.com";
+      "https://us.i.posthog.com";
     
     if (!POSTHOG_KEY) {
       console.warn("PostHog: No API key provided. Tracking disabled.");
@@ -21,7 +21,7 @@ export const initPostHog = () => {
     try {
       posthog.init(POSTHOG_KEY, {
         api_host: POSTHOG_HOST,
-        ui_host: POSTHOG_HOST.includes("us.i.posthog") ? "https://us.posthog.com" : "https://eu.posthog.com",
+        ui_host: POSTHOG_HOST.includes("eu.i.posthog") ? "https://eu.posthog.com" : "https://us.posthog.com",
         loaded: (posthog) => {
           console.log("PostHog loaded successfully!", { api_host: POSTHOG_HOST });
           if (import.meta.env.DEV) {
@@ -51,6 +51,14 @@ export const initPostHog = () => {
         host: POSTHOG_HOST, 
         key: POSTHOG_KEY.substring(0, 10) + "..." 
       });
+
+      // Set up feature flags loaded callback
+      posthog.onFeatureFlags(() => {
+        console.log("PostHog: Feature flags loaded");
+      });
+
+      // Force reload feature flags to ensure they're loaded
+      posthog.reloadFeatureFlags();
     } catch (error) {
       console.error("PostHog initialization failed:", error);
     }
