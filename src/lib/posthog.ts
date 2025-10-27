@@ -116,28 +116,51 @@ export const setUserPropertiesOnce = (properties: Record<string, any>) => {
 
 /**
  * Increment overall CLTV by adding the purchase amount
- * Since PostHog JS doesn't have increment, we track cumulative value manually
+ * Tracks CLTV locally and syncs to PostHog as a custom person property
  */
 export const updateCLTV = (purchaseAmount: number) => {
   if (typeof window !== "undefined") {
     try {
-      // Get current CLTV from person properties
-      const currentProperties = posthog.get_distinct_id() ? posthog.getFeatureFlag('$stored_person_properties') as any : {};
-      const currentCLTV = (currentProperties?.overall_CLTV || 0);
+      // Get current CLTV from localStorage (our source of truth)
+      const currentCLTV = parseFloat(localStorage.getItem('user_cltv') || '0');
       const newCLTV = currentCLTV + purchaseAmount;
       
-      // Set the new cumulative value
+      // Store updated CLTV in localStorage
+      localStorage.setItem('user_cltv', newCLTV.toString());
+      
+      // Set as person property in PostHog (this is persistent on PostHog's servers)
       posthog.setPersonProperties({
-        overall_CLTV: newCLTV,
+        customer_lifetime_value: newCLTV,
+        last_purchase_amount: purchaseAmount,
+        last_purchase_date: new Date().toISOString(),
       });
       
       console.log("PostHog CLTV updated:", { previous: currentCLTV, added: purchaseAmount, new: newCLTV });
     } catch (error) {
       console.error("PostHog CLTV update error:", error);
-      // Fallback: just set the purchase amount
+      // Fallback: just set the purchase amount as CLTV
+      localStorage.setItem('user_cltv', purchaseAmount.toString());
       posthog.setPersonProperties({
-        overall_CLTV: purchaseAmount,
+        customer_lifetime_value: purchaseAmount,
+        last_purchase_amount: purchaseAmount,
+        last_purchase_date: new Date().toISOString(),
       });
+    }
+  }
+};
+
+/**
+ * Initialize CLTV for a new user
+ */
+const initializeCLTV = () => {
+  if (typeof window !== "undefined") {
+    const currentCLTV = localStorage.getItem('user_cltv');
+    if (!currentCLTV) {
+      localStorage.setItem('user_cltv', '0');
+      posthog.setPersonProperties({
+        customer_lifetime_value: 0,
+      });
+      console.log("PostHog CLTV initialized to 0");
     }
   }
 };
@@ -169,4 +192,4 @@ export const captureException = (
   }
 };
 
-export { posthog };
+export { posthog, initializeCLTV };

@@ -7,7 +7,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { RegistrationDialog } from "@/components/RegistrationDialog";
-import { posthog, trackEvent, setUserProperties, setUserPropertiesOnce } from "@/lib/posthog";
+import { posthog, trackEvent, setUserProperties, initializeCLTV } from "@/lib/posthog";
 
 export const CartDrawer = () => {
   const { items, removeFromCart, updateQuantity, totalItems, totalPrice, clearCart } = useCart();
@@ -76,13 +76,11 @@ export const CartDrawer = () => {
       setUserProperties({
         items_basket: basketItems,
         basket_value: totalPrice,
-        last_checkout_date: new Date().toISOString(),
+        checkout_initiated_date: new Date().toISOString(),
       });
       
-      // Initialize overall_CLTV to 0 if it doesn't exist (won't overwrite existing value)
-      setUserPropertiesOnce({
-        overall_CLTV: 0,
-      });
+      // Initialize CLTV if this is their first checkout
+      initializeCLTV();
 
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: { 

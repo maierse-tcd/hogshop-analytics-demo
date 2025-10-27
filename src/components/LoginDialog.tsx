@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { identifyUser, setUserProperties, trackEvent } from "@/lib/posthog";
+import { identifyUser, setUserProperties, trackEvent, initializeCLTV } from "@/lib/posthog";
 
 interface LoginDialogProps {
   open: boolean;
@@ -26,8 +26,9 @@ export const LoginDialog = ({ open, onOpenChange, onLoginSuccess, discountPercen
       // Also store in hedgehog_user format for checkout compatibility
       localStorage.setItem("hedgehog_user", JSON.stringify({ email, name }));
       
-      // Identify in PostHog
+      // Identify in PostHog and initialize CLTV
       identifyUser(email, { name, email });
+      initializeCLTV();
       
       onLoginSuccess(email, name);
       onOpenChange(false);
@@ -65,6 +66,9 @@ export const LoginDialog = ({ open, onOpenChange, onLoginSuccess, discountPercen
         discount_percent: discountPercent || 0,
         experiment_variant: discountPercent ? `${discountPercent}percent` : 'control'
       });
+      
+      // Initialize CLTV for new user
+      initializeCLTV();
       
       onLoginSuccess(email, name);
       onOpenChange(false);
