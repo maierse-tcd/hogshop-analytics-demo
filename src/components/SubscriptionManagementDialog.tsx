@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -26,49 +26,11 @@ export const SubscriptionManagementDialog = ({
   onCancelled,
 }: SubscriptionManagementDialogProps) => {
   const [isCancelling, setIsCancelling] = useState(false);
-  const [showSurvey, setShowSurvey] = useState(false);
   const { toast } = useToast();
-  const surveyContainerRef = useRef<HTMLDivElement | null>(null);
-
-  // Force PostHog to rescan for survey targets when modal opens
-  useEffect(() => {
-    if (open) {
-      // Give PostHog time to detect the modal content
-      setTimeout(() => {
-        posthog.reloadFeatureFlags();
-        console.log("PostHog: Modal opened, rescanning for survey targets");
-      }, 300);
-    }
-  }, [open]);
 
   const handleCancel = async () => {
-    setShowSurvey(true);
-    
-    // Show PostHog survey immediately inside the dialog
-    posthog.getActiveMatchingSurveys((surveys) => {
-      const cancelSurvey = surveys.find((survey) => survey.name === "subscription_cancellation");
-      if (cancelSurvey) {
-        const render = (posthog as any).renderSurvey as ((id: string, selector?: string) => void) | undefined;
-        if (typeof render === "function") {
-          const selector = "#ph-survey-container";
-          try {
-            render(cancelSurvey.id, selector);
-            console.log("PostHog: Rendered cancellation survey in container", { id: cancelSurvey.id, selector });
-          } catch (e) {
-            console.warn("PostHog: renderSurvey failed, proceeding with default behavior", e);
-          }
-        } else {
-          console.warn("PostHog: renderSurvey not available in this SDK version");
-        }
-      } else {
-        console.log("PostHog: No cancellation survey found, proceeding with cancellation");
-      }
-    }, true);
-
-    // Small delay to let the survey appear
-    setTimeout(() => {
-      proceedWithCancellation();
-    }, 500);
+    // No survey on cancel; proceed immediately
+    await proceedWithCancellation();
   };
 
   const proceedWithCancellation = async () => {
@@ -128,7 +90,6 @@ export const SubscriptionManagementDialog = ({
       });
     } finally {
       setIsCancelling(false);
-      setShowSurvey(false);
     }
   };
 
@@ -149,14 +110,6 @@ export const SubscriptionManagementDialog = ({
           </AlertDescription>
         </Alert>
 
-        {showSurvey && (
-          <div className="py-4">
-            <div className="text-center text-sm text-muted-foreground mb-2">
-              Please help us improve by answering a quick survey...
-            </div>
-            <div id="ph-survey-container" ref={surveyContainerRef} />
-          </div>
-        )}
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button

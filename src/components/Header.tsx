@@ -43,18 +43,25 @@ export const Header = () => {
 
   const triggerSubscriptionSurvey = () => {
     try {
+      // Always track the click
+      posthog.capture("click_subscription", {
+        source: "header",
+        timestamp: new Date().toISOString(),
+      });
+
       posthog.getActiveMatchingSurveys((surveys) => {
-        const survey = surveys.find((s) => s.name === "subscription_cancellation");
+        // Prefer a survey with "subscription" in name, else take the first
+        const survey = surveys.find((s: any) => (s.name || "").toLowerCase().includes("subscription")) || surveys[0];
         if (survey) {
           const render = (posthog as any).renderSurvey as ((id: string, selector?: string) => void) | undefined;
           if (typeof render === "function") {
             render(survey.id);
-            console.log("PostHog: Rendered subscription survey from header", { id: survey.id });
+            console.log("PostHog: Rendered survey from header click", { id: survey.id, name: survey.name });
           } else {
             console.warn("PostHog: renderSurvey not available in this SDK version");
           }
         } else {
-          console.log("PostHog: No matching survey found on header click");
+          console.log("PostHog: No active surveys available on header click");
         }
       }, true);
     } catch (e) {
