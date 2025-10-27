@@ -248,7 +248,11 @@ export const updateSubscriptionStatus = (subscriptionData: {
         subscription_updated_at: new Date().toISOString(),
       });
       
-      console.log("PostHog subscription status updated:", subscriptionData);
+      console.log("PostHog subscription status updated:", {
+        ...subscriptionData,
+        distinctId: posthog.get_distinct_id(),
+        timestamp: new Date().toISOString()
+      });
     } catch (error) {
       console.error("PostHog subscription update error:", error);
     }

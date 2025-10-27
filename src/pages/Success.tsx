@@ -71,6 +71,13 @@ const Success = () => {
           basketItems = basketData.items;
           basketValue = basketData.total;
           sessionStorage.removeItem("checkout_basket");
+          console.log("PostHog: Basket data retrieved from sessionStorage:", {
+            items: basketItems,
+            total: basketValue,
+            itemCount: basketItems.length
+          });
+        } else {
+          console.warn("PostHog: No basket data in sessionStorage, using fallback");
         }
 
         // Track purchase completion
@@ -94,26 +101,26 @@ const Success = () => {
           updateCLTV(basketValue);
           
           console.log("PostHog: Purchase tracked and CLTV updated by", basketValue);
-        }, 150);
+        }, 300);
         
         // Check if this was a subscription purchase and update subscription status
         const hasSubscription = basketItems.some((item: any) => item.is_subscription);
+        console.log("PostHog: Subscription check:", {
+          hasSubscription,
+          basketItems,
+          subscriptionItems: basketItems.filter((item: any) => item.is_subscription)
+        });
+        
         if (hasSubscription) {
           const subscriptionItem = basketItems.find((item: any) => item.is_subscription);
           setTimeout(() => {
+            console.log("PostHog: Setting subscription_active to true");
             updateSubscriptionStatus({
               active: true,
               start_date: new Date().toISOString(),
               monthly_value: subscriptionItem?.price || basketValue,
             });
-            
-            // Refresh the Header's subscription status
-            if (typeof window !== "undefined" && (window as any).refreshSubscriptionStatus) {
-              setTimeout(() => {
-                (window as any).refreshSubscriptionStatus();
-              }, 1000);
-            }
-          }, 200);
+          }, 500);
         }
         
         clearCart();

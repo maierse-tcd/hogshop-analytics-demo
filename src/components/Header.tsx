@@ -6,9 +6,8 @@ import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { LoginDialog } from "./LoginDialog";
 import { SubscriptionManagementDialog } from "./SubscriptionManagementDialog";
-import { posthog, updateSubscriptionStatus } from "@/lib/posthog";
+import { posthog } from "@/lib/posthog";
 import { useFeatureFlagEnabled, useFeatureFlagVariantKey } from "posthog-js/react";
-import { supabase } from "@/integrations/supabase/client";
 
 export const Header = () => {
   const { theme, setTheme } = useTheme();
@@ -16,48 +15,9 @@ export const Header = () => {
   const [userName, setUserName] = useState("");
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
-  const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
   const signupVariant = useFeatureFlagVariantKey('increase_signup');
   const halloweenMode = useFeatureFlagEnabled('hero_banner_halloween');
-
-  const checkSubscriptionStatus = async () => {
-    if (!isLoggedIn) return;
-    
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        console.log("No active session, skipping subscription check");
-        return;
-      }
-
-      const { data, error } = await supabase.functions.invoke("check-subscription");
-      
-      if (!error && data?.subscribed) {
-        setHasActiveSubscription(true);
-        
-        // Update PostHog with subscription details
-        updateSubscriptionStatus({
-          active: true,
-          subscription_id: data.subscription_id,
-          start_date: data.subscription_end ? new Date(data.subscription_end).toISOString() : undefined,
-          cancelled: false,
-        });
-        
-        console.log("Active subscription found:", data);
-      } else {
-        setHasActiveSubscription(false);
-        
-        // Update PostHog - no active subscription
-        updateSubscriptionStatus({
-          active: false,
-          cancelled: false,
-        });
-      }
-    } catch (error) {
-      console.error("Failed to check subscription status:", error);
-      setHasActiveSubscription(false);
-    }
-  };
+  const showSubscription = useFeatureFlagEnabled('show_subscription');
 
   useEffect(() => {
     const email = localStorage.getItem("user_email");
@@ -68,34 +28,12 @@ export const Header = () => {
     }
   }, []);
 
-  useEffect(() => {
-    if (isLoggedIn) {
-      // Small delay to ensure session is established
-      const timer = setTimeout(() => {
-        checkSubscriptionStatus();
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [isLoggedIn]);
-
-  // Expose checkSubscriptionStatus globally for Success page to use
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      (window as any).refreshSubscriptionStatus = checkSubscriptionStatus;
-    }
-  }, [isLoggedIn]);
-
   const handleLogout = () => {
     localStorage.removeItem("user_email");
     localStorage.removeItem("user_name");
     posthog.reset();
     setIsLoggedIn(false);
     setUserName("");
-    setHasActiveSubscription(false);
-  };
-
-  const handleSubscriptionCancelled = () => {
-    setHasActiveSubscription(false);
   };
 
   const handleLoginSuccess = (email: string, name: string) => {
@@ -156,7 +94,7 @@ export const Header = () => {
             }`}>
               {halloweenMode ? '📦 Shipping' : 'Shipping'}
             </Link>
-            {isLoggedIn && hasActiveSubscription && (
+            {isLoggedIn && showSubscription && (
               <button
                 onClick={() => setShowSubscriptionDialog(true)}
                 className={`text-sm font-medium transition-colors ${
@@ -237,7 +175,6 @@ export const Header = () => {
         <SubscriptionManagementDialog
           open={showSubscriptionDialog}
           onOpenChange={setShowSubscriptionDialog}
-          onCancelled={handleSubscriptionCancelled}
         />
       </div>
     </header>
