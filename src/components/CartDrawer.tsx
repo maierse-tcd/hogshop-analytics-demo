@@ -18,12 +18,18 @@ export const CartDrawer = () => {
     
     setIsCheckingOut(true);
     try {
-      // We'll implement the checkout edge function next
-      toast({
-        title: "Checkout coming soon!",
-        description: "Stripe checkout will be implemented next.",
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: { items },
       });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        // Track checkout event
+        window.open(data.url, "_blank");
+      }
     } catch (error) {
+      console.error("Checkout error:", error);
       toast({
         variant: "destructive",
         title: "Checkout failed",
