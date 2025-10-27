@@ -99,10 +99,22 @@ const Index = () => {
         <Header />
       
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-background via-accent/5 to-background border-b overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.03]">
+      <section className="relative border-b overflow-hidden">
+        {/* Gradient Background */}
+        <div className="absolute inset-0" style={{ background: 'var(--gradient-hero)' }} />
+        
+        {/* Radial Glow Effect */}
+        <div className="absolute inset-0" style={{ background: 'var(--gradient-glow)' }} />
+        
+        {/* Grid Pattern Overlay */}
+        <div className="absolute inset-0 opacity-[0.05]">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,hsl(var(--primary))_1px,transparent_1px)] bg-[length:32px_32px]" />
         </div>
+        
+        {/* Animated Gradient Orbs */}
+        <div className="absolute top-20 left-1/4 w-64 h-64 bg-primary/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-20 right-1/4 w-96 h-96 bg-blue/20 rounded-full blur-3xl animate-pulse delay-1000" />
+        
         <div className="container py-24 md:py-36 relative">
           <div className="max-w-4xl mx-auto text-center space-y-8">
             <Badge className="text-sm px-4 py-1.5 font-semibold" variant="secondary">
