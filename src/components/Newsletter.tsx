@@ -18,6 +18,9 @@ export const Newsletter = () => {
 
   return (
     <div className="bg-primary/5 border border-primary/20 rounded-lg p-8 max-w-2xl mx-auto">
+      <div className="inline-block bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-semibold mb-3">
+        🎉 15% OFF Your First Order
+      </div>
       <h3 className="text-2xl font-bold text-center mb-2">
         Join Our Hedgehog Community
       </h3>

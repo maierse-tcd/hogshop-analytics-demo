@@ -51,7 +51,24 @@ const Index = () => {
     ? products 
     : products?.filter(p => p.category === selectedCategory);
 
-  const showNewsletter = posthog.isFeatureEnabled("show_newsletter");
+  // Check feature flag with fallback
+  const [showNewsletter, setShowNewsletter] = useState(false);
+  
+  useEffect(() => {
+    // Wait for PostHog to be ready before checking feature flags
+    const checkFeatureFlag = () => {
+      const isEnabled = posthog.isFeatureEnabled("show_newsletter");
+      setShowNewsletter(isEnabled === true);
+    };
+    
+    // Check immediately
+    checkFeatureFlag();
+    
+    // Also check after a short delay in case PostHog is still loading
+    const timer = setTimeout(checkFeatureFlag, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
