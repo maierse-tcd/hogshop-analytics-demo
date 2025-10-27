@@ -41,6 +41,27 @@ export const Header = () => {
     setUserName(name);
   };
 
+  const triggerSubscriptionSurvey = () => {
+    try {
+      posthog.getActiveMatchingSurveys((surveys) => {
+        const survey = surveys.find((s) => s.name === "subscription_cancellation");
+        if (survey) {
+          const render = (posthog as any).renderSurvey as ((id: string, selector?: string) => void) | undefined;
+          if (typeof render === "function") {
+            render(survey.id);
+            console.log("PostHog: Rendered subscription survey from header", { id: survey.id });
+          } else {
+            console.warn("PostHog: renderSurvey not available in this SDK version");
+          }
+        } else {
+          console.log("PostHog: No matching survey found on header click");
+        }
+      }, true);
+    } catch (e) {
+      console.error("PostHog: Survey trigger error", e);
+    }
+  };
+
   return (
     <header className={`sticky top-0 z-50 w-full border-b backdrop-blur supports-[backdrop-filter]:bg-background/60 ${
       halloweenMode 
@@ -96,7 +117,10 @@ export const Header = () => {
             </Link>
             {isLoggedIn && showSubscription && (
               <button
-                onClick={() => setShowSubscriptionDialog(true)}
+                onClick={() => {
+                  triggerSubscriptionSurvey();
+                  setTimeout(() => setShowSubscriptionDialog(true), 600);
+                }}
                 className={`text-sm font-medium transition-colors ${
                   halloweenMode 
                     ? 'text-[hsl(var(--halloween-orange))]/80 hover:text-[hsl(var(--halloween-orange))]' 
