@@ -6,12 +6,14 @@ import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { LoginDialog } from "./LoginDialog";
 import { posthog } from "@/lib/posthog";
+import { useFeatureFlagEnabled } from "posthog-js/react";
 
 export const Header = () => {
   const { theme, setTheme } = useTheme();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState("");
   const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const signupVariant = posthog.getFeatureFlag('increase_signup');
 
   useEffect(() => {
     const email = localStorage.getItem("user_email");
@@ -77,15 +79,24 @@ export const Header = () => {
               </Button>
             </div>
           ) : (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowLoginDialog(true)}
-              className="gap-2"
-            >
-              <LogIn className="h-4 w-4" />
-              <span className="hidden md:inline">Login</span>
-            </Button>
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowLoginDialog(true)}
+                className="gap-2"
+              >
+                <LogIn className="h-4 w-4" />
+                <span className="hidden md:inline">Login/Signup</span>
+              </Button>
+              {(signupVariant === '10percent' || signupVariant === '15percent') && (
+                <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 animate-pulse">
+                  <span className="text-xs font-medium text-primary">
+                    🎉 {signupVariant === '10percent' ? '10%' : '15%'} off your first order!
+                  </span>
+                </div>
+              )}
+            </>
           )}
           <Button
             variant="ghost"
@@ -103,6 +114,7 @@ export const Header = () => {
           open={showLoginDialog} 
           onOpenChange={setShowLoginDialog}
           onLoginSuccess={handleLoginSuccess}
+          discountPercent={signupVariant === '10percent' ? 10 : signupVariant === '15percent' ? 15 : undefined}
         />
       </div>
     </header>
