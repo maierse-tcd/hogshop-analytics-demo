@@ -81,7 +81,7 @@ const Index = () => {
   // Use PostHog React hook for feature flags
   const showNewsletterFlag = useFeatureFlagEnabled('show_newsletter');
   const halloweenHeroFlag = useFeatureFlagEnabled('hero_banner_halloween');
-  const newsletterSubVariant = useFeatureFlagVariantKey('increase_sales_cta');
+  const newsletterSubVariant = useFeatureFlagVariantKey('newsletter_sub');
   const [hasSubscribed, setHasSubscribed] = useState(false);
   const [showNewsletterModal, setShowNewsletterModal] = useState(false);
   
@@ -168,7 +168,7 @@ const Index = () => {
                 document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' });
                 trackEvent("hero_cta_clicked", { 
                   cta: "shop_now",
-                  experiment: "increase_sales_cta",
+                  experiment: "newsletter_sub",
                   variant: newsletterSubVariant || "control"
                 });
               }}>
@@ -185,7 +185,7 @@ const Index = () => {
                     setShowNewsletterModal(true);
                     trackEvent("hero_cta_clicked", { 
                       cta: "newsletter_signup",
-                      experiment: "increase_sales_cta",
+                      experiment: "newsletter_sub",
                       variant: "test"
                     });
                   }}
@@ -202,7 +202,7 @@ const Index = () => {
                     window.location.href = "/about";
                     trackEvent("hero_cta_clicked", { 
                       cta: "learn_more",
-                      experiment: "increase_sales_cta",
+                      experiment: "newsletter_sub",
                       variant: newsletterSubVariant || "control"
                     });
                   }}

@@ -15,7 +15,7 @@ export const Header = () => {
   const [userName, setUserName] = useState("");
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
-  const signupVariant = useFeatureFlagVariantKey('increase_signup');
+  const signupVariant = useFeatureFlagVariantKey('increase_sales_cta');
   const halloweenMode = useFeatureFlagEnabled('hero_banner_halloween');
   const showSubscription = useFeatureFlagEnabled('show_subscription');
 
