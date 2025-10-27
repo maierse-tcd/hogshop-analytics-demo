@@ -56,6 +56,22 @@ const Index = () => {
     return () => clearTimeout(errorTimer);
   }, [products]);
 
+  // One-time event seeding for PostHog experiment setup
+  useEffect(() => {
+    const eventSeeded = localStorage.getItem("posthog_events_seeded");
+    if (!eventSeeded) {
+      // Send sample event to register it in PostHog
+      trackEvent("newsletter_subscribed", {
+        email: "demo@example.com",
+        source: "event_seeding",
+        variant: "test",
+        subscribed_at: new Date().toISOString(),
+        _demo_event: true
+      });
+      localStorage.setItem("posthog_events_seeded", "true");
+    }
+  }, []);
+
   const categories = ["All", "Food & Nutrition", "Housing", "Toys & Exercise", "Care & Grooming", "Bedding & Comfort", "Merchandise"];
   
   const filteredProducts = selectedCategory === "All" 
