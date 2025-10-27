@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
-import { trackEvent, posthog } from "@/lib/posthog";
+import { trackEvent, posthog, checkFeatureFlag } from "@/lib/posthog";
 import { ArrowRight } from "lucide-react";
 import { Newsletter } from "@/components/Newsletter";
 
@@ -59,23 +59,35 @@ const Index = () => {
     // Check localStorage for subscription status
     const subscribed = localStorage.getItem("newsletter_subscribed") === "true";
     setHasSubscribed(subscribed);
+    console.log("Newsletter subscription status from localStorage:", subscribed);
 
     // Robust feature flag check with PostHog
-    const checkFeatureFlag = () => {
-      const isEnabled = posthog.isFeatureEnabled("show_newsletter");
-      setShowNewsletter(isEnabled === true);
+    const updateFeatureFlag = () => {
+      const isEnabled = checkFeatureFlag("show_newsletter");
+      console.log("Setting showNewsletter to:", isEnabled);
+      setShowNewsletter(isEnabled);
     };
     
     // Immediate check
-    checkFeatureFlag();
+    updateFeatureFlag();
     
     // Listen for feature flags to load
     posthog.onFeatureFlags(() => {
-      setShowNewsletter(posthog.isFeatureEnabled("show_newsletter") === true);
+      console.log("PostHog feature flags loaded callback triggered");
+      updateFeatureFlag();
     });
     
     // Reload feature flags to ensure fresh data
+    console.log("Reloading PostHog feature flags...");
     posthog.reloadFeatureFlags();
+    
+    // Poll for feature flag changes every 3 seconds (for testing)
+    const interval = setInterval(() => {
+      console.log("Polling feature flag...");
+      updateFeatureFlag();
+    }, 3000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   return (

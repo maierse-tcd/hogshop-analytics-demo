@@ -68,6 +68,21 @@ export const trackEvent = (eventName: string, properties?: Record<string, any>) 
   }
 };
 
+export const checkFeatureFlag = (flagName: string): boolean => {
+  if (typeof window !== "undefined") {
+    try {
+      const isEnabled = posthog.isFeatureEnabled(flagName);
+      const flagValue = posthog.getFeatureFlag(flagName);
+      console.log(`PostHog feature flag '${flagName}':`, { isEnabled, flagValue });
+      return isEnabled === true;
+    } catch (error) {
+      console.error(`PostHog feature flag check error for '${flagName}':`, error);
+      return false;
+    }
+  }
+  return false;
+};
+
 export const identifyUser = (userId: string, properties?: Record<string, any>) => {
   if (typeof window !== "undefined") {
     try {
