@@ -177,11 +177,10 @@ const Index = () => {
               
               {/* A/B Test: Newsletter CTA vs Learn More */}
               {newsletterSubVariant === 'test' ? (
-                // Test Variant: Newsletter CTA
+                // Test Variant: Newsletter CTA - More pronounced
                 <Button 
                   size="lg" 
-                  variant="outline" 
-                  className="h-12 px-8 text-base font-semibold gap-2" 
+                  className="h-12 px-8 text-base font-semibold gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/30 animate-pulse hover:animate-none hover:scale-105 transition-transform" 
                   onClick={() => {
                     setShowNewsletterModal(true);
                     trackEvent("hero_cta_clicked", { 
