@@ -5,6 +5,7 @@ import { CartDrawer } from "./CartDrawer";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { LoginDialog } from "./LoginDialog";
+import { posthog } from "@/lib/posthog";
 
 export const Header = () => {
   const { theme, setTheme } = useTheme();
@@ -24,6 +25,7 @@ export const Header = () => {
   const handleLogout = () => {
     localStorage.removeItem("user_email");
     localStorage.removeItem("user_name");
+    posthog.reset();
     setIsLoggedIn(false);
     setUserName("");
   };
