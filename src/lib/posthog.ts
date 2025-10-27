@@ -3,23 +3,38 @@ import posthog from "posthog-js";
 export const initPostHog = () => {
   if (typeof window !== "undefined") {
     const POSTHOG_KEY = "phc_mCl11WvLPwmqyjG7FlivcsSbTfSEY1J3TWcEnnR0CJa";
-    const POSTHOG_HOST = "https://us.i.posthog.com"; // Changed to US server
+    const POSTHOG_HOST = "https://eu.i.posthog.com";
     
-    posthog.init(POSTHOG_KEY, {
-      api_host: POSTHOG_HOST,
-      loaded: (posthog) => {
-        console.log("PostHog loaded successfully!");
-        if (import.meta.env.DEV) {
-          posthog.debug();
-        }
-      },
-      capture_pageview: true,
-      capture_pageleave: true,
-      persistence: "localStorage",
-      cross_subdomain_cookie: false,
-    });
-    
-    console.log("PostHog initialization called with US server");
+    try {
+      posthog.init(POSTHOG_KEY, {
+        api_host: POSTHOG_HOST,
+        ui_host: "https://eu.posthog.com",
+        loaded: (posthog) => {
+          console.log("PostHog loaded successfully on EU server!");
+          if (import.meta.env.DEV) {
+            posthog.debug();
+          }
+        },
+        capture_pageview: true,
+        capture_pageleave: true,
+        persistence: "localStorage+cookie",
+        cross_subdomain_cookie: false,
+        disable_session_recording: true,
+        respect_dnt: false,
+        opt_out_capturing_by_default: false,
+        sanitize_properties: null,
+        bootstrap: {
+          distinctID: undefined,
+        },
+        session_recording: {
+          recordCrossOriginIframes: false,
+        },
+      });
+      
+      console.log("PostHog initialization called with EU server");
+    } catch (error) {
+      console.error("PostHog initialization failed:", error);
+    }
   }
 };
 
