@@ -2,15 +2,28 @@ import posthog from "posthog-js";
 
 export const initPostHog = () => {
   if (typeof window !== "undefined") {
-    const POSTHOG_KEY = "phc_mCl11WvLPwmqyjG7FlivcsSbTfSEY1J3TWcEnnR0CJa";
-    const POSTHOG_HOST = "https://eu.i.posthog.com";
+    // Read from environment variables with fallbacks
+    const POSTHOG_KEY = 
+      import.meta.env.VITE_POSTHOG_KEY || 
+      import.meta.env.NEXT_PUBLIC_POSTHOG_KEY || 
+      "phc_mCl11WvLPwmqyjG7FlivcsSbTfSEY1J3TWcEnnR0CJa";
+    
+    const POSTHOG_HOST = 
+      import.meta.env.VITE_POSTHOG_HOST || 
+      import.meta.env.NEXT_PUBLIC_POSTHOG_HOST || 
+      "https://eu.i.posthog.com";
+    
+    if (!POSTHOG_KEY) {
+      console.warn("PostHog: No API key provided. Tracking disabled.");
+      return;
+    }
     
     try {
       posthog.init(POSTHOG_KEY, {
         api_host: POSTHOG_HOST,
-        ui_host: "https://eu.posthog.com",
+        ui_host: POSTHOG_HOST.includes("us.i.posthog") ? "https://us.posthog.com" : "https://eu.posthog.com",
         loaded: (posthog) => {
-          console.log("PostHog loaded successfully on EU server!");
+          console.log("PostHog loaded successfully!", { api_host: POSTHOG_HOST });
           if (import.meta.env.DEV) {
             posthog.debug();
           }
@@ -23,6 +36,9 @@ export const initPostHog = () => {
         respect_dnt: false,
         opt_out_capturing_by_default: false,
         sanitize_properties: null,
+        xhr_headers: {
+          "Content-Type": "application/json",
+        },
         bootstrap: {
           distinctID: undefined,
         },
@@ -31,7 +47,10 @@ export const initPostHog = () => {
         },
       });
       
-      console.log("PostHog initialization called with EU server");
+      console.log("PostHog initialized", { 
+        host: POSTHOG_HOST, 
+        key: POSTHOG_KEY.substring(0, 10) + "..." 
+      });
     } catch (error) {
       console.error("PostHog initialization failed:", error);
     }
