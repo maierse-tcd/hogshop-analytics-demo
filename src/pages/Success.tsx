@@ -17,12 +17,22 @@ const Success = () => {
 
   useEffect(() => {
     const identifyUser = async () => {
-      if (!sessionId || trackingComplete) {
-        console.log("PostHog: Skipping tracking", { sessionId, trackingComplete });
+      // Allow tracking if we have a session_id OR a pending basket flag
+      const basketFlag = localStorage.getItem("checkout_basket") || sessionStorage.getItem("checkout_basket");
+      let hasPending = false;
+      try {
+        if (basketFlag) {
+          const tmp = JSON.parse(basketFlag);
+          hasPending = !!tmp?.needs_tracking;
+        }
+      } catch (_) {}
+
+      if ((!sessionId && !hasPending) || trackingComplete) {
+        console.log("PostHog: Skipping tracking", { sessionId, hasPending, trackingComplete });
         return;
       }
 
-      console.log("PostHog: Starting purchase tracking for session:", sessionId);
+      console.log("PostHog: Starting purchase tracking for session:", sessionId || "no-session");
 
       // Check if this session was already tracked
       const trackedSessions = JSON.parse(localStorage.getItem("tracked_sessions") || "{}");

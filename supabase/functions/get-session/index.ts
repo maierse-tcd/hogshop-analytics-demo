@@ -13,7 +13,16 @@ serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    const sessionId = url.searchParams.get("session_id");
+    let sessionId = url.searchParams.get("session_id");
+
+    if (!sessionId) {
+      try {
+        const body = await req.json();
+        sessionId = body?.session_id;
+      } catch (_) {
+        // ignore body parse errors
+      }
+    }
 
     if (!sessionId) {
       throw new Error("No session_id provided");
