@@ -88,10 +88,13 @@ const Index = () => {
         <Header />
       
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-background via-accent/5 to-background border-b overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.03]">
+      <section className="relative bg-gradient-to-br from-primary/5 via-background to-accent/10 border-b overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.07]">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,hsl(var(--primary))_1px,transparent_1px)] bg-[length:32px_32px]" />
         </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-background/50 via-transparent to-transparent" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
         <div className="container py-24 md:py-36 relative">
           <div className="max-w-4xl mx-auto text-center space-y-8">
             <Badge className="text-sm px-4 py-1.5 font-semibold" variant="secondary">
