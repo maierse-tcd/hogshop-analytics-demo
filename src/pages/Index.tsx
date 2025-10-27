@@ -11,6 +11,7 @@ import { useFeatureFlagEnabled } from "posthog-js/react";
 import { ArrowRight, X } from "lucide-react";
 import { Newsletter } from "@/components/Newsletter";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { simulateDemoErrors } from "@/utils/demoErrorSimulator";
 
 interface Product {
   id: string;
@@ -46,25 +47,13 @@ const Index = () => {
       product_count: products?.length || 0,
     });
 
-    // Demo: Simulate a caught error for PostHog tracking
-    try {
-      // Intentional error for demo purposes
-      if (Math.random() > 0.5) {
-        throw new Error("Demo error: Simulated product processing exception");
-      }
-    } catch (error) {
-      // Catch and report to PostHog without breaking UI
-      console.error("Caught demo error:", error);
-      if (error instanceof Error) {
-        posthog.capture('$exception', {
-          $exception_message: error.message,
-          $exception_type: error.name,
-          $exception_stack_trace_raw: error.stack,
-          demo_context: 'product_processing',
-          timestamp: new Date().toISOString(),
-        });
-      }
-    }
+    // Simulate demo errors in background (safe, non-blocking)
+    // This runs once after initial render
+    const errorTimer = setTimeout(() => {
+      simulateDemoErrors();
+    }, 2000); // Delay to ensure page is fully loaded
+
+    return () => clearTimeout(errorTimer);
   }, [products]);
 
   const categories = ["All", "Food & Nutrition", "Housing", "Toys & Exercise", "Care & Grooming", "Bedding & Comfort", "Merchandise"];

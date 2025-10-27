@@ -84,4 +84,31 @@ export const identifyUser = (userId: string, properties?: Record<string, any>) =
   }
 };
 
+/**
+ * Captures an exception to PostHog with rich metadata
+ * Use this for consistent error formatting across the app
+ */
+export const captureException = (
+  error: Error, 
+  context?: string,
+  additionalProperties?: Record<string, any>
+) => {
+  if (typeof window !== "undefined") {
+    try {
+      posthog.capture('$exception', {
+        $exception_message: error.message,
+        $exception_type: error.name,
+        $exception_stack_trace_raw: error.stack,
+        $exception_personURL: posthog.get_session_replay_url(),
+        context: context || 'unknown',
+        timestamp: new Date().toISOString(),
+        ...additionalProperties,
+      });
+      console.log("PostHog exception captured:", error.message, context);
+    } catch (captureError) {
+      console.error("PostHog exception capture failed:", captureError);
+    }
+  }
+};
+
 export { posthog };
