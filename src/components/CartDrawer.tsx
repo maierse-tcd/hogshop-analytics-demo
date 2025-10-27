@@ -99,14 +99,21 @@ export const CartDrawer = () => {
       if (error) throw error;
 
       if (data?.url) {
-        // Store user info and basket data in localStorage (persists across tabs)
-        localStorage.setItem("checkout_user", JSON.stringify({ email, name }));
+        // Store user info and basket data in localStorage (persists for 24 hours)
+        const expiresAt = Date.now() + (24 * 60 * 60 * 1000); // 24 hours
+        localStorage.setItem("checkout_user", JSON.stringify({ 
+          email, 
+          name, 
+          expiresAt 
+        }));
         localStorage.setItem("checkout_basket", JSON.stringify({ 
           items: basketItems, 
           total: totalPrice,
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          expiresAt,
+          needs_tracking: true
         }));
-        console.log("Checkout data stored in localStorage:", { email, basketItems, totalPrice });
+        console.log("Checkout data stored in localStorage with 24h expiration:", { email, basketItems, totalPrice });
         window.open(data.url, "_blank");
       }
     } catch (error) {
