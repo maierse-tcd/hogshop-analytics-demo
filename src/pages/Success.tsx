@@ -44,6 +44,8 @@ const Success = () => {
 
       // Capture totalPrice before clearing cart
       const cartTotal = totalPrice;
+      let stripeItems: any[] = [];
+      let stripeTotal = 0;
       
       // Try to get user info from localStorage first (persists across tabs), then sessionStorage
       const storedUserData = localStorage.getItem("checkout_user") || sessionStorage.getItem("checkout_user");
