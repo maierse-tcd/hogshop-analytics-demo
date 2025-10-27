@@ -7,7 +7,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { RegistrationDialog } from "@/components/RegistrationDialog";
-import { posthog, trackEvent, setUserProperties, initializeCLTV } from "@/lib/posthog";
+import { posthog, trackEvent, setUserProperties, initializeCLTV, ensureIdentified } from "@/lib/posthog";
 
 export const CartDrawer = () => {
   const { items, removeFromCart, updateQuantity, totalItems, totalPrice, clearCart } = useCart();
@@ -38,16 +38,19 @@ export const CartDrawer = () => {
     }
   };
 
-  const handleRegistrationComplete = (email: string, name: string) => {
+  const handleRegistrationComplete = async (email: string, name: string) => {
     // Store user info in localStorage for future checkouts
     localStorage.setItem("hedgehog_user", JSON.stringify({ email, name }));
     
-    // Identify user in PostHog immediately
-    posthog.identify(email, {
+    // Identify user in PostHog and WAIT for it to complete
+    await ensureIdentified(email, {
       email,
       name,
       identified_at: new Date().toISOString(),
     });
+    
+    // NOW initialize CLTV (after user is identified)
+    initializeCLTV();
     
     setShowRegistration(false);
     proceedToCheckout(email, name);
@@ -56,6 +59,10 @@ export const CartDrawer = () => {
   const proceedToCheckout = async (email: string, name: string) => {
     setIsCheckingOut(true);
     try {
+      // Ensure user is identified and CLTV is synced (for logged-in users)
+      await ensureIdentified(email, { email, name });
+      initializeCLTV();
+      
       // Prepare basket data for PostHog
       const basketItems = items.map(item => ({
         id: item.id,
@@ -78,9 +85,6 @@ export const CartDrawer = () => {
         basket_value: totalPrice,
         checkout_initiated_date: new Date().toISOString(),
       });
-      
-      // Initialize CLTV if this is their first checkout
-      initializeCLTV();
 
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: { 

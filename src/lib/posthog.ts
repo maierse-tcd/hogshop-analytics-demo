@@ -150,19 +150,53 @@ export const updateCLTV = (purchaseAmount: number) => {
 };
 
 /**
- * Initialize CLTV for a new user
+ * Initialize CLTV for a new user or sync existing CLTV to PostHog
+ * ALWAYS syncs the current localStorage value to PostHog person properties
  */
 const initializeCLTV = () => {
   if (typeof window !== "undefined") {
-    const currentCLTV = localStorage.getItem('user_cltv');
-    if (!currentCLTV) {
+    // Get CLTV from localStorage (our source of truth)
+    let currentCLTV = parseFloat(localStorage.getItem('user_cltv') || '0');
+    
+    // If it doesn't exist, initialize to 0
+    if (!localStorage.getItem('user_cltv')) {
       localStorage.setItem('user_cltv', '0');
-      posthog.setPersonProperties({
-        customer_lifetime_value: 0,
-      });
-      console.log("PostHog CLTV initialized to 0");
+      currentCLTV = 0;
     }
+    
+    // ALWAYS sync the current CLTV to PostHog person properties
+    posthog.setPersonProperties({
+      customer_lifetime_value: currentCLTV,
+    });
+    
+    console.log("PostHog CLTV synced:", currentCLTV);
   }
+};
+
+/**
+ * Ensures user is identified before setting properties
+ * Waits for PostHog to be ready and user to be identified
+ */
+export const ensureIdentified = async (email: string, properties?: Record<string, any>) => {
+  if (typeof window !== "undefined") {
+    return new Promise<void>((resolve) => {
+      // If already identified, resolve immediately
+      if (posthog.get_distinct_id() && posthog.get_distinct_id() !== 'anonymous') {
+        resolve();
+        return;
+      }
+      
+      // Otherwise, identify and wait for it to complete
+      posthog.identify(email, properties);
+      
+      // Wait a small amount for identification to propagate
+      setTimeout(() => {
+        console.log("PostHog: User identification complete", email);
+        resolve();
+      }, 100);
+    });
+  }
+  return Promise.resolve();
 };
 
 /**

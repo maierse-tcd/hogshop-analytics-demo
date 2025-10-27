@@ -81,18 +81,20 @@ const Success = () => {
           items: basketItems,
         });
         
-        // Update user properties with completed purchase
-        setUserProperties({
-          last_purchase_date: new Date().toISOString(),
-          last_purchase_amount: basketValue,
-          items_basket: basketItems,
-          basket_value: basketValue,
-        });
-        
-        // Update overall customer lifetime value
-        updateCLTV(basketValue);
-        
-        console.log("PostHog: Purchase tracked and CLTV updated by", basketValue);
+        // Wait for identify to propagate before setting properties
+        setTimeout(() => {
+          setUserProperties({
+            last_purchase_date: new Date().toISOString(),
+            last_purchase_amount: basketValue,
+            items_basket: basketItems,
+            basket_value: basketValue,
+          });
+          
+          // Update overall customer lifetime value
+          updateCLTV(basketValue);
+          
+          console.log("PostHog: Purchase tracked and CLTV updated by", basketValue);
+        }, 150);
         
         clearCart();
         setIdentified(true);
