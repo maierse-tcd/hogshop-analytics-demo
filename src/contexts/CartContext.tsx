@@ -3,8 +3,12 @@ import React, { createContext, useContext, useState, ReactNode } from "react";
 interface Product {
   id: string;
   title: string;
+  description?: string;
   price: number;
   image_url: string;
+  stock?: number;
+  category?: string;
+  quantity?: number;
   is_subscription: boolean;
   subscription_interval?: string;
 }

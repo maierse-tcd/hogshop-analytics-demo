@@ -7,12 +7,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Mapping of product IDs to Stripe price IDs
+// Mapping of product titles to Stripe price IDs
 const PRICE_MAP: Record<string, string> = {
-  "plushie": "price_1SMnmLLVW76jxQhl2ZTnrB7P", // Hedgehog Plushie
-  "pro-analytics": "price_1SMnlSLVW76jxQhlqJcKYAsU", // PostHog Pro
-  "feature-flags": "price_1SMnmBLLVW76jxQhlJRoK93jN", // Feature Flags
-  "team-plan": "price_1SMnmLLVW76jxQhlx8MBNgyL", // Team Plan
+  "Premium Hedgehog Food": "price_1SMoRdLVW76jxQhlNLBKgkjF",
+  "Deluxe Hedgehog Habitat": "price_1SMoRgLVW76jxQhlkgmMqwBU",
+  "Hedgehog Treat Pack": "price_1SMoRhLVW76jxQhldEicBNXv",
+  "Hedgehog Exercise Wheel": "price_1SMoRjLVW76jxQhlcmaiy2pn",
+  "Hedgehog Care Starter Kit": "price_1SMoRjLVW76jxQhlJXAdsXoC",
+  "Cozy Hedgehog Hideout": "price_1SMoRkLVW76jxQhl9AOgqSsm",
+  "Hedgehog Plushie": "price_1SMnmLLVW76jxQhl2ZTnrB7P",
 };
 
 serve(async (req) => {
@@ -33,19 +36,10 @@ serve(async (req) => {
 
     // Build line items for Stripe
     const lineItems = items.map((item: any) => {
-      // Try to map to a Stripe price, or use product price
-      let priceId = null;
-      
-      // Match subscription products
-      if (item.is_subscription) {
-        if (item.title.includes("Pro Analytics")) priceId = PRICE_MAP["pro-analytics"];
-        else if (item.title.includes("Feature Flags")) priceId = PRICE_MAP["feature-flags"];
-        else if (item.title.includes("Team Plan")) priceId = PRICE_MAP["team-plan"];
-      } else if (item.title.includes("Plushie")) {
-        priceId = PRICE_MAP["plushie"];
-      }
+      // Try to find the Stripe price ID by product title
+      const priceId = PRICE_MAP[item.title];
 
-      // If we have a price ID, use it; otherwise create price_data
+      // If we have a price ID, use it
       if (priceId) {
         return {
           price: priceId,
@@ -54,13 +48,14 @@ serve(async (req) => {
       }
 
       // Fallback to price_data for items without a mapping
+      console.log(`No price mapping found for: ${item.title}, using price_data`);
       return {
         price_data: {
           currency: "usd",
           unit_amount: Math.round(item.price * 100),
           product_data: {
             name: item.title,
-            images: [item.image_url],
+            description: item.description || "",
           },
           recurring: item.is_subscription ? {
             interval: item.subscription_interval || "month",
@@ -80,6 +75,8 @@ serve(async (req) => {
       success_url: `${req.headers.get("origin")}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.get("origin")}/`,
       allow_promotion_codes: true,
+      billing_address_collection: "required",
+      customer_email: undefined, // Let Stripe collect email
     });
 
     return new Response(JSON.stringify({ url: session.url }), {
@@ -87,8 +84,9 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error) {
-    console.error("Checkout error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Checkout error:", errorMessage);
+    return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });

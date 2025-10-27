@@ -44,7 +44,7 @@ const Index = () => {
     });
   }, [products]);
 
-  const categories = ["All", "Merchandise", "Apparel", "Subscription"];
+  const categories = ["All", "Food & Nutrition", "Housing", "Toys & Exercise", "Care & Grooming", "Bedding & Comfort", "Merchandise"];
   
   const filteredProducts = selectedCategory === "All" 
     ? products 
@@ -55,34 +55,35 @@ const Index = () => {
       <Header />
       
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-b from-primary/10 via-primary/5 to-background border-b overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&q=80')] bg-cover bg-center opacity-5" />
-        <div className="container py-20 md:py-32 relative">
-          <div className="max-w-3xl mx-auto text-center space-y-8">
-            <Badge className="text-sm px-4 py-1" variant="secondary">
-              🦔 PostHog-Powered Analytics Demo
+      <section className="relative bg-gradient-to-br from-background via-accent/5 to-background border-b overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.03]">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,hsl(var(--primary))_1px,transparent_1px)] bg-[length:32px_32px]" />
+        </div>
+        <div className="container py-24 md:py-36 relative">
+          <div className="max-w-4xl mx-auto text-center space-y-8">
+            <Badge className="text-sm px-4 py-1.5 font-semibold" variant="secondary">
+              🦔 Everything for your Hedgehog
             </Badge>
-            <h1 className="text-5xl md:text-7xl font-bold tracking-tight">
-              Welcome to{" "}
-              <span className="bg-gradient-to-r from-primary via-purple-400 to-accent bg-clip-text text-transparent">
-                HogShop
-              </span>
+            <h1 className="text-5xl md:text-8xl font-bold tracking-tight leading-[1.1]">
+              Your Hedgehog's
+              <br />
+              <span className="text-primary">Happy Place</span>
             </h1>
-            <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto">
-              Where hedgehog dreams become reality. Premium merchandise and analytics subscriptions for the modern data-driven team.
+            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+              From premium nutrition to cozy habitats. Everything your spiky friend needs to thrive, delivered with love.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-              <Button size="lg" className="gap-2" onClick={() => {
+            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-6">
+              <Button size="lg" className="gap-2 h-12 px-8 text-base font-semibold" onClick={() => {
                 document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' });
                 trackEvent("hero_cta_clicked", { cta: "shop_now" });
               }}>
-                Shop Now <ArrowRight className="h-4 w-4" />
+                Shop Now <ArrowRight className="h-5 w-5" />
               </Button>
-              <Button size="lg" variant="outline" onClick={() => {
-                window.open("https://posthog.com", "_blank");
+              <Button size="lg" variant="outline" className="h-12 px-8 text-base font-semibold" onClick={() => {
+                window.location.href = "/about";
                 trackEvent("hero_cta_clicked", { cta: "learn_more" });
               }}>
-                Learn About PostHog
+                Learn More About Us
               </Button>
             </div>
           </div>
@@ -90,14 +91,18 @@ const Index = () => {
       </section>
 
       {/* Products Section */}
-      <section id="products" className="container py-12 md:py-16">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-4">Shop All Products</h2>
-          <div className="flex gap-2 flex-wrap mb-6">
+      <section id="products" className="container py-16 md:py-24">
+        <div className="mb-12">
+          <div className="text-center mb-8">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">Shop by Category</h2>
+            <p className="text-muted-foreground text-lg">Find everything your hedgehog needs</p>
+          </div>
+          <div className="flex gap-2 flex-wrap justify-center mb-8">
             {categories.map((category) => (
               <Button
                 key={category}
                 variant={selectedCategory === category ? "default" : "outline"}
+                className="font-semibold"
                 onClick={() => {
                   setSelectedCategory(category);
                   trackEvent("category_filtered", { category });
@@ -133,23 +138,29 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="border-t mt-16">
-        <div className="container py-12">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <h3 className="font-bold text-lg mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                HogShop
+      <footer className="border-t mt-24 bg-accent/5">
+        <div className="container py-16">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+            <div className="md:col-span-2">
+              <h3 className="font-bold text-2xl mb-4 text-primary">
+                🦔 HogShop
               </h3>
-              <p className="text-sm text-muted-foreground">
-                Premium hedgehog merchandise and PostHog analytics subscriptions.
+              <p className="text-muted-foreground max-w-sm leading-relaxed">
+                Your trusted source for premium hedgehog supplies. From nutrition to habitats, we provide everything your spiky companion needs to live their best life.
               </p>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Shop</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                {categories.filter(c => c !== "All").map(cat => (
+              <h4 className="font-bold mb-4 text-lg">Shop</h4>
+              <ul className="space-y-3 text-sm">
+                {categories.filter(c => c !== "All").slice(0, 5).map(cat => (
                   <li key={cat}>
-                    <button onClick={() => setSelectedCategory(cat)} className="hover:text-foreground transition-colors">
+                    <button 
+                      onClick={() => {
+                        setSelectedCategory(cat);
+                        document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' });
+                      }} 
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                    >
                       {cat}
                     </button>
                   </li>
@@ -157,27 +168,24 @@ const Index = () => {
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Support</h4>
-              <ul className="space-y-2 text-sm">
-                <li><a href="/faq" className="text-muted-foreground hover:text-foreground transition-colors">FAQ</a></li>
-                <li><a href="/shipping" className="text-muted-foreground hover:text-foreground transition-colors">Shipping</a></li>
-                <li><a href="/terms" className="text-muted-foreground hover:text-foreground transition-colors">Terms & Conditions</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Company</h4>
-              <ul className="space-y-2 text-sm">
-                <li><a href="/about" className="text-muted-foreground hover:text-foreground transition-colors">About Us</a></li>
-                <li><a href="https://posthog.com" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors">PostHog</a></li>
+              <h4 className="font-bold mb-4 text-lg">Support</h4>
+              <ul className="space-y-3 text-sm">
+                <li><a href="/faq" className="text-muted-foreground hover:text-primary transition-colors">FAQ</a></li>
+                <li><a href="/shipping" className="text-muted-foreground hover:text-primary transition-colors">Shipping Info</a></li>
+                <li><a href="/terms" className="text-muted-foreground hover:text-primary transition-colors">Terms & Conditions</a></li>
+                <li><a href="/about" className="text-muted-foreground hover:text-primary transition-colors">About Us</a></li>
               </ul>
             </div>
           </div>
           <div className="border-t pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm text-muted-foreground">
-              © 2025 HogShop. A PostHog analytics demo environment.
+              © 2025 HogShop. All rights reserved. Made with ❤️ for hedgehogs.
             </p>
-            <p className="text-xs text-muted-foreground">
-              Powered by hedgehogs 🦔 and analytics
+            <p className="text-xs text-muted-foreground flex items-center gap-2">
+              <span>Powered by</span>
+              <a href="https://posthog.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-semibold">
+                PostHog Analytics
+              </a>
             </p>
           </div>
         </div>
