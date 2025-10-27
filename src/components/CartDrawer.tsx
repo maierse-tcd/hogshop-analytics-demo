@@ -99,12 +99,14 @@ export const CartDrawer = () => {
       if (error) throw error;
 
       if (data?.url) {
-        // Store user info and basket data in session for success page
-        sessionStorage.setItem("checkout_user", JSON.stringify({ email, name }));
-        sessionStorage.setItem("checkout_basket", JSON.stringify({ 
+        // Store user info and basket data in localStorage (persists across tabs)
+        localStorage.setItem("checkout_user", JSON.stringify({ email, name }));
+        localStorage.setItem("checkout_basket", JSON.stringify({ 
           items: basketItems, 
-          total: totalPrice 
+          total: totalPrice,
+          timestamp: Date.now()
         }));
+        console.log("Checkout data stored in localStorage:", { email, basketItems, totalPrice });
         window.open(data.url, "_blank");
       }
     } catch (error) {

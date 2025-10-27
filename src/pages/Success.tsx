@@ -18,8 +18,8 @@ const Success = () => {
   useEffect(() => {
     const identifyUser = async () => {
       if (sessionId && !identified) {
-        // Try to get user info from session storage first
-        const storedUser = sessionStorage.getItem("checkout_user");
+        // Try to get user info from localStorage first (persists across tabs), then sessionStorage
+        const storedUser = localStorage.getItem("checkout_user") || sessionStorage.getItem("checkout_user");
         let userEmail = "";
         let userName = "";
 
@@ -34,9 +34,10 @@ const Success = () => {
             name: userName,
             purchase_session_id: sessionId,
           });
-          console.log("PostHog: User identified from session", userEmail);
+          console.log("PostHog: User identified from storage", userEmail);
           
-          // Clear the session storage
+          // Clear both storages
+          localStorage.removeItem("checkout_user");
           sessionStorage.removeItem("checkout_user");
         } else {
           // Fallback: fetch from Stripe
@@ -61,8 +62,8 @@ const Success = () => {
           }
         }
 
-        // Get basket data from session storage
-        const storedBasket = sessionStorage.getItem("checkout_basket");
+        // Get basket data from localStorage first (persists across tabs), then sessionStorage
+        const storedBasket = localStorage.getItem("checkout_basket") || sessionStorage.getItem("checkout_basket");
         let basketItems = [];
         let basketValue = totalPrice;
         
@@ -70,14 +71,15 @@ const Success = () => {
           const basketData = JSON.parse(storedBasket);
           basketItems = basketData.items;
           basketValue = basketData.total;
+          localStorage.removeItem("checkout_basket");
           sessionStorage.removeItem("checkout_basket");
-          console.log("PostHog: Basket data retrieved from sessionStorage:", {
+          console.log("PostHog: Basket data retrieved from storage:", {
             items: basketItems,
             total: basketValue,
             itemCount: basketItems.length
           });
         } else {
-          console.warn("PostHog: No basket data in sessionStorage, using fallback");
+          console.warn("PostHog: No basket data in storage, using fallback");
         }
 
         // Track purchase completion
