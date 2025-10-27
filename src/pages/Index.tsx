@@ -198,11 +198,29 @@ const Index = () => {
       )}
 
       {/* Products Section */}
-      <section id="products" className="container py-16 md:py-24">
-        <div className="mb-12">
+      <section id="products" className={`container py-16 md:py-24 relative ${
+        halloweenHeroFlag ? 'overflow-hidden' : ''
+      }`}>
+        {halloweenHeroFlag && (
+          <>
+            <div className="absolute top-10 left-5 text-4xl animate-bounce opacity-30" style={{ animationDuration: '4s' }}>🕸️</div>
+            <div className="absolute top-20 right-10 text-5xl animate-bounce opacity-30" style={{ animationDuration: '3.5s', animationDelay: '1s' }}>🕷️</div>
+            <div className="absolute bottom-20 left-[10%] text-6xl animate-bounce opacity-20" style={{ animationDuration: '5s', animationDelay: '0.5s' }}>🦇</div>
+            <div className="absolute top-[50%] right-[5%] text-4xl animate-bounce opacity-25" style={{ animationDuration: '4.5s', animationDelay: '2s' }}>👻</div>
+          </>
+        )}
+        <div className="mb-12 relative">
           <div className="text-center mb-8">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">Shop by Category</h2>
-            <p className="text-muted-foreground text-lg">Find everything your hedgehog needs</p>
+            <h2 className={`text-4xl md:text-5xl font-bold mb-4 ${
+              halloweenHeroFlag ? 'text-[hsl(var(--halloween-orange))] drop-shadow-[0_0_20px_hsl(var(--halloween-orange))]' : ''
+            }`}>
+              {halloweenHeroFlag ? '🎃 Spooky Shop by Category 👻' : 'Shop by Category'}
+            </h2>
+            <p className={`text-lg ${
+              halloweenHeroFlag ? 'text-[hsl(var(--halloween-purple))]' : 'text-muted-foreground'
+            }`}>
+              {halloweenHeroFlag ? 'Frighteningly good supplies for your hedgehog! 🦔' : 'Find everything your hedgehog needs'}
+            </p>
           </div>
           <div className="flex gap-2 flex-wrap justify-center mb-8">
             {categories.map((category) => (
@@ -245,15 +263,35 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="border-t mt-24 bg-accent/5">
-        <div className="container py-16">
+      <footer className={`border-t mt-24 relative overflow-hidden ${
+        halloweenHeroFlag 
+          ? 'bg-gradient-to-br from-[hsl(var(--halloween-dark))] via-[hsl(var(--halloween-purple))]/20 to-[hsl(var(--halloween-dark))] border-[hsl(var(--halloween-orange))]/30' 
+          : 'bg-accent/5'
+      }`}>
+        {halloweenHeroFlag && (
+          <>
+            <div className="absolute top-5 left-10 text-3xl animate-bounce opacity-40" style={{ animationDuration: '3s' }}>🦇</div>
+            <div className="absolute top-10 right-20 text-4xl animate-bounce opacity-40" style={{ animationDuration: '4s', animationDelay: '1s' }}>👻</div>
+            <div className="absolute bottom-10 left-[30%] text-3xl animate-bounce opacity-30" style={{ animationDuration: '3.5s', animationDelay: '0.5s' }}>🎃</div>
+            <div className="absolute top-[50%] right-[10%] text-2xl animate-bounce opacity-35" style={{ animationDuration: '4.5s', animationDelay: '2s' }}>🕷️</div>
+          </>
+        )}
+        <div className="container py-16 relative">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
             <div className="md:col-span-2">
-              <h3 className="font-bold text-2xl mb-4 text-primary">
-                🦔 HogShop
+              <h3 className={`font-bold text-2xl mb-4 ${
+                halloweenHeroFlag 
+                  ? 'text-[hsl(var(--halloween-orange))] drop-shadow-[0_0_10px_hsl(var(--halloween-orange))]' 
+                  : 'text-primary'
+              }`}>
+                {halloweenHeroFlag ? '👻 HogShop 🎃' : '🦔 HogShop'}
               </h3>
-              <p className="text-muted-foreground max-w-sm leading-relaxed">
-                Your trusted source for premium hedgehog supplies. From nutrition to habitats, we provide everything your spiky companion needs to live their best life.
+              <p className={`max-w-sm leading-relaxed ${
+                halloweenHeroFlag ? 'text-[hsl(var(--halloween-purple))]/90' : 'text-muted-foreground'
+              }`}>
+                {halloweenHeroFlag 
+                  ? 'Your spooktacular source for premium hedgehog supplies! From frightfully good nutrition to haunted habitats, we provide everything your spiky companion needs! 🦔👻' 
+                  : 'Your trusted source for premium hedgehog supplies. From nutrition to habitats, we provide everything your spiky companion needs to live their best life.'}
               </p>
             </div>
             <div>

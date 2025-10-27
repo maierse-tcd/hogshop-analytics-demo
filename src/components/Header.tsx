@@ -14,6 +14,7 @@ export const Header = () => {
   const [userName, setUserName] = useState("");
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const signupVariant = useFeatureFlagVariantKey('increase_signup');
+  const halloweenMode = useFeatureFlagEnabled('hero_banner_halloween');
 
   useEffect(() => {
     const email = localStorage.getItem("user_email");
@@ -38,26 +39,57 @@ export const Header = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between">
+    <header className={`sticky top-0 z-50 w-full border-b backdrop-blur supports-[backdrop-filter]:bg-background/60 ${
+      halloweenMode 
+        ? 'bg-gradient-to-r from-[hsl(var(--halloween-dark))] via-[hsl(var(--halloween-purple))]/40 to-[hsl(var(--halloween-dark))]/95 border-[hsl(var(--halloween-orange))]/30' 
+        : 'bg-background/95'
+    }`}>
+      {halloweenMode && (
+        <>
+          <div className="absolute top-0 right-10 text-2xl animate-bounce" style={{ animationDuration: '2s' }}>🦇</div>
+          <div className="absolute top-0 left-[15%] text-xl animate-bounce" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }}>🕷️</div>
+          <div className="absolute top-0 right-[30%] text-2xl animate-bounce" style={{ animationDuration: '3s', animationDelay: '1s' }}>🎃</div>
+        </>
+      )}
+      <div className="container flex h-16 items-center justify-between relative">
         <div className="flex items-center gap-8">
           <Link to="/" className="flex items-center space-x-2">
-            <span className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              HogShop
+            <span className={`text-2xl font-bold ${
+              halloweenMode 
+                ? 'bg-gradient-to-r from-[hsl(var(--halloween-orange))] to-[hsl(var(--halloween-purple))] bg-clip-text text-transparent drop-shadow-[0_0_10px_hsl(var(--halloween-orange))]' 
+                : 'bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent'
+            }`}>
+              {halloweenMode ? '👻 HogShop 🎃' : 'HogShop'}
             </span>
           </Link>
           <nav className="hidden md:flex gap-6">
-            <Link to="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-              Shop
+            <Link to="/" className={`text-sm font-medium transition-colors ${
+              halloweenMode 
+                ? 'text-[hsl(var(--halloween-orange))]/80 hover:text-[hsl(var(--halloween-orange))]' 
+                : 'text-muted-foreground hover:text-foreground'
+            }`}>
+              {halloweenMode ? '🛒 Shop' : 'Shop'}
             </Link>
-            <Link to="/about" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-              About
+            <Link to="/about" className={`text-sm font-medium transition-colors ${
+              halloweenMode 
+                ? 'text-[hsl(var(--halloween-orange))]/80 hover:text-[hsl(var(--halloween-orange))]' 
+                : 'text-muted-foreground hover:text-foreground'
+            }`}>
+              {halloweenMode ? '🦔 About' : 'About'}
             </Link>
-            <Link to="/faq" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-              FAQ
+            <Link to="/faq" className={`text-sm font-medium transition-colors ${
+              halloweenMode 
+                ? 'text-[hsl(var(--halloween-orange))]/80 hover:text-[hsl(var(--halloween-orange))]' 
+                : 'text-muted-foreground hover:text-foreground'
+            }`}>
+              {halloweenMode ? '❓ FAQ' : 'FAQ'}
             </Link>
-            <Link to="/shipping" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-              Shipping
+            <Link to="/shipping" className={`text-sm font-medium transition-colors ${
+              halloweenMode 
+                ? 'text-[hsl(var(--halloween-orange))]/80 hover:text-[hsl(var(--halloween-orange))]' 
+                : 'text-muted-foreground hover:text-foreground'
+            }`}>
+              {halloweenMode ? '📦 Shipping' : 'Shipping'}
             </Link>
           </nav>
         </div>
@@ -65,7 +97,9 @@ export const Header = () => {
         <div className="flex items-center gap-2">
           {isLoggedIn ? (
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground hidden md:inline">
+              <span className={`text-sm hidden md:inline ${
+                halloweenMode ? 'text-[hsl(var(--halloween-orange))]' : 'text-muted-foreground'
+              }`}>
                 {userName}
               </span>
               <Button
@@ -90,8 +124,14 @@ export const Header = () => {
                 <span className="hidden md:inline">Login/Signup</span>
               </Button>
               {(signupVariant === '10percent' || signupVariant === '15percent') && (
-                <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 animate-pulse">
-                  <span className="text-xs font-medium text-primary">
+                <div className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full border animate-pulse ${
+                  halloweenMode 
+                    ? 'bg-[hsl(var(--halloween-orange))]/20 border-[hsl(var(--halloween-orange))]/40' 
+                    : 'bg-primary/10 border-primary/20'
+                }`}>
+                  <span className={`text-xs font-medium ${
+                    halloweenMode ? 'text-[hsl(var(--halloween-orange))]' : 'text-primary'
+                  }`}>
                     🎉 {signupVariant === '10percent' ? '10%' : '15%'} off your first order!
                   </span>
                 </div>
