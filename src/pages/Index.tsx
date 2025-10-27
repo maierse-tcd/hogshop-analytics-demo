@@ -6,8 +6,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
-import { trackEvent, posthog, checkFeatureFlag } from "@/lib/posthog";
-import { ArrowRight } from "lucide-react";
+import { trackEvent } from "@/lib/posthog";
+import { useFeatureFlagEnabled } from "posthog-js/react";
+import { ArrowRight, X } from "lucide-react";
 import { Newsletter } from "@/components/Newsletter";
 
 interface Product {
@@ -51,44 +52,25 @@ const Index = () => {
     ? products 
     : products?.filter(p => p.category === selectedCategory);
 
-  // Check feature flag and subscription status
-  const [showNewsletter, setShowNewsletter] = useState(false);
+  // Use PostHog React hook for feature flags
+  const showNewsletterFlag = useFeatureFlagEnabled('show_newsletter');
   const [hasSubscribed, setHasSubscribed] = useState(false);
+  const [showNewsletterModal, setShowNewsletterModal] = useState(false);
   
   useEffect(() => {
     // Check localStorage for subscription status
     const subscribed = localStorage.getItem("newsletter_subscribed") === "true";
     setHasSubscribed(subscribed);
-    console.log("Newsletter subscription status from localStorage:", subscribed);
 
-    // Robust feature flag check with PostHog
-    const updateFeatureFlag = () => {
-      const isEnabled = checkFeatureFlag("show_newsletter");
-      console.log("Setting showNewsletter to:", isEnabled);
-      setShowNewsletter(isEnabled);
-    };
-    
-    // Immediate check
-    updateFeatureFlag();
-    
-    // Listen for feature flags to load
-    posthog.onFeatureFlags(() => {
-      console.log("PostHog feature flags loaded callback triggered");
-      updateFeatureFlag();
-    });
-    
-    // Reload feature flags to ensure fresh data
-    console.log("Reloading PostHog feature flags...");
-    posthog.reloadFeatureFlags();
-    
-    // Poll for feature flag changes every 3 seconds (for testing)
-    const interval = setInterval(() => {
-      console.log("Polling feature flag...");
-      updateFeatureFlag();
-    }, 3000);
-    
-    return () => clearInterval(interval);
-  }, []);
+    // Show modal when feature flag is enabled and user hasn't subscribed
+    if (showNewsletterFlag && !subscribed) {
+      // Delay modal slightly for better UX
+      const timer = setTimeout(() => {
+        setShowNewsletterModal(true);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [showNewsletterFlag]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -126,15 +108,42 @@ const Index = () => {
                 Learn More About Us
               </Button>
             </div>
-            {showNewsletter && !hasSubscribed && (
-              <Newsletter 
-                variant="banner" 
-                onSubscribed={() => setHasSubscribed(true)} 
-              />
-            )}
           </div>
         </div>
       </section>
+
+      {/* Newsletter Modal */}
+      {showNewsletterModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div 
+            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+            onClick={() => {
+              setShowNewsletterModal(false);
+              trackEvent("newsletter_modal_dismissed");
+            }}
+          />
+          <div className="relative animate-in zoom-in-95 duration-300">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute -top-2 -right-2 z-10 rounded-full bg-background shadow-lg hover:bg-accent"
+              onClick={() => {
+                setShowNewsletterModal(false);
+                trackEvent("newsletter_modal_closed");
+              }}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+            <Newsletter 
+              variant="card" 
+              onSubscribed={(email) => {
+                setHasSubscribed(true);
+                setShowNewsletterModal(false);
+              }} 
+            />
+          </div>
+        </div>
+      )}
 
       {/* Products Section */}
       <section id="products" className="container py-16 md:py-24">
