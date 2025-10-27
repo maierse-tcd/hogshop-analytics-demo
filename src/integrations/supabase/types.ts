@@ -21,8 +21,11 @@ export type Database = {
           description: string | null
           id: string
           image_url: string | null
+          is_subscription: boolean | null
           price: number
           stock: number
+          subscription_interval: string | null
+          subscription_interval_count: number | null
           title: string
           updated_at: string | null
         }
@@ -32,8 +35,11 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          is_subscription?: boolean | null
           price: number
           stock?: number
+          subscription_interval?: string | null
+          subscription_interval_count?: number | null
           title: string
           updated_at?: string | null
         }
@@ -43,8 +49,11 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          is_subscription?: boolean | null
           price?: number
           stock?: number
+          subscription_interval?: string | null
+          subscription_interval_count?: number | null
           title?: string
           updated_at?: string | null
         }
