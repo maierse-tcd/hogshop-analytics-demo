@@ -36,9 +36,6 @@ export const initPostHog = () => {
         respect_dnt: false,
         opt_out_capturing_by_default: false,
         sanitize_properties: null,
-        xhr_headers: {
-          "Content-Type": "application/json",
-        },
         bootstrap: {
           distinctID: undefined,
         },
