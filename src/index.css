@@ -50,6 +50,11 @@ All colors MUST be HSL.
     /* PostHog Gray */
     --gray: 60 3% 75%;
     --gray-foreground: 0 0% 8%;
+    
+    /* Halloween Theme Colors */
+    --halloween-orange: 25 95% 53%;
+    --halloween-purple: 270 50% 40%;
+    --halloween-dark: 240 30% 10%;
 
     --sidebar-background: 60 11% 93%;
     --sidebar-foreground: 0 0% 8%;
@@ -102,6 +107,11 @@ All colors MUST be HSL.
     /* PostHog Gray - Dark Mode */
     --gray: 60 3% 75%;
     --gray-foreground: 0 0% 8%;
+    
+    /* Halloween Theme Colors - Dark Mode */
+    --halloween-orange: 25 95% 53%;
+    --halloween-purple: 270 50% 50%;
+    --halloween-dark: 240 30% 15%;
 
     --sidebar-background: 0 0% 8%;
     --sidebar-foreground: 60 11% 93%;

@@ -64,6 +64,7 @@ const Index = () => {
 
   // Use PostHog React hook for feature flags
   const showNewsletterFlag = useFeatureFlagEnabled('show_newsletter');
+  const halloweenHeroFlag = useFeatureFlagEnabled('hero_banner_halloween');
   const [hasSubscribed, setHasSubscribed] = useState(false);
   const [showNewsletterModal, setShowNewsletterModal] = useState(false);
   
@@ -88,26 +89,62 @@ const Index = () => {
         <Header />
       
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-primary/10 via-background to-accent/15 border-b overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.15]">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,hsl(var(--primary))_1px,transparent_1px)] bg-[length:32px_32px]" />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
-        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-accent/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[100px]" />
+      <section className={`relative border-b overflow-hidden ${
+        halloweenHeroFlag 
+          ? 'bg-gradient-to-br from-[hsl(var(--halloween-dark))] via-[hsl(var(--halloween-purple))]/30 to-[hsl(var(--halloween-dark))]' 
+          : 'bg-gradient-to-br from-primary/10 via-background to-accent/15'
+      }`}>
+        {halloweenHeroFlag ? (
+          <>
+            {/* Halloween Theme */}
+            <div className="absolute inset-0 opacity-20">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,hsl(var(--halloween-orange))_1px,transparent_1px)] bg-[length:32px_32px]" />
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-transparent" />
+            <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[hsl(var(--halloween-orange))]/30 rounded-full blur-[120px] animate-pulse" />
+            <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-[hsl(var(--halloween-purple))]/30 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
+            {/* Floating Ghosts */}
+            <div className="absolute top-20 left-10 text-6xl animate-bounce" style={{ animationDuration: '3s', animationDelay: '0s' }}>👻</div>
+            <div className="absolute top-40 right-20 text-5xl animate-bounce" style={{ animationDuration: '4s', animationDelay: '1s' }}>👻</div>
+            <div className="absolute bottom-32 left-20 text-4xl animate-bounce" style={{ animationDuration: '3.5s', animationDelay: '0.5s' }}>👻</div>
+            <div className="absolute top-60 right-40 text-3xl animate-bounce" style={{ animationDuration: '4.5s', animationDelay: '2s' }}>🎃</div>
+          </>
+        ) : (
+          <>
+            {/* Regular Theme */}
+            <div className="absolute inset-0 opacity-[0.15]">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,hsl(var(--primary))_1px,transparent_1px)] bg-[length:32px_32px]" />
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
+            <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] animate-pulse" />
+            <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-accent/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[100px]" />
+          </>
+        )}
         <div className="container py-24 md:py-36 relative">
           <div className="max-w-4xl mx-auto text-center space-y-8">
             <Badge className="text-sm px-4 py-1.5 font-semibold" variant="secondary">
-              🦔 Everything for your Hedgehog
+              {halloweenHeroFlag ? '🎃 Spooky Supplies for your Hedgehog' : '🦔 Everything for your Hedgehog'}
             </Badge>
             <h1 className="text-5xl md:text-8xl font-bold tracking-tight leading-[1.1]">
-              Your Hedgehog's
-              <br />
-              <span className="text-primary">Happy Place</span>
+              {halloweenHeroFlag ? (
+                <>
+                  Spooky Treats for
+                  <br />
+                  <span className="text-[hsl(var(--halloween-orange))]">Your Little Hedgie</span>
+                </>
+              ) : (
+                <>
+                  Your Hedgehog's
+                  <br />
+                  <span className="text-primary">Happy Place</span>
+                </>
+              )}
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              From premium nutrition to cozy habitats. Everything your spiky friend needs to thrive, delivered with love.
+              {halloweenHeroFlag 
+                ? 'Frighteningly good treats and supplies for your spiky companion this Halloween season! 🦔👻' 
+                : 'From premium nutrition to cozy habitats. Everything your spiky friend needs to thrive, delivered with love.'}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center pt-6">
               <Button size="lg" className="gap-2 h-12 px-8 text-base font-semibold" onClick={() => {
