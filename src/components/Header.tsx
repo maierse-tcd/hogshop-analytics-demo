@@ -6,14 +6,14 @@ import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { LoginDialog } from "./LoginDialog";
 import { posthog } from "@/lib/posthog";
-import { useFeatureFlagEnabled } from "posthog-js/react";
+import { useFeatureFlagEnabled, useFeatureFlagVariantKey } from "posthog-js/react";
 
 export const Header = () => {
   const { theme, setTheme } = useTheme();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState("");
   const [showLoginDialog, setShowLoginDialog] = useState(false);
-  const signupVariant = posthog.getFeatureFlag('increase_signup');
+  const signupVariant = useFeatureFlagVariantKey('increase_signup');
 
   useEffect(() => {
     const email = localStorage.getItem("user_email");
