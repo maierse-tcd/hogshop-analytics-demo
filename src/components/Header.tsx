@@ -1,11 +1,37 @@
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, LogIn, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import { CartDrawer } from "./CartDrawer";
 import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { LoginDialog } from "./LoginDialog";
 
 export const Header = () => {
   const { theme, setTheme } = useTheme();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userName, setUserName] = useState("");
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
+
+  useEffect(() => {
+    const email = localStorage.getItem("user_email");
+    const name = localStorage.getItem("user_name");
+    if (email && name) {
+      setIsLoggedIn(true);
+      setUserName(name);
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("user_email");
+    localStorage.removeItem("user_name");
+    setIsLoggedIn(false);
+    setUserName("");
+  };
+
+  const handleLoginSuccess = (email: string, name: string) => {
+    setIsLoggedIn(true);
+    setUserName(name);
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -33,6 +59,32 @@ export const Header = () => {
         </div>
         
         <div className="flex items-center gap-2">
+          {isLoggedIn ? (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground hidden md:inline">
+                {userName}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="hidden md:inline">Logout</span>
+              </Button>
+            </div>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowLoginDialog(true)}
+              className="gap-2"
+            >
+              <LogIn className="h-4 w-4" />
+              <span className="hidden md:inline">Login</span>
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -45,6 +97,11 @@ export const Header = () => {
           </Button>
           <CartDrawer />
         </div>
+        <LoginDialog 
+          open={showLoginDialog} 
+          onOpenChange={setShowLoginDialog}
+          onLoginSuccess={handleLoginSuccess}
+        />
       </div>
     </header>
   );

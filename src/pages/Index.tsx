@@ -6,8 +6,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
-import { trackEvent } from "@/lib/posthog";
+import { trackEvent, posthog } from "@/lib/posthog";
 import { ArrowRight } from "lucide-react";
+import { Newsletter } from "@/components/Newsletter";
 
 interface Product {
   id: string;
@@ -49,6 +50,8 @@ const Index = () => {
   const filteredProducts = selectedCategory === "All" 
     ? products 
     : products?.filter(p => p.category === selectedCategory);
+
+  const showNewsletter = posthog.isFeatureEnabled("show_newsletter");
 
   return (
     <div className="min-h-screen bg-background">
@@ -136,6 +139,15 @@ const Index = () => {
           </div>
         )}
       </section>
+
+      {/* Newsletter */}
+      {showNewsletter && (
+        <section className="py-16 px-4">
+          <div className="container">
+            <Newsletter />
+          </div>
+        </section>
+      )}
 
       {/* Footer */}
       <footer className="border-t mt-24 bg-accent/5">
