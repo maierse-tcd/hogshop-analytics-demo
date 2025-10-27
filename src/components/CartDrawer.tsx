@@ -61,8 +61,8 @@ export const CartDrawer = () => {
           <SheetTitle>Shopping Cart ({totalItems})</SheetTitle>
         </SheetHeader>
         
-        <div className="flex flex-col h-full">
-          <div className="flex-1 overflow-auto py-4">
+        <div className="flex flex-col h-[calc(100vh-8rem)]">
+          <div className="flex-1 overflow-y-auto py-4 -mx-6 px-6">
             {items.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center">
                 <ShoppingCart className="h-16 w-16 text-muted-foreground mb-4" />
@@ -125,7 +125,7 @@ export const CartDrawer = () => {
           </div>
 
           {items.length > 0 && (
-            <div className="sticky bottom-0 bg-background border-t pt-4 mt-4 space-y-4">
+            <div className="border-t pt-4 space-y-4 shrink-0">
               <div className="flex justify-between text-lg font-bold">
                 <span>Total</span>
                 <span>${totalPrice.toFixed(2)}</span>

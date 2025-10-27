@@ -8,107 +8,109 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    /* PostHog Design System - Light Mode */
+    --background: 60 11% 93%;
+    --foreground: 0 0% 8%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card: 60 11% 93%;
+    --card-foreground: 0 0% 8%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
+    --popover: 60 11% 93%;
+    --popover-foreground: 0 0% 8%;
 
-    --primary: 258 86% 66%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 17 100% 48%;
+    --primary-foreground: 60 11% 93%;
 
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
+    --secondary: 60 11% 89%;
+    --secondary-foreground: 0 0% 8%;
 
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
+    --muted: 60 11% 89%;
+    --muted-foreground: 0 0% 8%;
 
-    --accent: 258 86% 66%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 60 11% 89%;
+    --accent-foreground: 0 0% 8%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 17 100% 48%;
+    --destructive-foreground: 60 11% 93%;
 
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 258 86% 66%;
+    --border: 60 8% 80%;
+    --input: 60 8% 80%;
+    --ring: 17 100% 48%;
 
     --radius: 0.5rem;
     
-    /* Premium gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(258 86% 66%), hsl(270 90% 72%));
-    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%), hsl(240 5% 98%));
+    /* PostHog Yellow */
+    --yellow: 41 100% 43%;
+    --yellow-foreground: 0 0% 8%;
     
-    /* Premium shadows */
-    --shadow-soft: 0 2px 8px -2px hsl(240 10% 3.9% / 0.08);
-    --shadow-medium: 0 4px 16px -4px hsl(240 10% 3.9% / 0.12);
-    --shadow-glow: 0 0 24px hsl(258 86% 66% / 0.2);
+    /* PostHog Blue */
+    --blue: 227 100% 56%;
+    --blue-foreground: 60 11% 93%;
+    
+    /* PostHog Gray */
+    --gray: 60 3% 75%;
+    --gray-foreground: 0 0% 8%;
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 60 11% 93%;
+    --sidebar-foreground: 0 0% 8%;
+    --sidebar-primary: 17 100% 48%;
+    --sidebar-primary-foreground: 60 11% 93%;
+    --sidebar-accent: 60 11% 89%;
+    --sidebar-accent-foreground: 0 0% 8%;
+    --sidebar-border: 60 8% 80%;
+    --sidebar-ring: 17 100% 48%;
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
+    /* PostHog Design System - Dark Mode */
+    --background: 0 0% 8%;
+    --foreground: 60 11% 93%;
 
-    --card: 240 6% 10%;
-    --card-foreground: 0 0% 98%;
+    --card: 0 0% 17%;
+    --card-foreground: 60 11% 93%;
 
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 60 11% 93%;
 
-    --primary: 258 86% 66%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 17 100% 48%;
+    --primary-foreground: 60 11% 93%;
 
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 0 0% 17%;
+    --secondary-foreground: 60 11% 93%;
 
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
+    --muted: 0 0% 17%;
+    --muted-foreground: 60 11% 93%;
 
-    --accent: 258 86% 66%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 0 0% 17%;
+    --accent-foreground: 60 11% 93%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 17 100% 48%;
+    --destructive-foreground: 60 11% 93%;
 
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 258 86% 66%;
+    --border: 0 0% 29%;
+    --input: 0 0% 29%;
+    --ring: 17 100% 48%;
     
-    /* Dark mode gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(258 86% 66%), hsl(270 90% 72%));
-    --gradient-subtle: linear-gradient(180deg, hsl(240 10% 3.9%), hsl(240 6% 10%));
+    /* PostHog Yellow - Dark Mode */
+    --yellow: 39 87% 56%;
+    --yellow-foreground: 0 0% 8%;
     
-    /* Dark mode shadows */
-    --shadow-soft: 0 2px 8px -2px hsl(0 0% 0% / 0.3);
-    --shadow-medium: 0 4px 16px -4px hsl(0 0% 0% / 0.4);
-    --shadow-glow: 0 0 24px hsl(258 86% 66% / 0.3);
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* PostHog Blue - Dark Mode */
+    --blue: 227 100% 56%;
+    --blue-foreground: 60 11% 93%;
+    
+    /* PostHog Gray - Dark Mode */
+    --gray: 60 3% 75%;
+    --gray-foreground: 0 0% 8%;
+
+    --sidebar-background: 0 0% 8%;
+    --sidebar-foreground: 60 11% 93%;
+    --sidebar-primary: 17 100% 48%;
+    --sidebar-primary-foreground: 60 11% 93%;
+    --sidebar-accent: 0 0% 17%;
+    --sidebar-accent-foreground: 60 11% 93%;
+    --sidebar-border: 0 0% 29%;
+    --sidebar-ring: 17 100% 48%;
   }
 }
 
