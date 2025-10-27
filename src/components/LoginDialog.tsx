@@ -20,9 +20,11 @@ export const LoginDialog = ({ open, onOpenChange, onLoginSuccess, discountPercen
 
   const handleLogin = () => {
     if (email && name) {
-      // Store in localStorage
+      // Store in localStorage (using same keys for consistency)
       localStorage.setItem("user_email", email);
       localStorage.setItem("user_name", name);
+      // Also store in hedgehog_user format for checkout compatibility
+      localStorage.setItem("hedgehog_user", JSON.stringify({ email, name }));
       
       // Identify in PostHog
       identifyUser(email, { name, email });
@@ -36,9 +38,11 @@ export const LoginDialog = ({ open, onOpenChange, onLoginSuccess, discountPercen
 
   const handleSignup = () => {
     if (email && name) {
-      // Store in localStorage
+      // Store in localStorage (using same keys for consistency)
       localStorage.setItem("user_email", email);
       localStorage.setItem("user_name", name);
+      // Also store in hedgehog_user format for checkout compatibility
+      localStorage.setItem("hedgehog_user", JSON.stringify({ email, name }));
       
       // Identify in PostHog and set signup properties
       identifyUser(email, { 

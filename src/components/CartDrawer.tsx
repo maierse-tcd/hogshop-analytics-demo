@@ -18,7 +18,17 @@ export const CartDrawer = () => {
   const handleCheckoutClick = () => {
     if (items.length === 0) return;
     
-    // Check if user info is already stored
+    // Check if user is logged in (from LoginDialog)
+    const loggedInEmail = localStorage.getItem("user_email");
+    const loggedInName = localStorage.getItem("user_name");
+    
+    if (loggedInEmail && loggedInName) {
+      // User is already logged in
+      proceedToCheckout(loggedInEmail, loggedInName);
+      return;
+    }
+    
+    // Check if user info was stored from previous checkout (from RegistrationDialog)
     const userInfo = localStorage.getItem("hedgehog_user");
     if (userInfo) {
       const { email, name } = JSON.parse(userInfo);
