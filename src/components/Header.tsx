@@ -2,6 +2,8 @@ import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import { CartDrawer } from "./CartDrawer";
+import { RegistrationDialog } from "./RegistrationDialog";
+import { Link } from "react-router-dom";
 
 export const Header = () => {
   const { theme, setTheme } = useTheme();
@@ -10,25 +12,29 @@ export const Header = () => {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-8">
-          <a href="/" className="flex items-center space-x-2">
+          <Link to="/" className="flex items-center space-x-2">
             <span className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               HogShop
             </span>
-          </a>
+          </Link>
           <nav className="hidden md:flex gap-6">
-            <a href="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            <Link to="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               Shop
-            </a>
-            <a href="#" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            </Link>
+            <Link to="/about" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               About
-            </a>
-            <a href="#" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-              Contact
-            </a>
+            </Link>
+            <Link to="/faq" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              FAQ
+            </Link>
+            <Link to="/shipping" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              Shipping
+            </Link>
           </nav>
         </div>
         
         <div className="flex items-center gap-2">
+          <RegistrationDialog />
           <Button
             variant="ghost"
             size="icon"

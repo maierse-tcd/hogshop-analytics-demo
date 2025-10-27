@@ -125,23 +125,20 @@ export const CartDrawer = () => {
           </div>
 
           {items.length > 0 && (
-            <>
-              <Separator className="my-4" />
-              <div className="space-y-4">
-                <div className="flex justify-between text-lg font-bold">
-                  <span>Total</span>
-                  <span>${totalPrice.toFixed(2)}</span>
-                </div>
-                <Button 
-                  className="w-full" 
-                  size="lg"
-                  onClick={handleCheckout}
-                  disabled={isCheckingOut}
-                >
-                  {isCheckingOut ? "Processing..." : "Checkout"}
-                </Button>
+            <div className="sticky bottom-0 bg-background border-t pt-4 mt-4 space-y-4">
+              <div className="flex justify-between text-lg font-bold">
+                <span>Total</span>
+                <span>${totalPrice.toFixed(2)}</span>
               </div>
-            </>
+              <Button 
+                className="w-full" 
+                size="lg"
+                onClick={handleCheckout}
+                disabled={isCheckingOut}
+              >
+                {isCheckingOut ? "Processing..." : "Proceed to Checkout"}
+              </Button>
+            </div>
           )}
         </div>
       </SheetContent>
