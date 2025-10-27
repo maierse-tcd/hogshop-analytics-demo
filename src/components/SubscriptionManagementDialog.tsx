@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +28,17 @@ export const SubscriptionManagementDialog = ({
   const [isCancelling, setIsCancelling] = useState(false);
   const [showSurvey, setShowSurvey] = useState(false);
   const { toast } = useToast();
+
+  // Force PostHog to rescan for survey targets when modal opens
+  useEffect(() => {
+    if (open) {
+      // Give PostHog time to detect the "subscription" text element
+      setTimeout(() => {
+        posthog.reloadFeatureFlags();
+        console.log("PostHog: Modal opened, rescanning for survey targets");
+      }, 300);
+    }
+  }, [open]);
 
   const handleCancel = async () => {
     setShowSurvey(true);
