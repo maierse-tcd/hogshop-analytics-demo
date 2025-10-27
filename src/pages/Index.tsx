@@ -51,23 +51,31 @@ const Index = () => {
     ? products 
     : products?.filter(p => p.category === selectedCategory);
 
-  // Check feature flag with fallback
+  // Check feature flag and subscription status
   const [showNewsletter, setShowNewsletter] = useState(false);
+  const [hasSubscribed, setHasSubscribed] = useState(false);
   
   useEffect(() => {
-    // Wait for PostHog to be ready before checking feature flags
+    // Check localStorage for subscription status
+    const subscribed = localStorage.getItem("newsletter_subscribed") === "true";
+    setHasSubscribed(subscribed);
+
+    // Robust feature flag check with PostHog
     const checkFeatureFlag = () => {
       const isEnabled = posthog.isFeatureEnabled("show_newsletter");
       setShowNewsletter(isEnabled === true);
     };
     
-    // Check immediately
+    // Immediate check
     checkFeatureFlag();
     
-    // Also check after a short delay in case PostHog is still loading
-    const timer = setTimeout(checkFeatureFlag, 1000);
+    // Listen for feature flags to load
+    posthog.onFeatureFlags(() => {
+      setShowNewsletter(posthog.isFeatureEnabled("show_newsletter") === true);
+    });
     
-    return () => clearTimeout(timer);
+    // Reload feature flags to ensure fresh data
+    posthog.reloadFeatureFlags();
   }, []);
 
   return (
@@ -106,6 +114,12 @@ const Index = () => {
                 Learn More About Us
               </Button>
             </div>
+            {showNewsletter && !hasSubscribed && (
+              <Newsletter 
+                variant="banner" 
+                onSubscribed={() => setHasSubscribed(true)} 
+              />
+            )}
           </div>
         </div>
       </section>
@@ -156,15 +170,6 @@ const Index = () => {
           </div>
         )}
       </section>
-
-      {/* Newsletter */}
-      {showNewsletter && (
-        <section className="py-16 px-4">
-          <div className="container">
-            <Newsletter />
-          </div>
-        </section>
-      )}
 
       {/* Footer */}
       <footer className="border-t mt-24 bg-accent/5">

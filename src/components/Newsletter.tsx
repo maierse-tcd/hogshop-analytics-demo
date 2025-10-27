@@ -4,17 +4,44 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { trackEvent } from "@/lib/posthog";
 
-export const Newsletter = () => {
+interface NewsletterProps {
+  variant?: "card" | "banner";
+  onSubscribed?: (email: string) => void;
+}
+
+export const Newsletter = ({ variant = "card", onSubscribed }: NewsletterProps) => {
   const [email, setEmail] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (email) {
-      trackEvent("newsletter_signup", { email });
-      toast.success("Thanks for subscribing!");
+      trackEvent("newsletter_signup", { email, source: "hero", variant });
+      toast.success("Thanks for subscribing! Check your inbox for your 15% discount code.");
+      localStorage.setItem("newsletter_subscribed", "true");
+      onSubscribed?.(email);
       setEmail("");
     }
   };
+
+  if (variant === "banner") {
+    return (
+      <div className="mt-8 max-w-xl mx-auto">
+        <form onSubmit={handleSubmit} className="bg-primary/10 border border-primary/30 rounded-full p-2 flex gap-2 items-center backdrop-blur-sm">
+          <Input
+            type="email"
+            placeholder="your@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 h-10"
+          />
+          <Button type="submit" size="lg" className="rounded-full whitespace-nowrap px-6">
+            🎉 Get 15% Off
+          </Button>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-primary/5 border border-primary/20 rounded-lg p-8 max-w-2xl mx-auto">
