@@ -6,10 +6,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
-import { trackEvent } from "@/lib/posthog";
+import { trackEvent, posthog } from "@/lib/posthog";
 import { useFeatureFlagEnabled } from "posthog-js/react";
 import { ArrowRight, X } from "lucide-react";
 import { Newsletter } from "@/components/Newsletter";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 interface Product {
   id: string;
@@ -44,6 +45,26 @@ const Index = () => {
     trackEvent("products_viewed", {
       product_count: products?.length || 0,
     });
+
+    // Demo: Simulate a caught error for PostHog tracking
+    try {
+      // Intentional error for demo purposes
+      if (Math.random() > 0.5) {
+        throw new Error("Demo error: Simulated product processing exception");
+      }
+    } catch (error) {
+      // Catch and report to PostHog without breaking UI
+      console.error("Caught demo error:", error);
+      if (error instanceof Error) {
+        posthog.capture('$exception', {
+          $exception_message: error.message,
+          $exception_type: error.name,
+          $exception_stack_trace_raw: error.stack,
+          demo_context: 'product_processing',
+          timestamp: new Date().toISOString(),
+        });
+      }
+    }
   }, [products]);
 
   const categories = ["All", "Food & Nutrition", "Housing", "Toys & Exercise", "Care & Grooming", "Bedding & Comfort", "Merchandise"];
@@ -73,8 +94,9 @@ const Index = () => {
   }, [showNewsletterFlag]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
+    <ErrorBoundary>
+      <div className="min-h-screen bg-background">
+        <Header />
       
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-background via-accent/5 to-background border-b overflow-hidden">
@@ -245,7 +267,8 @@ const Index = () => {
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 };
 
