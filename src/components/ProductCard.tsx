@@ -2,9 +2,9 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/contexts/CartContext";
-import { useToast } from "@/hooks/use-toast";
 import { trackEvent } from "@/lib/posthog";
 import { ShoppingCart } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 // Import all product images
 import hedgehogFood from "@/assets/hedgehog-food.jpg";
@@ -52,9 +52,10 @@ export const ProductCard = ({
   subscription_interval_count
 }: ProductCardProps) => {
   const { addToCart } = useCart();
-  const { toast } = useToast();
+  const navigate = useNavigate();
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.stopPropagation();
     const imageSrc = imageMap[image_url] || image_url;
     addToCart({ 
       id, 
@@ -76,17 +77,24 @@ export const ProductCard = ({
       category,
       is_subscription,
     });
+  };
 
-    toast({
-      title: "Added to cart",
-      description: `${title} has been added to your cart.`,
+  const handleCardClick = () => {
+    navigate(`/product/${id}`);
+    trackEvent("product_viewed", {
+      product_id: id,
+      product_name: title,
+      category,
     });
   };
 
   const imageSrc = imageMap[image_url] || image_url;
 
   return (
-    <Card className="overflow-hidden group hover:shadow-lg transition-shadow duration-300 border-2">
+    <Card 
+      className="overflow-hidden group hover:shadow-lg transition-shadow duration-300 border-2 cursor-pointer"
+      onClick={handleCardClick}
+    >
       <div className="relative aspect-square overflow-hidden bg-accent/5">
         <img
           src={imageSrc}

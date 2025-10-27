@@ -1,0 +1,241 @@
+import { useParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Header } from "@/components/Header";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useCart } from "@/contexts/CartContext";
+import { ShoppingCart, ArrowLeft } from "lucide-react";
+import { trackEvent } from "@/lib/posthog";
+
+// Import all product images
+import hedgehogFood from "@/assets/hedgehog-food.jpg";
+import hedgehogHabitat from "@/assets/hedgehog-habitat.jpg";
+import hedgehogTreats from "@/assets/hedgehog-treats.jpg";
+import hedgehogWheel from "@/assets/hedgehog-wheel.jpg";
+import hedgehogCareKit from "@/assets/hedgehog-care-kit.jpg";
+import hedgehogHideout from "@/assets/hedgehog-hideout.jpg";
+import hedgehogPlushie from "@/assets/hedgehog-plushie.jpg";
+
+const imageMap: Record<string, string> = {
+  "hedgehog-food.jpg": hedgehogFood,
+  "hedgehog-habitat.jpg": hedgehogHabitat,
+  "hedgehog-treats.jpg": hedgehogTreats,
+  "hedgehog-wheel.jpg": hedgehogWheel,
+  "hedgehog-care-kit.jpg": hedgehogCareKit,
+  "hedgehog-hideout.jpg": hedgehogHideout,
+  "hedgehog-plushie.jpg": hedgehogPlushie,
+};
+
+const ProductDetail = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { addToCart } = useCart();
+
+  const { data: product, isLoading } = useQuery({
+    queryKey: ["product", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("id", id)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const handleAddToCart = () => {
+    if (!product) return;
+    
+    const imageSrc = imageMap[product.image_url] || product.image_url;
+    addToCart({
+      id: product.id,
+      title: product.title,
+      description: product.description,
+      price: product.price,
+      image_url: imageSrc,
+      stock: product.stock,
+      category: product.category,
+      quantity: 1,
+      is_subscription: product.is_subscription,
+      subscription_interval: product.subscription_interval,
+    });
+
+    trackEvent("product_added_to_cart", {
+      product_id: product.id,
+      product_name: product.title,
+      price: product.price,
+      category: product.category,
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container py-12">
+          <div className="grid md:grid-cols-2 gap-12">
+            <Skeleton className="aspect-square w-full" />
+            <div className="space-y-4">
+              <Skeleton className="h-8 w-3/4" />
+              <Skeleton className="h-6 w-1/2" />
+              <Skeleton className="h-32 w-full" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container py-12 text-center">
+          <h1 className="text-2xl font-bold mb-4">Product not found</h1>
+          <Button onClick={() => navigate("/")}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Shop
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const imageSrc = imageMap[product.image_url] || product.image_url;
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Header />
+      
+      <div className="container py-8">
+        <Button
+          variant="ghost"
+          onClick={() => navigate("/")}
+          className="mb-6"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Shop
+        </Button>
+
+        <div className="grid md:grid-cols-2 gap-12 mb-16">
+          {/* Product Image */}
+          <div className="relative aspect-square overflow-hidden rounded-lg border-2 bg-accent/5">
+            <img
+              src={imageSrc}
+              alt={product.title}
+              className="object-cover w-full h-full"
+            />
+            {product.is_subscription && (
+              <Badge className="absolute top-4 left-4 bg-primary text-lg px-4 py-2">
+                Subscription
+              </Badge>
+            )}
+          </div>
+
+          {/* Product Info */}
+          <div className="flex flex-col space-y-6">
+            <div>
+              <Badge variant="secondary" className="mb-3">
+                {product.category}
+              </Badge>
+              <h1 className="text-4xl md:text-5xl font-bold mb-4">
+                {product.title}
+              </h1>
+              <div className="flex items-baseline gap-2 mb-6">
+                <p className="text-4xl font-bold text-primary">
+                  ${product.price.toFixed(2)}
+                </p>
+                {product.is_subscription && (
+                  <span className="text-xl text-muted-foreground">
+                    /{product.subscription_interval}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="prose prose-lg max-w-none">
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                {product.description}
+              </p>
+            </div>
+
+            {/* Stock Info */}
+            <div className="flex items-center gap-2">
+              {product.stock > 10 ? (
+                <Badge variant="secondary" className="text-sm">
+                  ✓ In Stock ({product.stock} available)
+                </Badge>
+              ) : product.stock > 0 ? (
+                <Badge className="bg-yellow text-yellow-foreground text-sm">
+                  Only {product.stock} left!
+                </Badge>
+              ) : (
+                <Badge variant="destructive" className="text-sm">
+                  Out of Stock
+                </Badge>
+              )}
+            </div>
+
+            {/* Add to Cart Button */}
+            <Button
+              size="lg"
+              className="w-full md:w-auto gap-2 h-14 px-8 text-lg font-semibold"
+              onClick={handleAddToCart}
+              disabled={product.stock === 0}
+            >
+              <ShoppingCart className="h-5 w-5" />
+              {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
+            </Button>
+
+            {/* Additional Details */}
+            {product.is_subscription && (
+              <div className="border-t pt-6 space-y-3">
+                <h3 className="font-semibold text-lg">Subscription Details</h3>
+                <ul className="space-y-2 text-muted-foreground">
+                  <li>• Automatic {product.subscription_interval}ly delivery</li>
+                  <li>• Cancel anytime through your account</li>
+                  <li>• Never run out of supplies</li>
+                  <li>• Skip or pause deliveries easily</li>
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Product Features */}
+        <div className="border-t pt-12">
+          <h2 className="text-2xl font-bold mb-6">Why Choose This Product?</h2>
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="space-y-2">
+              <div className="text-primary text-3xl">🦔</div>
+              <h3 className="font-semibold">Hedgehog Approved</h3>
+              <p className="text-sm text-muted-foreground">
+                Tested and loved by hedgehogs worldwide
+              </p>
+            </div>
+            <div className="space-y-2">
+              <div className="text-primary text-3xl">✓</div>
+              <h3 className="font-semibold">Premium Quality</h3>
+              <p className="text-sm text-muted-foreground">
+                Only the best materials and ingredients
+              </p>
+            </div>
+            <div className="space-y-2">
+              <div className="text-primary text-3xl">🚚</div>
+              <h3 className="font-semibold">Fast Shipping</h3>
+              <p className="text-sm text-muted-foreground">
+                Get it delivered to your door quickly
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ProductDetail;

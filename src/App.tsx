@@ -10,6 +10,7 @@ import { initPostHog } from "@/lib/posthog";
 import { RouteTracker } from "@/components/RouteTracker";
 import Index from "./pages/Index";
 import Success from "./pages/Success";
+import ProductDetail from "./pages/ProductDetail";
 import About from "./pages/About";
 import FAQ from "./pages/FAQ";
 import Shipping from "./pages/Shipping";
@@ -34,6 +35,7 @@ const App = () => {
               <RouteTracker />
               <Routes>
                 <Route path="/" element={<Index />} />
+                <Route path="/product/:id" element={<ProductDetail />} />
                 <Route path="/success" element={<Success />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/faq" element={<FAQ />} />

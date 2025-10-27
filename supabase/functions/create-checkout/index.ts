@@ -48,6 +48,7 @@ serve(async (req) => {
       }
 
       // Fallback to price_data for items without a mapping
+      // Note: Stripe doesn't require images for line items, so we omit them to avoid URL validation errors
       console.log(`No price mapping found for: ${item.title}, using price_data`);
       return {
         price_data: {
