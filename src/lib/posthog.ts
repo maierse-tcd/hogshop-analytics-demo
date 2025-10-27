@@ -226,4 +226,33 @@ export const captureException = (
   }
 };
 
+/**
+ * Update subscription status in PostHog
+ * Tracks subscription state, dates, and recurring value
+ */
+export const updateSubscriptionStatus = (subscriptionData: {
+  active: boolean;
+  start_date?: string;
+  monthly_value?: number;
+  subscription_id?: string;
+  cancelled?: boolean;
+}) => {
+  if (typeof window !== "undefined") {
+    try {
+      posthog.setPersonProperties({
+        subscription_active: subscriptionData.active,
+        subscription_start_date: subscriptionData.start_date || null,
+        subscription_monthly_value: subscriptionData.monthly_value || null,
+        subscription_id: subscriptionData.subscription_id || null,
+        subscription_cancelled: subscriptionData.cancelled || false,
+        subscription_updated_at: new Date().toISOString(),
+      });
+      
+      console.log("PostHog subscription status updated:", subscriptionData);
+    } catch (error) {
+      console.error("PostHog subscription update error:", error);
+    }
+  }
+};
+
 export { posthog, initializeCLTV };

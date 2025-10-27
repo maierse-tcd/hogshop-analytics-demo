@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { LoginDialog } from "./LoginDialog";
 import { SubscriptionManagementDialog } from "./SubscriptionManagementDialog";
-import { posthog } from "@/lib/posthog";
+import { posthog, updateSubscriptionStatus } from "@/lib/posthog";
 import { useFeatureFlagEnabled, useFeatureFlagVariantKey } from "posthog-js/react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -25,18 +25,37 @@ export const Header = () => {
     
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      if (!session) {
+        console.log("No active session, skipping subscription check");
+        return;
+      }
 
       const { data, error } = await supabase.functions.invoke("check-subscription");
       
       if (!error && data?.subscribed) {
         setHasActiveSubscription(true);
-        console.log("Active subscription found");
+        
+        // Update PostHog with subscription details
+        updateSubscriptionStatus({
+          active: true,
+          subscription_id: data.subscription_id,
+          start_date: data.subscription_end ? new Date(data.subscription_end).toISOString() : undefined,
+          cancelled: false,
+        });
+        
+        console.log("Active subscription found:", data);
       } else {
         setHasActiveSubscription(false);
+        
+        // Update PostHog - no active subscription
+        updateSubscriptionStatus({
+          active: false,
+          cancelled: false,
+        });
       }
     } catch (error) {
       console.error("Failed to check subscription status:", error);
+      setHasActiveSubscription(false);
     }
   };
 
@@ -51,7 +70,18 @@ export const Header = () => {
 
   useEffect(() => {
     if (isLoggedIn) {
-      checkSubscriptionStatus();
+      // Small delay to ensure session is established
+      const timer = setTimeout(() => {
+        checkSubscriptionStatus();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoggedIn]);
+
+  // Expose checkSubscriptionStatus globally for Success page to use
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      (window as any).refreshSubscriptionStatus = checkSubscriptionStatus;
     }
   }, [isLoggedIn]);
 

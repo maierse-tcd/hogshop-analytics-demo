@@ -4,7 +4,7 @@ import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
-import { trackEvent, setUserProperties, updateCLTV } from "@/lib/posthog";
+import { trackEvent, setUserProperties, updateCLTV, updateSubscriptionStatus } from "@/lib/posthog";
 import { posthog } from "@/lib/posthog";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -95,6 +95,26 @@ const Success = () => {
           
           console.log("PostHog: Purchase tracked and CLTV updated by", basketValue);
         }, 150);
+        
+        // Check if this was a subscription purchase and update subscription status
+        const hasSubscription = basketItems.some((item: any) => item.is_subscription);
+        if (hasSubscription) {
+          const subscriptionItem = basketItems.find((item: any) => item.is_subscription);
+          setTimeout(() => {
+            updateSubscriptionStatus({
+              active: true,
+              start_date: new Date().toISOString(),
+              monthly_value: subscriptionItem?.price || basketValue,
+            });
+            
+            // Refresh the Header's subscription status
+            if (typeof window !== "undefined" && (window as any).refreshSubscriptionStatus) {
+              setTimeout(() => {
+                (window as any).refreshSubscriptionStatus();
+              }, 1000);
+            }
+          }, 200);
+        }
         
         clearCart();
         setIdentified(true);

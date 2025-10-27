@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { posthog } from "@/lib/posthog";
+import { posthog, updateSubscriptionStatus } from "@/lib/posthog";
 
 interface SubscriptionManagementDialogProps {
   open: boolean;
@@ -82,10 +82,10 @@ export const SubscriptionManagementDialog = ({
           cancellation_date: new Date().toISOString(),
         });
 
-        // Update user properties
-        posthog.setPersonProperties({
-          subscription_status: "cancelled",
-          subscription_cancelled_at: new Date().toISOString(),
+        // Update subscription status in PostHog
+        updateSubscriptionStatus({
+          active: false,
+          cancelled: true,
         });
 
         onCancelled?.();
