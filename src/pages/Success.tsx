@@ -7,6 +7,7 @@ import { useCart } from "@/contexts/CartContext";
 import { trackEvent, setUserProperties, updateCLTV, updateSubscriptionStatus, setCustomerTypeGroup } from "@/lib/posthog";
 import { posthog } from "@/lib/posthog";
 import { supabase } from "@/integrations/supabase/client";
+import { saveUser } from "@/lib/auth";
 
 const Success = () => {
   const [searchParams] = useSearchParams();
@@ -21,6 +22,31 @@ const Success = () => {
       // Short-circuit if server-side tracking indicated via URL
       if (trackedParam === "1") {
         console.log("PostHog: Server-side tracking confirmed via URL; skipping client tracking.");
+        
+        // CRITICAL: Restore user session from checkout_user before clearing
+        const storedUserData = localStorage.getItem("checkout_user");
+        if (storedUserData) {
+          try {
+            const userData = JSON.parse(storedUserData);
+            if (userData.email && userData.name && (!userData.expiresAt || Date.now() < userData.expiresAt)) {
+              // Re-save to permanent auth storage
+              saveUser(userData.email, userData.name);
+              console.log("Success: User session restored", { email: userData.email });
+              
+              // Also re-associate with PostHog group as backup
+              posthog.group("customer_type", "Subscription Customer");
+            }
+          } catch (error) {
+            console.error("Success: Failed to restore user session", error);
+          }
+        }
+        
+        // Force reload feature flags after server-side tracking
+        setTimeout(() => {
+          posthog.reloadFeatureFlags();
+          console.log("Success: Feature flags reloaded after server tracking");
+        }, 1000);
+        
         setTrackingComplete(true);
         return;
       }
@@ -78,6 +104,10 @@ const Success = () => {
               name: userName,
               purchase_session_id: sessionId,
             });
+            
+            // Re-save to permanent auth storage
+            saveUser(userEmail, userName);
+            
             console.log("PostHog: User identified from storage", userEmail);
           }
         } catch (error) {
@@ -101,6 +131,10 @@ const Success = () => {
               name: userName,
               purchase_session_id: sessionId,
             });
+            
+            // Save to permanent auth storage
+            saveUser(userEmail, userName);
+            
             console.log("PostHog: User identified from Stripe", userEmail);
           }
         } catch (error) {
@@ -192,6 +226,12 @@ const Success = () => {
             monthly_value: subscriptionItem?.price || basketValue,
           });
           setCustomerTypeGroup("subscription");
+          
+          // Force reload feature flags after setting subscription properties
+          setTimeout(() => {
+            posthog.reloadFeatureFlags();
+            console.log("Success: Feature flags reloaded after subscription activation");
+          }, 500);
         }, 500);
       } else {
         // One-off purchase - set customer type to one-off
@@ -218,8 +258,9 @@ const Success = () => {
       });
       localStorage.setItem("tracked_sessions", JSON.stringify(trackedSessions));
 
-      // Now safe to clear cart and storage
+      // Now safe to clear cart and temporary checkout storage
       clearCart();
+      // Clear temporary checkout data but NOT permanent auth (user_email/user_name)
       localStorage.removeItem("checkout_user");
       localStorage.removeItem("checkout_basket");
       sessionStorage.removeItem("checkout_user");

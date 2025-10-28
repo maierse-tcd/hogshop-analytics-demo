@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { RegistrationDialog } from "@/components/RegistrationDialog";
 import { posthog, trackEvent, setUserProperties, initializeCLTV, ensureIdentified } from "@/lib/posthog";
+import { getUser, saveUser } from "@/lib/auth";
 
 export const CartDrawer = () => {
   const { items, removeFromCart, updateQuantity, totalItems, totalPrice, clearCart } = useCart();
@@ -18,29 +19,20 @@ export const CartDrawer = () => {
   const handleCheckoutClick = () => {
     if (items.length === 0) return;
     
-    // Check if user is logged in (from LoginDialog)
-    const loggedInEmail = localStorage.getItem("user_email");
-    const loggedInName = localStorage.getItem("user_name");
+    // Check if user is logged in using unified auth helper
+    const user = getUser();
     
-    if (loggedInEmail && loggedInName) {
+    if (user) {
       // User is already logged in
-      proceedToCheckout(loggedInEmail, loggedInName);
-      return;
-    }
-    
-    // Check if user info was stored from previous checkout (from RegistrationDialog)
-    const userInfo = localStorage.getItem("hedgehog_user");
-    if (userInfo) {
-      const { email, name } = JSON.parse(userInfo);
-      proceedToCheckout(email, name);
+      proceedToCheckout(user.email, user.name);
     } else {
       setShowRegistration(true);
     }
   };
 
   const handleRegistrationComplete = async (email: string, name: string) => {
-    // Store user info in localStorage for future checkouts
-    localStorage.setItem("hedgehog_user", JSON.stringify({ email, name }));
+    // Store user info using unified auth helper
+    saveUser(email, name);
     
     // Identify user in PostHog and WAIT for it to complete
     await ensureIdentified(email, {

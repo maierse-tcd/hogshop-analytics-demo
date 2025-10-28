@@ -293,4 +293,19 @@ export const setCustomerTypeGroup = (customerType: "subscription" | "one-off") =
   }
 };
 
+/**
+ * Force reload feature flags from PostHog
+ * Useful after server-side changes to user properties
+ */
+export const reloadFeatureFlags = () => {
+  if (typeof window !== "undefined") {
+    try {
+      posthog.reloadFeatureFlags();
+      console.log("PostHog: Feature flags reloaded");
+    } catch (error) {
+      console.error("PostHog: Failed to reload feature flags", error);
+    }
+  }
+};
+
 export { posthog, initializeCLTV };

@@ -2,15 +2,17 @@ import { Moon, Sun, LogIn, LogOut, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import { CartDrawer } from "./CartDrawer";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { LoginDialog } from "./LoginDialog";
 import { SubscriptionManagementDialog } from "./SubscriptionManagementDialog";
 import { posthog } from "@/lib/posthog";
 import { useFeatureFlagEnabled, useFeatureFlagVariantKey } from "posthog-js/react";
+import { getUser } from "@/lib/auth";
 
 export const Header = () => {
   const { theme, setTheme } = useTheme();
+  const location = useLocation();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState("");
   const [showLoginDialog, setShowLoginDialog] = useState(false);
@@ -19,18 +21,30 @@ export const Header = () => {
   const halloweenMode = useFeatureFlagEnabled('hero_banner_halloween');
   const showSubscription = useFeatureFlagEnabled('show_subscription');
 
+  // Check auth state on mount and when location changes
   useEffect(() => {
-    const email = localStorage.getItem("user_email");
-    const name = localStorage.getItem("user_name");
-    if (email && name) {
+    const user = getUser();
+    if (user) {
       setIsLoggedIn(true);
-      setUserName(name);
+      setUserName(user.name);
     }
-  }, []);
+  }, [location]);
+
+  // Reload feature flags periodically on Success page to ensure subscription menu appears
+  useEffect(() => {
+    if (location.pathname === '/success') {
+      const interval = setInterval(() => {
+        posthog.reloadFeatureFlags();
+        console.log("Header: Reloading feature flags on Success page");
+      }, 10000); // Every 10 seconds
+      
+      return () => clearInterval(interval);
+    }
+  }, [location]);
 
   const handleLogout = () => {
-    localStorage.removeItem("user_email");
-    localStorage.removeItem("user_name");
+    const { clearUser } = require("@/lib/auth");
+    clearUser();
     posthog.reset();
     setIsLoggedIn(false);
     setUserName("");
