@@ -541,6 +541,7 @@ const Index = () => {
                 <li><a href="/shipping" className="text-muted-foreground hover:text-primary transition-colors">Shipping Info</a></li>
                 <li><a href="/terms" className="text-muted-foreground hover:text-primary transition-colors">Terms & Conditions</a></li>
                 <li><a href="/about" className="text-muted-foreground hover:text-primary transition-colors">About Us</a></li>
+                <li><a href="/readme" className="text-muted-foreground hover:text-primary transition-colors">Demo Info</a></li>
               </ul>
             </div>
           </div>
