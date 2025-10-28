@@ -88,6 +88,10 @@ const Index = () => {
   const summerHeroFlag = useFeatureFlagEnabled('hero_banner_summer');
   const newsletterSubVariant = useFeatureFlagVariantKey('newsletter_sub');
   
+  // Experiment: Discount banner
+  const showDiscountBanner = useFeatureFlagEnabled('seasonal-discount-banner');
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  
   // Determine active seasonal theme (priority: Halloween > Christmas > Easter > Summer)
   const seasonalTheme = halloweenHeroFlag ? 'halloween' 
     : christmasHeroFlag ? 'christmas'
@@ -153,6 +157,31 @@ const Index = () => {
     <ErrorBoundary>
       <div className="min-h-screen bg-background">
         <Header />
+        
+        {/* Discount Banner Experiment */}
+        {showDiscountBanner && !bannerDismissed && (
+          <div className="bg-primary text-primary-foreground py-3 px-4">
+            <div className="container mx-auto flex items-center justify-between">
+              <p className="text-sm font-semibold flex items-center gap-2">
+                🎉 Special Offer: 20% off your first order! Use code: HEDGEHOG20
+              </p>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-primary-foreground hover:bg-primary-foreground/20"
+                onClick={() => {
+                  setBannerDismissed(true);
+                  trackEvent("banner_dismissed", {
+                    banner_type: "discount",
+                    variant: "20_percent_off",
+                  });
+                }}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       
       {/* Hero Section */}
       <section className={`relative border-b overflow-hidden ${

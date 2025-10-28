@@ -160,7 +160,70 @@ export const simulateDemoErrors = () => {
     }
   }, 8000);
 
-  console.log("[Demo Errors] All background errors scheduled");
+  // 9. Payment Failed Error
+  setTimeout(() => {
+    try {
+      throw new Error("Payment declined by card issuer");
+    } catch (error) {
+      if (error instanceof Error) {
+        captureDemoException(error, "payment_failed", {
+          payment_method: "card",
+          decline_code: "insufficient_funds",
+          amount: 89.99,
+          currency: "USD",
+        });
+      }
+    }
+  }, 9000);
+
+  // 10. AI Timeout Error
+  setTimeout(() => {
+    try {
+      throw new Error("AI response timeout after 30 seconds");
+    } catch (error) {
+      if (error instanceof Error) {
+        captureDemoException(error, "ai_timeout", {
+          model: "gemini-2.5-flash",
+          timeout_ms: 30000,
+          prompt_length: 512,
+        });
+      }
+    }
+  }, 10000);
+
+  // 11. Out of Stock Error
+  setTimeout(() => {
+    try {
+      throw new Error("Product out of stock during checkout");
+    } catch (error) {
+      if (error instanceof Error) {
+        captureDemoException(error, "out_of_stock", {
+          product_id: "prod_hedgehog_food",
+          product_name: "Premium Hedgehog Food",
+          quantity_requested: 5,
+          stock_available: 0,
+        });
+      }
+    }
+  }, 11000);
+
+  // 12. API Rate Limit Error
+  setTimeout(() => {
+    try {
+      throw new Error("Rate limit exceeded: 100 requests per minute");
+    } catch (error) {
+      if (error instanceof Error) {
+        captureDemoException(error, "api_rate_limit", {
+          api_endpoint: "/api/v1/products",
+          limit: 100,
+          window: "1 minute",
+          retry_after: 45,
+        });
+      }
+    }
+  }, 12000);
+
+  console.log("[Demo Errors] All background errors scheduled (12 types)");
 };
 
 /**

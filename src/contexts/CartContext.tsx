@@ -36,31 +36,40 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const addToCart = (product: Product) => {
     setItems((prev) => {
       const existing = prev.find((item) => item.id === product.id);
-      if (existing) {
-        trackEvent("add_to_cart", {
-          product_id: product.id,
-          product_name: product.title,
-          price: product.price,
-          quantity: 1,
-          new_quantity: existing.quantity + 1,
-          category: product.category,
-          is_subscription: product.is_subscription,
-        });
-        return prev.map((item) =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      }
+      const newItems = existing 
+        ? prev.map((item) =>
+            item.id === product.id
+              ? { ...item, quantity: item.quantity + 1 }
+              : item
+          )
+        : [...prev, { ...product, quantity: 1 }];
+      
+      // Calculate totals AFTER adding item
+      const totalItems = newItems.reduce((sum, item) => sum + item.quantity, 0);
+      const totalValue = newItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      
       trackEvent("add_to_cart", {
         product_id: product.id,
         product_name: product.title,
         price: product.price,
         quantity: 1,
+        new_quantity: existing ? existing.quantity + 1 : 1,
         category: product.category,
         is_subscription: product.is_subscription,
+        cart_total_items: totalItems,
+        cart_total_value: totalValue,
+        product_category: product.category,
       });
-      return [...prev, { ...product, quantity: 1 }];
+      
+      // Track cart_updated event
+      trackEvent("cart_updated", {
+        cart_total_items: totalItems,
+        cart_total_value: totalValue,
+        action: "add",
+        product_id: product.id,
+      });
+      
+      return newItems;
     });
   };
 

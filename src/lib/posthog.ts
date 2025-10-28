@@ -336,4 +336,132 @@ export const reloadFeatureFlags = () => {
   }
 };
 
+/**
+ * Track AI Generation for PostHog LLM Analytics
+ */
+export const trackAIGeneration = (data: {
+  model: string;
+  provider: string;
+  input: string;
+  output: string[];
+  inputTokens: number;
+  outputTokens: number;
+  latency: number;
+  traceId: string;
+  additionalProps?: Record<string, any>;
+}) => {
+  trackEvent("$ai_generation", {
+    $ai_model: data.model,
+    $ai_provider: data.provider,
+    $ai_input: data.input,
+    $ai_output_choices: data.output,
+    $ai_input_tokens: data.inputTokens,
+    $ai_output_tokens: data.outputTokens,
+    $ai_total_tokens: data.inputTokens + data.outputTokens,
+    $ai_latency: data.latency,
+    $ai_trace_id: data.traceId,
+    ...data.additionalProps,
+  });
+};
+
+/**
+ * Track AI Trace (complete conversation session)
+ */
+export const trackAITrace = (data: {
+  traceId: string;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  durationSeconds: number;
+  messageCount: number;
+  additionalProps?: Record<string, any>;
+}) => {
+  trackEvent("$ai_trace", {
+    $ai_trace_id: data.traceId,
+    $ai_total_input_tokens: data.totalInputTokens,
+    $ai_total_output_tokens: data.totalOutputTokens,
+    $ai_total_tokens: data.totalInputTokens + data.totalOutputTokens,
+    conversation_duration_seconds: data.durationSeconds,
+    total_messages: data.messageCount,
+    ...data.additionalProps,
+  });
+};
+
+/**
+ * Track AI Error
+ */
+export const trackAIError = (data: {
+  traceId: string;
+  errorMessage: string;
+  errorType: string;
+  additionalProps?: Record<string, any>;
+}) => {
+  trackEvent("ai_error", {
+    trace_id: data.traceId,
+    error_message: data.errorMessage,
+    error_type: data.errorType,
+    ...data.additionalProps,
+  });
+};
+
+/**
+ * Set customer segment group based on CLTV
+ */
+export const setCustomerSegment = (cltv: number) => {
+  const segment = cltv > 500 ? "high_value" : cltv > 100 ? "medium_value" : "low_value";
+  
+  if (posthog) {
+    posthog.group("customer_segment", segment, {
+      cltv,
+      segment,
+    });
+  }
+};
+
+/**
+ * Set engagement level based on session count
+ */
+export const setEngagementLevel = (sessionCount: number) => {
+  const level = sessionCount > 10 ? "power_user" : sessionCount > 5 ? "active" : "casual";
+  
+  if (posthog) {
+    posthog.group("engagement_level", level, {
+      session_count: sessionCount,
+      level,
+    });
+  }
+};
+
+/**
+ * Set subscription tier group
+ */
+export const setSubscriptionTier = (tier: "free" | "basic" | "pro" | "premium") => {
+  if (posthog) {
+    posthog.group("subscription_tier", tier, {
+      tier,
+    });
+  }
+};
+
+/**
+ * Track experiment view
+ */
+export const trackExperimentView = (experimentName: string, variant: string) => {
+  trackEvent("experiment_viewed", {
+    experiment_name: experimentName,
+    variant,
+  });
+};
+
+/**
+ * Track experiment goal conversion
+ */
+export const trackExperimentGoal = (experimentName: string, variant: string, goalName: string, goalValue?: number) => {
+  trackEvent("experiment_goal_achieved", {
+    experiment_name: experimentName,
+    variant,
+    goal_name: goalName,
+    goal_value: goalValue,
+  });
+};
+
 export { posthog, initializeCLTV };

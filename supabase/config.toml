@@ -6,6 +6,6 @@ verify_jwt = false
 [functions.track-success]
 verify_jwt = false
 
-[functions.create-posthog-dashboards]
+[functions.ai-chat]
 verify_jwt = false
 

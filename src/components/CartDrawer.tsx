@@ -136,7 +136,27 @@ export const CartDrawer = () => {
         onComplete={handleRegistrationComplete}
       />
       
-      <Sheet>
+      <Sheet onOpenChange={(open) => {
+        if (open) {
+          trackEvent("cart_viewed", {
+            items_count: totalItems,
+            cart_value: totalPrice,
+            items: items.map(item => ({
+              id: item.id,
+              title: item.title,
+              quantity: item.quantity,
+              price: item.price,
+            })),
+          });
+        } else if (items.length > 0) {
+          // Track cart abandonment when drawer closes with items
+          trackEvent("checkout_abandoned", {
+            items_count: totalItems,
+            cart_value: totalPrice,
+            abandonment_stage: "cart_view",
+          });
+        }
+      }}>
         <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="rounded-full relative">
           <ShoppingCart className="h-5 w-5" />

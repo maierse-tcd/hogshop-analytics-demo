@@ -9,6 +9,7 @@ import { useEffect } from "react";
 import { initPostHog, posthog } from "@/lib/posthog";
 import { PostHogProvider } from "posthog-js/react";
 import { RouteTracker } from "@/components/RouteTracker";
+import { AIChatWidget } from "@/components/AIChatWidget";
 import Index from "./pages/Index";
 import Success from "./pages/Success";
 import ProductDetail from "./pages/ProductDetail";
@@ -33,6 +34,7 @@ const App = () => {
             <TooltipProvider>
               <Toaster />
               <Sonner />
+              <AIChatWidget />
               <BrowserRouter>
                 <RouteTracker />
                 <Routes>

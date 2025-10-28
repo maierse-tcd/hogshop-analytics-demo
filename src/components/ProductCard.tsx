@@ -61,6 +61,12 @@ export const ProductCard = ({
   const easterMode = useFeatureFlagEnabled('hero_banner_easter');
   const summerMode = useFeatureFlagEnabled('hero_banner_summer');
   
+  // Experiment: Product card design variant
+  const cardDesignV2 = useFeatureFlagEnabled('product-card-design-v2');
+  
+  // Experiment: Subscription highlight badge
+  const subscriptionHighlight = useFeatureFlagEnabled('subscription-highlight');
+  
   // Determine active seasonal theme
   const seasonalMode = halloweenMode ? 'halloween' 
     : christmasMode ? 'christmas'
@@ -114,6 +120,52 @@ export const ProductCard = ({
   const imageSrc = imageMap[image_url] || image_url;
   const themeConfig = seasonalMode ? getThemeConfig(seasonalMode as SeasonalTheme) : null;
 
+  // Horizontal card variant (experiment)
+  if (cardDesignV2) {
+    return (
+      <Card 
+        className="overflow-hidden group transition-all duration-300 border-2 cursor-pointer hover:shadow-lg"
+        onClick={handleCardClick}
+      >
+        <div className="flex">
+          <div className="relative w-1/2 overflow-hidden">
+            <img
+              src={imageSrc}
+              alt={title}
+              className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+            />
+            {stock < 10 && stock > 0 && (
+              <Badge className="absolute top-3 right-3">Only {stock} left</Badge>
+            )}
+            {is_subscription && (
+              <Badge className="absolute top-3 left-3">
+                {subscriptionHighlight ? "⭐ Subscribe!" : "Subscription"}
+              </Badge>
+            )}
+          </div>
+          <div className="w-1/2 p-5 flex flex-col">
+            <Badge variant="secondary" className="text-xs font-medium w-fit mb-2">{category}</Badge>
+            <h3 className="font-bold text-lg mb-2">{title}</h3>
+            <p className="text-sm line-clamp-2 mb-3 text-muted-foreground">{description}</p>
+            <div className="flex items-baseline gap-2 mt-auto mb-3">
+              <p className="text-2xl font-bold">${price.toFixed(2)}</p>
+              {is_subscription && <span className="text-sm text-muted-foreground">/{subscription_interval}</span>}
+            </div>
+            <Button
+              className="w-full gap-2 font-semibold"
+              onClick={handleAddToCart}
+              disabled={stock === 0}
+            >
+              <ShoppingCart className="h-4 w-4" />
+              {stock === 0 ? "Out of Stock" : "Add to Cart"}
+            </Button>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  // Default vertical card
   return (
     <Card 
       className={`overflow-hidden group transition-all duration-300 border-2 cursor-pointer ${
@@ -159,7 +211,11 @@ export const ProductCard = ({
         {is_subscription && (
           <Badge className="absolute top-3 left-3 text-white"
                  style={seasonalMode && themeConfig ? { backgroundColor: themeConfig.colors.secondary } : {}}>
-            {seasonalMode && themeConfig ? `${themeConfig.emoji.primary} Subscription` : 'Subscription'}
+            {subscriptionHighlight 
+              ? "⭐ Most Popular - Subscribe & Save!" 
+              : seasonalMode && themeConfig 
+                ? `${themeConfig.emoji.primary} Subscription` 
+                : 'Subscription'}
           </Badge>
         )}
       </div>
