@@ -13,6 +13,7 @@ import { Newsletter } from "@/components/Newsletter";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { simulateDemoErrors } from "@/utils/demoErrorSimulator";
 import { getThemeConfig, type SeasonalTheme } from "@/utils/seasonalThemes";
+import { toast } from "sonner";
 
 interface Product {
   id: string;
@@ -95,6 +96,22 @@ const Index = () => {
     : null;
   const [hasSubscribed, setHasSubscribed] = useState(false);
   const [showNewsletterModal, setShowNewsletterModal] = useState(false);
+  const [creatingDashboard, setCreatingDashboard] = useState(false);
+  
+  const handleCreateDashboard = async () => {
+    setCreatingDashboard(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-posthog-dashboards');
+      if (error) throw error;
+      toast.success('Dashboard created successfully!');
+      console.log('Dashboard created:', data);
+    } catch (error) {
+      console.error('Error creating dashboard:', error);
+      toast.error('Failed to create dashboard');
+    } finally {
+      setCreatingDashboard(false);
+    }
+  };
   
   // Track feature flag views (rich analytics)
   useEffect(() => {
@@ -152,6 +169,18 @@ const Index = () => {
     <ErrorBoundary>
       <div className="min-h-screen bg-background">
         <Header />
+        
+        {/* Dashboard Creation Button - Test */}
+        <div className="fixed bottom-4 left-4 z-50">
+          <Button 
+            onClick={handleCreateDashboard}
+            disabled={creatingDashboard}
+            variant="secondary"
+            size="sm"
+          >
+            {creatingDashboard ? 'Creating...' : 'Create PostHog Dashboard'}
+          </Button>
+        </div>
       
       {/* Hero Section */}
       <section className={`relative border-b overflow-hidden ${
