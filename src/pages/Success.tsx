@@ -33,20 +33,38 @@ const Success = () => {
               saveUser(userData.email, userData.name);
               console.log("Success: User session restored", { email: userData.email });
               
-              // Also re-associate with PostHog groups as backup
-              const cltv = parseFloat(localStorage.getItem("posthog_cltv") || "0");
-              setCustomerGroups("Active Subscriber", cltv);
+              // CRITICAL: Identify user in PostHog FIRST
+              posthog.identify(userData.email, {
+                email: userData.email,
+                name: userData.name,
+              });
+              
+              // Wait for identification to propagate
+              setTimeout(() => {
+                // Set groups after identification
+                const cltv = parseFloat(localStorage.getItem("user_cltv") || "0");
+                setCustomerGroups("Active Subscriber", cltv);
+                
+                console.log("Success: User identified and groups set", { email: userData.email, cltv });
+                
+                // Force reload feature flags after groups are set
+                // Use longer delay to allow server-side events to propagate
+                setTimeout(() => {
+                  posthog.reloadFeatureFlags();
+                  console.log("Success: Feature flags reloaded after server tracking");
+                }, 2000);
+              }, 500);
             }
           } catch (error) {
             console.error("Success: Failed to restore user session", error);
           }
+        } else {
+          // No stored user data, still reload flags after delay
+          setTimeout(() => {
+            posthog.reloadFeatureFlags();
+            console.log("Success: Feature flags reloaded (no user data)");
+          }, 2000);
         }
-        
-        // Force reload feature flags after server-side tracking
-        setTimeout(() => {
-          posthog.reloadFeatureFlags();
-          console.log("Success: Feature flags reloaded after server tracking");
-        }, 1000);
         
         setTrackingComplete(true);
         return;
@@ -110,6 +128,13 @@ const Success = () => {
             saveUser(userEmail, userName);
             
             console.log("PostHog: User identified from storage", userEmail);
+            
+            // Set initial groups if we have CLTV
+            const currentCLTV = parseFloat(localStorage.getItem("user_cltv") || "0");
+            if (currentCLTV > 0) {
+              setCustomerGroups("One-Time Buyer", currentCLTV);
+              console.log("PostHog: Initial groups set from storage", { cltv: currentCLTV });
+            }
           }
         } catch (error) {
           console.error("PostHog: Failed to parse stored user data", error);
@@ -137,6 +162,13 @@ const Success = () => {
             saveUser(userEmail, userName);
             
             console.log("PostHog: User identified from Stripe", userEmail);
+            
+            // Set initial groups
+            const currentCLTV = parseFloat(localStorage.getItem("user_cltv") || "0");
+            if (currentCLTV > 0) {
+              setCustomerGroups("One-Time Buyer", currentCLTV);
+              console.log("PostHog: Initial groups set from Stripe", { cltv: currentCLTV });
+            }
           }
         } catch (error) {
           console.error("PostHog: Failed to identify user from Stripe:", error);
@@ -228,21 +260,28 @@ const Success = () => {
           });
           
           // Set both lifecycle and value tier groups
-          const currentCLTV = parseFloat(localStorage.getItem("posthog_cltv") || "0");
+          const currentCLTV = parseFloat(localStorage.getItem("user_cltv") || "0");
           setCustomerGroups("Active Subscriber", currentCLTV);
           
           // Force reload feature flags after setting subscription properties
+          // Use longer delay to ensure server-side events have propagated
           setTimeout(() => {
             posthog.reloadFeatureFlags();
             console.log("Success: Feature flags reloaded after subscription activation");
-          }, 500);
+          }, 3000);
         }, 500);
       } else {
         // One-off purchase - set lifecycle to One-Time Buyer with value tier
         setTimeout(() => {
           console.log("PostHog: Setting customer groups for one-time buyer");
-          const currentCLTV = parseFloat(localStorage.getItem("posthog_cltv") || "0");
+          const currentCLTV = parseFloat(localStorage.getItem("user_cltv") || "0");
           setCustomerGroups("One-Time Buyer", currentCLTV);
+          
+          // Reload flags for one-off customers too
+          setTimeout(() => {
+            posthog.reloadFeatureFlags();
+            console.log("Success: Feature flags reloaded after one-time purchase");
+          }, 2000);
         }, 500);
       }
       
