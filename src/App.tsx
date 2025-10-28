@@ -7,7 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
 import { initPostHog, posthog } from "@/lib/posthog";
-import { PostHogProvider } from "posthog-js/react";
+import { PostHogProvider, useFeatureFlagEnabled } from "posthog-js/react";
 import { RouteTracker } from "@/components/RouteTracker";
 import { AIChatWidget } from "@/components/AIChatWidget";
 import Index from "./pages/Index";
@@ -22,6 +22,33 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+const AppContent = () => {
+  const showChatbot = useFeatureFlagEnabled('show_chatbot');
+
+  return (
+    <>
+      <Toaster />
+      <Sonner />
+      {showChatbot && <AIChatWidget />}
+      <BrowserRouter>
+        <RouteTracker />
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/product/:id" element={<ProductDetail />} />
+          <Route path="/success" element={<Success />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/faq" element={<FAQ />} />
+          <Route path="/shipping" element={<Shipping />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/readme" element={<Readme />} />
+          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </>
+  );
+};
+
 const App = () => {
   useEffect(() => {
     initPostHog();
@@ -33,24 +60,7 @@ const App = () => {
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <CartProvider>
             <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <AIChatWidget />
-              <BrowserRouter>
-                <RouteTracker />
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/product/:id" element={<ProductDetail />} />
-                  <Route path="/success" element={<Success />} />
-                  <Route path="/about" element={<About />} />
-                  <Route path="/faq" element={<FAQ />} />
-                  <Route path="/shipping" element={<Shipping />} />
-                  <Route path="/terms" element={<Terms />} />
-                  <Route path="/readme" element={<Readme />} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </BrowserRouter>
+              <AppContent />
             </TooltipProvider>
           </CartProvider>
         </ThemeProvider>
