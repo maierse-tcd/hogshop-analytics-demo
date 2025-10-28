@@ -60,8 +60,15 @@ serve(async (req) => {
       return insight;
     };
 
-    // Helper function to create dashboard
-    const createDashboard = async (name: string, description: string, insightIds: number[]) => {
+    // Helper function to create dashboard with tiles
+    const createDashboard = async (name: string, description: string, insights: any[]) => {
+      // Create dashboard with tiles in one call
+      const tiles = insights.map((insight, index) => ({
+        insight: insight.id,
+        layouts: {},
+        color: null,
+      }));
+
       const response = await fetch(`${POSTHOG_HOST}/api/projects/${projectId}/dashboards/`, {
         method: 'POST',
         headers: {
@@ -72,6 +79,7 @@ serve(async (req) => {
           name,
           description,
           pinned: true,
+          tiles,
         }),
       });
 
@@ -82,31 +90,7 @@ serve(async (req) => {
       }
 
       const dashboard = await response.json();
-      console.log('[CREATE-DASHBOARDS] Created dashboard:', dashboard.name, dashboard.id);
-
-      // Add insights to dashboard
-      for (const insightId of insightIds) {
-        const tileResponse = await fetch(`${POSTHOG_HOST}/api/projects/${projectId}/dashboards/${dashboard.id}/`, {
-          method: 'PATCH',
-          headers: {
-            'Authorization': `Bearer ${POSTHOG_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            tiles: [
-              ...(dashboard.tiles || []),
-              {
-                insight: insightId,
-              },
-            ],
-          }),
-        });
-
-        if (!tileResponse.ok) {
-          console.error('[CREATE-DASHBOARDS] Failed to add insight to dashboard:', insightId);
-        }
-      }
-
+      console.log(`[CREATE-DASHBOARDS] Created dashboard with ${tiles.length} tiles:`, dashboard.name, dashboard.id);
       return dashboard;
     };
 
@@ -208,7 +192,7 @@ serve(async (req) => {
     const revenueDashboard = await createDashboard(
       '💰 Revenue & Conversions',
       'Track purchase funnel, revenue trends, and conversion metrics',
-      createdInsights.slice(0, 5).map(i => i.id)
+      createdInsights.slice(0, 5)
     );
     createdDashboards.push(revenueDashboard);
 
@@ -296,7 +280,7 @@ serve(async (req) => {
     const engagementDashboard = await createDashboard(
       '📊 User Engagement',
       'Monitor user activity, retention, and engagement metrics',
-      createdInsights.slice(5, 10).map(i => i.id)
+      createdInsights.slice(5, 10)
     );
     createdDashboards.push(engagementDashboard);
 
@@ -365,7 +349,7 @@ serve(async (req) => {
     const productDashboard = await createDashboard(
       '🛍️ Product Analytics',
       'Analyze product views, conversions, and performance',
-      createdInsights.slice(10, 14).map(i => i.id)
+      createdInsights.slice(10, 14)
     );
     createdDashboards.push(productDashboard);
 
@@ -434,7 +418,7 @@ serve(async (req) => {
     const subscriptionDashboard = await createDashboard(
       '🔄 Subscription Metrics',
       'Track subscription lifecycle, churn, and recurring revenue',
-      createdInsights.slice(14, 18).map(i => i.id)
+      createdInsights.slice(14, 18)
     );
     createdDashboards.push(subscriptionDashboard);
 
@@ -510,7 +494,7 @@ serve(async (req) => {
     const behaviorDashboard = await createDashboard(
       '🎯 User Behavior',
       'Understand user paths, stickiness, and lifecycle patterns',
-      createdInsights.slice(18, 23).map(i => i.id)
+      createdInsights.slice(18, 23)
     );
     createdDashboards.push(behaviorDashboard);
 
