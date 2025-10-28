@@ -13,7 +13,10 @@ const log = (msg: string, details?: unknown) => {
 };
 
 serve(async (req) => {
+  log("🟢 TRACK-SUCCESS: Function invoked", { method: req.method, url: req.url });
+  
   if (req.method === "OPTIONS") {
+    log("🟢 TRACK-SUCCESS: Handling OPTIONS request");
     return new Response(null, { headers: corsHeaders });
   }
 
@@ -21,28 +24,46 @@ serve(async (req) => {
     const url = new URL(req.url);
     let sessionId = url.searchParams.get("session_id");
     const redirect = url.searchParams.get("redirect");
+    
+    log("🟢 TRACK-SUCCESS: URL params", { sessionId, redirect });
 
     if (!sessionId) {
+      log("🟢 TRACK-SUCCESS: No session_id in URL, checking body");
       try {
         const body = await req.json();
         sessionId = body?.session_id;
-      } catch (_) {
-        // ignore body parse errors
+        log("🟢 TRACK-SUCCESS: Session ID from body", { sessionId });
+      } catch (err) {
+        log("🟢 TRACK-SUCCESS: Failed to parse body", err);
       }
     }
 
     if (!sessionId) {
+      log("ERROR: No session_id provided in URL or body");
       throw new Error("No session_id provided");
     }
+    
+    log("🟢 TRACK-SUCCESS: Processing session", { sessionId });
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY") || "";
-    if (!stripeKey) throw new Error("Missing STRIPE_SECRET_KEY");
+    if (!stripeKey) {
+      log("ERROR: Missing STRIPE_SECRET_KEY");
+      throw new Error("Missing STRIPE_SECRET_KEY");
+    }
+    log("🟢 TRACK-SUCCESS: Stripe key verified");
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    log("Retrieving Stripe session", { sessionId });
+    log("🟢 TRACK-SUCCESS: Retrieving Stripe session", { sessionId });
 
     const session = await stripe.checkout.sessions.retrieve(sessionId, {
       expand: ["line_items.data.price.product"],
+    });
+    
+    log("🟢 TRACK-SUCCESS: Stripe session retrieved", {
+      sessionId: session.id,
+      paymentStatus: session.payment_status,
+      customerEmail: session.customer_details?.email,
+      amountTotal: session.amount_total,
     });
 
     const lineItems = session.line_items?.data.map((item: any) => ({
@@ -99,7 +120,18 @@ serve(async (req) => {
       },
     };
 
-    log("Sending PostHog capture", { host: POSTHOG_HOST, distinct_id: capturePayload.distinct_id });
+    log("🟢 TRACK-SUCCESS: Prepared purchase event payload", {
+      event: capturePayload.event,
+      distinct_id: capturePayload.distinct_id,
+      total_amount: capturePayload.properties.total_amount,
+      item_count: capturePayload.properties.item_count,
+      has_subscription: capturePayload.properties.has_subscription,
+    });
+    
+    log("🟢 TRACK-SUCCESS: Sending PostHog capture", { 
+      host: POSTHOG_HOST, 
+      distinct_id: capturePayload.distinct_id 
+    });
 
     // FIRST: Send $groupidentify events to create/update both groups
     const lifecycleGroupPayload = {
@@ -130,8 +162,8 @@ serve(async (req) => {
       },
     };
 
-    log("Sending PostHog groupIdentify", { lifecycle, valueTier });
-    await Promise.all([
+    log("🟢 TRACK-SUCCESS: Sending PostHog groupIdentify", { lifecycle, valueTier });
+    const groupPromises = await Promise.all([
       fetch(`${POSTHOG_HOST}/capture/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -143,7 +175,12 @@ serve(async (req) => {
         body: JSON.stringify(valueTierGroupPayload),
       })
     ]);
-    log("PostHog groupIdentify complete");
+    
+    log("🟢 TRACK-SUCCESS: GroupIdentify responses", {
+      lifecycle: groupPromises[0].status,
+      valueTier: groupPromises[1].status,
+    });
+    log("🟢 TRACK-SUCCESS: PostHog groupIdentify complete");
 
     // THEN: Send purchase_completed event with the group association
     const phRes = await fetch(`${POSTHOG_HOST}/capture/`, {
@@ -154,7 +191,12 @@ serve(async (req) => {
 
     const ok = phRes.ok;
     const text = await phRes.text();
-    log("PostHog response", { status: phRes.status, ok, body: text });
+    log("🟢 TRACK-SUCCESS: PostHog purchase_completed response", { 
+      status: phRes.status, 
+      ok, 
+      bodyLength: text.length,
+      body: text.substring(0, 200) 
+    });
 
     // Set person properties (including subscription_active for feature flags)
     if (customerEmail) {
@@ -176,13 +218,19 @@ serve(async (req) => {
         },
       };
 
-      log("Sending PostHog person properties", { email: customerEmail, subscription_active: hasSubscription });
+      log("🟢 TRACK-SUCCESS: Sending PostHog person properties", { 
+        email: customerEmail, 
+        subscription_active: hasSubscription 
+      });
       const propsRes = await fetch(`${POSTHOG_HOST}/capture/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(personPropertiesPayload),
       });
-      log("PostHog person properties response", { status: propsRes.status, ok: propsRes.ok });
+      log("🟢 TRACK-SUCCESS: PostHog person properties response", { 
+        status: propsRes.status, 
+        ok: propsRes.ok 
+      });
     }
 
     // If redirect specified, forward user there with the session_id preserved
@@ -191,14 +239,20 @@ serve(async (req) => {
       // Preserve provided session id for any client-side usage
       redirectUrl.searchParams.set("session_id", sessionId);
       redirectUrl.searchParams.set("tracked", "1");
+      
+      const finalUrl = redirectUrl.toString();
+      log("🟢 TRACK-SUCCESS: Redirecting user to success page", { finalUrl });
+      
       return new Response(null, {
         status: 302,
         headers: {
           ...corsHeaders,
-          Location: redirectUrl.toString(),
+          Location: finalUrl,
         },
       });
     }
+    
+    log("🟢 TRACK-SUCCESS: No redirect specified, returning JSON response");
 
     return new Response(
       JSON.stringify({ tracked: ok, session_id: sessionId, total_amount: totalAmount }),

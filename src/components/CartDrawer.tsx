@@ -91,6 +91,8 @@ export const CartDrawer = () => {
       if (error) throw error;
 
       if (data?.url) {
+        console.log("✅ CHECKOUT: Received checkout URL from edge function:", data.url);
+        
         // Store user info and basket data in localStorage (persists for 24 hours)
         const expiresAt = Date.now() + (24 * 60 * 60 * 1000); // 24 hours
         localStorage.setItem("checkout_user", JSON.stringify({ 
@@ -105,7 +107,13 @@ export const CartDrawer = () => {
           expiresAt,
           needs_tracking: true
         }));
-        console.log("Checkout data stored in localStorage with 24h expiration:", { email, basketItems, totalPrice });
+        console.log("✅ CHECKOUT: Data stored in localStorage with 24h expiration:", { 
+          email, 
+          itemCount: basketItems.length, 
+          totalPrice 
+        });
+        
+        console.log("✅ CHECKOUT: Opening Stripe checkout in new tab");
         window.open(data.url, "_blank");
       }
     } catch (error) {

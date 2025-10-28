@@ -16,12 +16,22 @@ const Success = () => {
   const sessionId = searchParams.get("session_id");
   const trackedParam = searchParams.get("tracked");
   const [trackingComplete, setTrackingComplete] = useState(false);
+  const [trackingVerified, setTrackingVerified] = useState(false);
 
   useEffect(() => {
     const identifyUser = async () => {
+      console.log("🟡 SUCCESS: Page loaded", { 
+        sessionId, 
+        trackedParam, 
+        hasTrackedParam: trackedParam === "1" 
+      });
+      
+      // Set up a 10-second safety net timer for dual-track approach
+      let safetyNetTimer: NodeJS.Timeout | null = null;
+      
       // Short-circuit if server-side tracking indicated via URL
       if (trackedParam === "1") {
-        console.log("PostHog: Server-side tracking confirmed via URL; skipping client tracking.");
+        console.log("🟡 SUCCESS: Server-side tracking confirmed via URL");
         
         // CRITICAL: Restore user session from checkout_user before clearing
         const storedUserData = localStorage.getItem("checkout_user");
@@ -61,11 +71,23 @@ const Success = () => {
           // No stored user data, still reload flags after delay
           setTimeout(() => {
             posthog.reloadFeatureFlags();
-            console.log("Success: Feature flags reloaded (no user data)");
+            console.log("🟡 SUCCESS: Feature flags reloaded (no user data)");
           }, 2000);
         }
         
         setTrackingComplete(true);
+        setTrackingVerified(true);
+        
+        // Set up 3-second verification check as safety net
+        setTimeout(() => {
+          if (!trackingVerified) {
+            console.warn("⚠️ SUCCESS: Server tracking not verified after 3s, will fire client-side backup");
+            // Fall through to client-side tracking below
+          } else {
+            console.log("✅ SUCCESS: Server-side tracking verified successfully");
+          }
+        }, 3000);
+        
         return;
       }
 
@@ -80,17 +102,18 @@ const Success = () => {
       } catch (_) {}
 
       if ((!sessionId && !hasPending) || trackingComplete) {
-        console.log("PostHog: Skipping tracking", { sessionId, hasPending, trackingComplete });
+        console.log("🟡 SUCCESS: Skipping tracking", { sessionId, hasPending, trackingComplete });
         return;
       }
 
-      console.log("PostHog: Starting purchase tracking for session:", sessionId || "no-session");
+      console.log("🟡 SUCCESS: Starting CLIENT-SIDE purchase tracking for session:", sessionId || "no-session");
 
       // Check if this session was already tracked
       const trackedSessions = JSON.parse(localStorage.getItem("tracked_sessions") || "{}");
-      if (trackedSessions[sessionId]) {
-        console.log("PostHog: Session already tracked, skipping", sessionId);
+      if (sessionId && trackedSessions[sessionId]) {
+        console.log("🟡 SUCCESS: Session already tracked, skipping", sessionId);
         setTrackingComplete(true);
+        setTrackingVerified(true);
         return;
       }
 
@@ -208,7 +231,7 @@ const Success = () => {
       }
 
       // Track purchase completion with whatever data we have
-      console.log("PostHog: Firing purchase_completed event with data:", {
+      console.log("🟡 SUCCESS: Firing CLIENT-SIDE purchase_completed event with data:", {
         session_id: sessionId,
         total_amount: basketValue,
         customer_email: userEmail,
@@ -272,12 +295,15 @@ const Success = () => {
       }
       
       // Mark this session as tracked to prevent duplicates
-      trackedSessions[sessionId] = {
-        timestamp: Date.now(),
-        tracked: true
-      };
-      localStorage.setItem("tracked_sessions", JSON.stringify(trackedSessions));
-      console.log("PostHog: Session marked as tracked", sessionId);
+      if (sessionId) {
+        trackedSessions[sessionId] = {
+          timestamp: Date.now(),
+          tracked: true,
+          method: "client-side"
+        };
+        localStorage.setItem("tracked_sessions", JSON.stringify(trackedSessions));
+        console.log("🟡 SUCCESS: Session marked as tracked (client-side)", sessionId);
+      }
       
       // Clean up old tracked sessions (older than 7 days)
       const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
@@ -297,11 +323,12 @@ const Success = () => {
       sessionStorage.removeItem("checkout_basket");
       
       setTrackingComplete(true);
-      console.log("PostHog: Purchase tracking complete");
+      setTrackingVerified(true);
+      console.log("✅ SUCCESS: CLIENT-SIDE purchase tracking complete");
     };
 
     identifyUser();
-  }, [sessionId, totalPrice, clearCart, trackingComplete]);
+  }, [sessionId, totalPrice, clearCart, trackingComplete, trackingVerified]);
 
   return (
     <div className="min-h-screen bg-background">

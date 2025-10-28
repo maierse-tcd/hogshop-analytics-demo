@@ -24,13 +24,19 @@ serve(async (req) => {
   }
 
   try {
+    console.log("🔵 CREATE-CHECKOUT: Function invoked");
+    
     const { items, customer_email, customer_name } = await req.json();
+    
+    console.log("🔵 CREATE-CHECKOUT: Request data:", { 
+      itemCount: items?.length, 
+      customer_email, 
+      customer_name 
+    });
     
     if (!items || items.length === 0) {
       throw new Error("No items in cart");
     }
-
-    console.log("Creating checkout for:", customer_email);
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
@@ -73,12 +79,23 @@ serve(async (req) => {
     const mode = hasSubscription ? "subscription" : "payment";
 
     const origin = req.headers.get("origin") || "http://localhost:3000";
-    const functionsBase = `${Deno.env.get("SUPABASE_URL")}/functions/v1`;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const functionsBase = `${supabaseUrl}/functions/v1`;
+    
+    console.log("🔵 CREATE-CHECKOUT: Building success URL with:", {
+      origin,
+      supabaseUrl,
+      functionsBase,
+    });
+    
+    const successUrl = `${functionsBase}/track-success?session_id={CHECKOUT_SESSION_ID}&redirect=${encodeURIComponent(origin + "/success")}`;
+    console.log("🔵 CREATE-CHECKOUT: Full success URL:", successUrl);
 
+    console.log("🔵 CREATE-CHECKOUT: Creating Stripe session with mode:", mode);
     const session = await stripe.checkout.sessions.create({
       line_items: lineItems,
       mode,
-      success_url: `${functionsBase}/track-success?session_id={CHECKOUT_SESSION_ID}&redirect=${encodeURIComponent(origin + "/success")}`,
+      success_url: successUrl,
       cancel_url: `${origin}/`,
       allow_promotion_codes: true,
       billing_address_collection: "required",
@@ -91,6 +108,13 @@ serve(async (req) => {
           optional: false,
         }]
       }),
+    });
+
+    console.log("🔵 CREATE-CHECKOUT: Stripe session created successfully:", {
+      sessionId: session.id,
+      checkoutUrl: session.url,
+      mode: session.mode,
+      successUrl: session.success_url,
     });
 
     return new Response(JSON.stringify({ url: session.url }), {
