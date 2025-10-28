@@ -175,39 +175,39 @@ const Index = () => {
                 Shop Now <ArrowRight className="h-5 w-5" />
               </Button>
               
-              {/* A/B Test: Newsletter CTA vs Learn More */}
+              {/* A/B Test: Newsletter CTA - Normal vs Blinking Orange */}
               {newsletterSubVariant === 'test' ? (
-                // Test Variant: Newsletter CTA - More pronounced
+                // Test Variant: Blinking Orange Newsletter Button
                 <Button 
                   size="lg" 
-                  className="h-12 px-8 text-base font-semibold gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/30 animate-pulse hover:animate-none hover:scale-105 transition-transform" 
+                  className="h-12 px-8 text-base font-semibold animate-blink-orange hover:animate-none hover:scale-105 transition-transform" 
                   onClick={() => {
                     setShowNewsletterModal(true);
                     trackEvent("hero_cta_clicked", { 
-                      cta: "newsletter_signup",
+                      cta: "newsletter_signup_blink",
                       experiment: "newsletter_sub",
                       variant: "test"
                     });
                   }}
                 >
-                  🎉 Get 15% Off Newsletter
+                  Sign up for newsletter
                 </Button>
               ) : (
-                // Control Variant: Learn More
+                // Control Variant: Normal Newsletter Button
                 <Button 
                   size="lg" 
                   variant="outline" 
                   className="h-12 px-8 text-base font-semibold" 
                   onClick={() => {
-                    window.location.href = "/about";
+                    setShowNewsletterModal(true);
                     trackEvent("hero_cta_clicked", { 
-                      cta: "learn_more",
+                      cta: "newsletter_signup",
                       experiment: "newsletter_sub",
                       variant: newsletterSubVariant || "control"
                     });
                   }}
                 >
-                  Learn More About Us
+                  Sign up for newsletter
                 </Button>
               )}
             </div>
