@@ -66,8 +66,15 @@ serve(async (req) => {
     const POSTHOG_HOST = Deno.env.get("POSTHOG_HOST") || "https://eu.i.posthog.com";
     const POSTHOG_KEY = Deno.env.get("POSTHOG_KEY") || "phc_mCl11WvLPwmqyjG7FlivcsSbTfSEY1J3TWcEnnR0CJa";
 
-    // Set customer type group
-    const customerTypeGroup = hasSubscription ? "Subscription Customer" : "One-Off Customer";
+    // Determine customer lifecycle and value tier
+    const lifecycle = hasSubscription ? "Active Subscriber" : "One-Time Buyer";
+    const getValueTier = (amount: number): string => {
+      if (amount >= 1000) return "Platinum";
+      if (amount >= 500) return "Gold";
+      if (amount >= 100) return "Silver";
+      return "Bronze";
+    };
+    const valueTier = getValueTier(totalAmount);
     
     const capturePayload = {
       api_key: POSTHOG_KEY,
@@ -86,35 +93,57 @@ serve(async (req) => {
         source: "edge_function",
         timestamp: new Date().toISOString(),
         $groups: {
-          customer_type: customerTypeGroup
+          customer_lifecycle: lifecycle,
+          customer_value_tier: valueTier
         },
       },
     };
 
     log("Sending PostHog capture", { host: POSTHOG_HOST, distinct_id: capturePayload.distinct_id });
 
-    // FIRST: Send $groupidentify event to create/update the group
-    const groupIdentifyPayload = {
+    // FIRST: Send $groupidentify events to create/update both groups
+    const lifecycleGroupPayload = {
       api_key: POSTHOG_KEY,
       event: "$groupidentify",
       distinct_id: customerEmail || sessionId,
       properties: {
-        $group_type: "customer_type",
-        $group_key: customerTypeGroup,
+        $group_type: "customer_lifecycle",
+        $group_key: lifecycle,
         $group_set: {
-          name: customerTypeGroup,
-          type: hasSubscription ? "subscription" : "one-off",
+          name: lifecycle,
+          is_subscriber: hasSubscription,
         },
       },
     };
 
-    log("Sending PostHog groupIdentify", { group_type: "customer_type", group_key: customerTypeGroup });
-    const groupRes = await fetch(`${POSTHOG_HOST}/capture/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(groupIdentifyPayload),
-    });
-    log("PostHog groupIdentify response", { status: groupRes.status, ok: groupRes.ok });
+    const valueTierGroupPayload = {
+      api_key: POSTHOG_KEY,
+      event: "$groupidentify",
+      distinct_id: customerEmail || sessionId,
+      properties: {
+        $group_type: "customer_value_tier",
+        $group_key: valueTier,
+        $group_set: {
+          name: valueTier,
+          min_value: valueTier === "Platinum" ? 1000 : valueTier === "Gold" ? 500 : valueTier === "Silver" ? 100 : 0,
+        },
+      },
+    };
+
+    log("Sending PostHog groupIdentify", { lifecycle, valueTier });
+    await Promise.all([
+      fetch(`${POSTHOG_HOST}/capture/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(lifecycleGroupPayload),
+      }),
+      fetch(`${POSTHOG_HOST}/capture/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(valueTierGroupPayload),
+      })
+    ]);
+    log("PostHog groupIdentify complete");
 
     // THEN: Send purchase_completed event with the group association
     const phRes = await fetch(`${POSTHOG_HOST}/capture/`, {
@@ -138,7 +167,9 @@ serve(async (req) => {
             subscription_active: hasSubscription,
             subscription_start_date: hasSubscription ? new Date().toISOString() : null,
             subscription_monthly_value: subscriptionValue || null,
-            customer_type: customerTypeGroup,
+            customer_lifecycle: lifecycle,
+            customer_value_tier: valueTier,
+            customer_lifetime_value: totalAmount,
             last_purchase_date: new Date().toISOString(),
             last_purchase_amount: totalAmount,
           },

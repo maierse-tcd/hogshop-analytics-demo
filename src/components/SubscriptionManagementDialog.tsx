@@ -42,13 +42,18 @@ export const SubscriptionManagementDialog = ({
         timestamp: new Date().toISOString(),
       });
 
-      // No backend call — just update person properties in PostHog
+      // Update PostHog to mark as churned subscriber
       updateSubscriptionStatus({
         active: false,
         cancelled: true,
       });
-      // Explicitly ensure the person property reflects the change
-      (posthog as any).setPersonProperties?.({ subscription_active: false });
+      
+      // Update to Churned Subscriber lifecycle (keep value tier unchanged)
+      posthog.group("customer_lifecycle", "Churned Subscriber");
+      posthog.setPersonProperties({ 
+        subscription_active: false,
+        customer_lifecycle: "Churned Subscriber",
+      });
 
       toast({
         title: "Subscription Cancelled",

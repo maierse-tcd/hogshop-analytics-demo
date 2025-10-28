@@ -71,27 +71,28 @@ serve(async (req) => {
     const cancelledSubscription = await stripe.subscriptions.cancel(subscription.id);
     logStep("Subscription cancelled", { subscriptionId: cancelledSubscription.id, status: cancelledSubscription.status });
 
-    // Update PostHog customer type to one-off
+    // Update PostHog to mark as churned subscriber
     const POSTHOG_HOST = Deno.env.get("POSTHOG_HOST") || "https://eu.i.posthog.com";
     const POSTHOG_KEY = Deno.env.get("POSTHOG_KEY") || "phc_mCl11WvLPwmqyjG7FlivcsSbTfSEY1J3TWcEnnR0CJa";
 
     try {
-      // FIRST: Send $groupidentify to update the group
+      // FIRST: Send $groupidentify to update lifecycle to Churned Subscriber
       const groupIdentifyPayload = {
         api_key: POSTHOG_KEY,
         event: "$groupidentify",
         distinct_id: user.email,
         properties: {
-          $group_type: "customer_type",
-          $group_key: "One-Off Customer",
+          $group_type: "customer_lifecycle",
+          $group_key: "Churned Subscriber",
           $group_set: {
-            name: "One-Off Customer",
-            type: "one-off",
+            name: "Churned Subscriber",
+            is_subscriber: false,
+            churned: true,
           },
         },
       };
 
-      logStep("Sending PostHog groupIdentify", { email: user.email, group: "One-Off Customer" });
+      logStep("Sending PostHog groupIdentify", { email: user.email, lifecycle: "Churned Subscriber" });
       await fetch(`${POSTHOG_HOST}/capture/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -107,7 +108,7 @@ serve(async (req) => {
           subscription_id: cancelledSubscription.id,
           cancelled_at: new Date(cancelledSubscription.canceled_at! * 1000).toISOString(),
           $groups: {
-            customer_type: "One-Off Customer"
+            customer_lifecycle: "Churned Subscriber"
           },
         },
       };
@@ -130,7 +131,7 @@ serve(async (req) => {
             subscription_active: false,
             subscription_cancelled: true,
             subscription_cancelled_at: new Date(cancelledSubscription.canceled_at! * 1000).toISOString(),
-            customer_type: "One-Off Customer",
+            customer_lifecycle: "Churned Subscriber",
           },
         },
       };

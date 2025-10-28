@@ -260,37 +260,64 @@ export const updateSubscriptionStatus = (subscriptionData: {
 };
 
 /**
- * Set customer type group in PostHog
- * Groups users by "Subscription Customer" or "One-Off Customer"
+ * Calculate customer value tier based on CLTV
  */
-export const setCustomerTypeGroup = (customerType: "subscription" | "one-off") => {
+const getValueTier = (cltv: number): string => {
+  if (cltv >= 1000) return "Platinum";
+  if (cltv >= 500) return "Gold";
+  if (cltv >= 100) return "Silver";
+  return "Bronze";
+};
+
+/**
+ * Set customer lifecycle and value tier groups
+ * Dual-group system for maximum analytics power
+ */
+export const setCustomerGroups = (
+  lifecycle: "One-Time Buyer" | "Active Subscriber" | "Churned Subscriber" | "Reactivated Subscriber", 
+  cltv?: number
+) => {
   if (typeof window !== "undefined") {
     try {
-      const groupKey = customerType === "subscription" ? "Subscription Customer" : "One-Off Customer";
+      // Set lifecycle group
+      posthog.group("customer_lifecycle", lifecycle);
       
-      // Associate the user with the group
-      posthog.group("customer_type", groupKey);
-      
-      // Also set as person property for easy filtering
-      posthog.setPersonProperties({
-        customer_type: groupKey,
-        customer_type_updated_at: new Date().toISOString(),
-      });
-      
-      // Send a custom event to track the group assignment
-      posthog.capture("customer_type_set", {
-        customer_type: groupKey,
-        type: customerType,
-      });
-      
-      console.log("PostHog customer type group set:", {
-        groupKey,
-        distinctId: posthog.get_distinct_id(),
-      });
+      // Set value tier group if CLTV provided
+      if (cltv !== undefined) {
+        const tier = getValueTier(cltv);
+        posthog.group("customer_value_tier", tier);
+        
+        posthog.setPersonProperties({
+          customer_lifecycle: lifecycle,
+          customer_value_tier: tier,
+          customer_lifetime_value: cltv,
+          customer_groups_updated_at: new Date().toISOString(),
+        });
+        
+        console.log("PostHog: Customer groups set", { lifecycle, tier, cltv });
+      } else {
+        posthog.setPersonProperties({
+          customer_lifecycle: lifecycle,
+          customer_groups_updated_at: new Date().toISOString(),
+        });
+        
+        console.log("PostHog: Customer lifecycle set", lifecycle);
+      }
     } catch (error) {
-      console.error("PostHog customer type group error:", error);
+      console.error("PostHog customer groups error:", error);
     }
   }
+};
+
+/**
+ * Legacy function for backwards compatibility
+ * @deprecated Use setCustomerGroups instead
+ */
+export const setCustomerTypeGroup = (customerType: "subscription" | "one-off") => {
+  const lifecycle = customerType === "subscription" ? "Active Subscriber" : "One-Time Buyer";
+  const cltv = parseFloat(localStorage.getItem("user_cltv") || "0");
+  
+  setCustomerGroups(lifecycle, cltv);
 };
 
 /**

@@ -4,7 +4,7 @@ import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
-import { trackEvent, setUserProperties, updateCLTV, updateSubscriptionStatus, setCustomerTypeGroup } from "@/lib/posthog";
+import { trackEvent, setUserProperties, updateCLTV, updateSubscriptionStatus, setCustomerGroups } from "@/lib/posthog";
 import { posthog } from "@/lib/posthog";
 import { supabase } from "@/integrations/supabase/client";
 import { saveUser } from "@/lib/auth";
@@ -33,8 +33,9 @@ const Success = () => {
               saveUser(userData.email, userData.name);
               console.log("Success: User session restored", { email: userData.email });
               
-              // Also re-associate with PostHog group as backup
-              posthog.group("customer_type", "Subscription Customer");
+              // Also re-associate with PostHog groups as backup
+              const cltv = parseFloat(localStorage.getItem("posthog_cltv") || "0");
+              setCustomerGroups("Active Subscriber", cltv);
             }
           } catch (error) {
             console.error("Success: Failed to restore user session", error);
@@ -219,13 +220,16 @@ const Success = () => {
       if (hasSubscription) {
         const subscriptionItem = basketItems.find((item: any) => item.is_subscription);
         setTimeout(() => {
-          console.log("PostHog: Setting subscription_active to true and customer type group");
+          console.log("PostHog: Setting subscription_active to true and customer groups");
           updateSubscriptionStatus({
             active: true,
             start_date: new Date().toISOString(),
             monthly_value: subscriptionItem?.price || basketValue,
           });
-          setCustomerTypeGroup("subscription");
+          
+          // Set both lifecycle and value tier groups
+          const currentCLTV = parseFloat(localStorage.getItem("posthog_cltv") || "0");
+          setCustomerGroups("Active Subscriber", currentCLTV);
           
           // Force reload feature flags after setting subscription properties
           setTimeout(() => {
@@ -234,10 +238,11 @@ const Success = () => {
           }, 500);
         }, 500);
       } else {
-        // One-off purchase - set customer type to one-off
+        // One-off purchase - set lifecycle to One-Time Buyer with value tier
         setTimeout(() => {
-          console.log("PostHog: Setting customer type group to one-off");
-          setCustomerTypeGroup("one-off");
+          console.log("PostHog: Setting customer groups for one-time buyer");
+          const currentCLTV = parseFloat(localStorage.getItem("posthog_cltv") || "0");
+          setCustomerGroups("One-Time Buyer", currentCLTV);
         }, 500);
       }
       
