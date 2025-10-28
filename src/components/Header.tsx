@@ -25,6 +25,19 @@ export const Header = () => {
   // Debug log for subscription flag
   console.log("Header: showSubscription flag =", showSubscription, "isLoggedIn =", isLoggedIn);
 
+  // Track feature flag views (rich analytics)
+  useEffect(() => {
+    if (showSubscription !== undefined) {
+      posthog.capture('$feature_view', { feature_flag: 'show_subscription' });
+    }
+  }, [showSubscription]);
+
+  useEffect(() => {
+    if (halloweenMode !== undefined) {
+      posthog.capture('$feature_view', { feature_flag: 'hero_banner_halloween' });
+    }
+  }, [halloweenMode]);
+
   // Check auth state on mount and when location changes
   useEffect(() => {
     const user = getUser();
@@ -143,6 +156,11 @@ export const Header = () => {
             {isLoggedIn && showSubscription && (
               <button
                 onClick={() => {
+                  // Track feature interaction with person property
+                  posthog.capture('$feature_interaction', {
+                    feature_flag: 'show_subscription',
+                    $set: { [`$feature_interaction/show_subscription`]: true }
+                  });
                   triggerSubscriptionSurvey();
                   setTimeout(() => setShowSubscriptionDialog(true), 600);
                 }}

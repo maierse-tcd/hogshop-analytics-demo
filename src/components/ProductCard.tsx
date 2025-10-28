@@ -2,10 +2,11 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/contexts/CartContext";
-import { trackEvent } from "@/lib/posthog";
+import { trackEvent, posthog } from "@/lib/posthog";
 import { ShoppingCart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useFeatureFlagEnabled } from "posthog-js/react";
+import { useEffect } from "react";
 
 // Import all product images
 import hedgehogFood from "@/assets/hedgehog-food.jpg";
@@ -55,6 +56,13 @@ export const ProductCard = ({
   const { addToCart } = useCart();
   const navigate = useNavigate();
   const halloweenMode = useFeatureFlagEnabled('hero_banner_halloween');
+
+  // Track feature flag view (rich analytics)
+  useEffect(() => {
+    if (halloweenMode !== undefined) {
+      posthog.capture('$feature_view', { feature_flag: 'hero_banner_halloween' });
+    }
+  }, [halloweenMode]);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();

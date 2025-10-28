@@ -85,6 +85,25 @@ const Index = () => {
   const [hasSubscribed, setHasSubscribed] = useState(false);
   const [showNewsletterModal, setShowNewsletterModal] = useState(false);
   
+  // Track feature flag views (rich analytics)
+  useEffect(() => {
+    if (showNewsletterFlag !== undefined) {
+      posthog.capture('$feature_view', { feature_flag: 'show_newsletter' });
+    }
+  }, [showNewsletterFlag]);
+
+  useEffect(() => {
+    if (halloweenHeroFlag !== undefined) {
+      posthog.capture('$feature_view', { feature_flag: 'hero_banner_halloween' });
+    }
+  }, [halloweenHeroFlag]);
+
+  useEffect(() => {
+    if (newsletterSubVariant !== undefined) {
+      posthog.capture('$feature_view', { feature_flag: 'newsletter_sub' });
+    }
+  }, [newsletterSubVariant]);
+  
   useEffect(() => {
     // Check localStorage for subscription status
     const subscribed = localStorage.getItem("newsletter_subscribed") === "true";
@@ -183,6 +202,11 @@ const Index = () => {
                   className="h-12 px-8 text-base font-semibold animate-blink-orange hover:animate-none hover:scale-105 transition-transform" 
                   onClick={() => {
                     setShowNewsletterModal(true);
+                    // Track feature interaction with person property
+                    posthog.capture('$feature_interaction', {
+                      feature_flag: 'newsletter_sub',
+                      $set: { [`$feature_interaction/newsletter_sub`]: true }
+                    });
                     trackEvent("hero_cta_clicked", { 
                       cta: "newsletter_signup_blink",
                       experiment: "newsletter_sub",
@@ -200,6 +224,11 @@ const Index = () => {
                   className="h-12 px-8 text-base font-semibold" 
                   onClick={() => {
                     setShowNewsletterModal(true);
+                    // Track feature interaction with person property
+                    posthog.capture('$feature_interaction', {
+                      feature_flag: 'newsletter_sub',
+                      $set: { [`$feature_interaction/newsletter_sub`]: true }
+                    });
                     trackEvent("hero_cta_clicked", { 
                       cta: "newsletter_signup",
                       experiment: "newsletter_sub",
