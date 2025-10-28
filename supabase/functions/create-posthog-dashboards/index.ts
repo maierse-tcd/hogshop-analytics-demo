@@ -38,6 +38,90 @@ serve(async (req) => {
     const projectId = project.id;
     console.log('[CREATE-DASHBOARDS] Project ID:', projectId);
 
+    // ==================== CLEANUP FUNCTIONS ====================
+    
+    // Helper function to delete all existing dashboards
+    const deleteAllDashboards = async () => {
+      console.log('[CREATE-DASHBOARDS] Fetching existing dashboards...');
+      const response = await fetch(`${POSTHOG_HOST}/api/projects/${projectId}/dashboards/`, {
+        headers: {
+          'Authorization': `Bearer ${POSTHOG_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        console.error('[CREATE-DASHBOARDS] Failed to fetch dashboards');
+        return;
+      }
+
+      const data = await response.json();
+      const dashboards = data.results || [];
+      console.log(`[CREATE-DASHBOARDS] Found ${dashboards.length} existing dashboards to delete`);
+
+      for (const dashboard of dashboards) {
+        console.log(`[CREATE-DASHBOARDS] Deleting dashboard: ${dashboard.name} (${dashboard.id})`);
+        const deleteResponse = await fetch(`${POSTHOG_HOST}/api/projects/${projectId}/dashboards/${dashboard.id}/`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${POSTHOG_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (deleteResponse.ok) {
+          console.log(`[CREATE-DASHBOARDS] ✓ Deleted dashboard: ${dashboard.name}`);
+        } else {
+          console.error(`[CREATE-DASHBOARDS] ✗ Failed to delete dashboard: ${dashboard.name}`);
+        }
+      }
+    };
+
+    // Helper function to delete all existing insights
+    const deleteAllInsights = async () => {
+      console.log('[CREATE-DASHBOARDS] Fetching existing insights...');
+      const response = await fetch(`${POSTHOG_HOST}/api/projects/${projectId}/insights/?limit=300`, {
+        headers: {
+          'Authorization': `Bearer ${POSTHOG_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        console.error('[CREATE-DASHBOARDS] Failed to fetch insights');
+        return;
+      }
+
+      const data = await response.json();
+      const insights = data.results || [];
+      console.log(`[CREATE-DASHBOARDS] Found ${insights.length} existing insights to delete`);
+
+      for (const insight of insights) {
+        console.log(`[CREATE-DASHBOARDS] Deleting insight: ${insight.name} (${insight.id})`);
+        const deleteResponse = await fetch(`${POSTHOG_HOST}/api/projects/${projectId}/insights/${insight.id}/`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${POSTHOG_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (deleteResponse.ok) {
+          console.log(`[CREATE-DASHBOARDS] ✓ Deleted insight: ${insight.name}`);
+        } else {
+          console.error(`[CREATE-DASHBOARDS] ✗ Failed to delete insight: ${insight.name}`);
+        }
+      }
+    };
+
+    // Execute cleanup before creating new dashboards/insights
+    console.log('[CREATE-DASHBOARDS] Starting cleanup process...');
+    await deleteAllDashboards();
+    await deleteAllInsights();
+    console.log('[CREATE-DASHBOARDS] Cleanup complete. Starting creation process...');
+
+    // ==================== HELPER FUNCTIONS ====================
+
     // Helper function to create insights
     const createInsight = async (insightData: any) => {
       const response = await fetch(`${POSTHOG_HOST}/api/projects/${projectId}/insights/`, {
