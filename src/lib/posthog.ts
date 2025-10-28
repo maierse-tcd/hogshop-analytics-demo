@@ -33,7 +33,7 @@ export const initPostHog = () => {
         capture_pageleave: true,
         persistence: "localStorage+cookie",
         cross_subdomain_cookie: false,
-        disable_session_recording: true,
+        disable_session_recording: false,
         respect_dnt: false,
         opt_out_capturing_by_default: false,
         sanitize_properties: null,
