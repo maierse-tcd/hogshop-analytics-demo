@@ -55,6 +55,12 @@ serve(async (req) => {
     const customerEmail = session.customer_details?.email || (session as any).customer_email || "";
     const customerName = session.customer_details?.name || "";
     const totalAmount = session.amount_total ? session.amount_total / 100 : 0;
+    const currency = session.currency?.toUpperCase() || "USD";
+    const itemCount = lineItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+    const hasSubscription = lineItems.some(item => item.is_subscription);
+    const subscriptionValue = hasSubscription 
+      ? lineItems.filter(item => item.is_subscription).reduce((sum, item) => sum + item.price * item.quantity, 0)
+      : 0;
 
     // PostHog capture (server-side) using public token
     const POSTHOG_HOST = Deno.env.get("POSTHOG_HOST") || "https://eu.i.posthog.com";
@@ -67,10 +73,15 @@ serve(async (req) => {
       properties: {
         session_id: sessionId,
         total_amount: totalAmount,
+        currency: currency,
+        item_count: itemCount,
+        has_subscription: hasSubscription,
+        subscription_value: subscriptionValue,
         customer_email: customerEmail,
         customer_name: customerName,
         items: lineItems,
         source: "edge_function",
+        timestamp: new Date().toISOString(),
       },
     };
 
