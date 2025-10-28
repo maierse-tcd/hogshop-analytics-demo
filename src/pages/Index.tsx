@@ -12,6 +12,7 @@ import { ArrowRight, X } from "lucide-react";
 import { Newsletter } from "@/components/Newsletter";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { simulateDemoErrors } from "@/utils/demoErrorSimulator";
+import { getThemeConfig, type SeasonalTheme } from "@/utils/seasonalThemes";
 
 interface Product {
   id: string;
@@ -81,7 +82,17 @@ const Index = () => {
   // Use PostHog React hook for feature flags
   const showNewsletterFlag = useFeatureFlagEnabled('show_newsletter');
   const halloweenHeroFlag = useFeatureFlagEnabled('hero_banner_halloween');
+  const christmasHeroFlag = useFeatureFlagEnabled('hero_banner_christmas');
+  const easterHeroFlag = useFeatureFlagEnabled('hero_banner_easter');
+  const summerHeroFlag = useFeatureFlagEnabled('hero_banner_summer');
   const newsletterSubVariant = useFeatureFlagVariantKey('newsletter_sub');
+  
+  // Determine active seasonal theme (priority: Halloween > Christmas > Easter > Summer)
+  const seasonalTheme = halloweenHeroFlag ? 'halloween' 
+    : christmasHeroFlag ? 'christmas'
+    : easterHeroFlag ? 'easter'
+    : summerHeroFlag ? 'summer'
+    : null;
   const [hasSubscribed, setHasSubscribed] = useState(false);
   const [showNewsletterModal, setShowNewsletterModal] = useState(false);
   
@@ -97,6 +108,24 @@ const Index = () => {
       posthog.capture('$feature_view', { feature_flag: 'hero_banner_halloween' });
     }
   }, [halloweenHeroFlag]);
+
+  useEffect(() => {
+    if (christmasHeroFlag !== undefined) {
+      posthog.capture('$feature_view', { feature_flag: 'hero_banner_christmas' });
+    }
+  }, [christmasHeroFlag]);
+
+  useEffect(() => {
+    if (easterHeroFlag !== undefined) {
+      posthog.capture('$feature_view', { feature_flag: 'hero_banner_easter' });
+    }
+  }, [easterHeroFlag]);
+
+  useEffect(() => {
+    if (summerHeroFlag !== undefined) {
+      posthog.capture('$feature_view', { feature_flag: 'hero_banner_summer' });
+    }
+  }, [summerHeroFlag]);
 
   useEffect(() => {
     if (newsletterSubVariant !== undefined) {
@@ -126,24 +155,44 @@ const Index = () => {
       
       {/* Hero Section */}
       <section className={`relative border-b overflow-hidden ${
-        halloweenHeroFlag 
-          ? 'bg-gradient-to-br from-[hsl(var(--halloween-dark))] via-[hsl(var(--halloween-purple))]/30 to-[hsl(var(--halloween-dark))]' 
+        seasonalTheme 
+          ? `bg-gradient-to-br from-[${getThemeConfig(seasonalTheme)?.colors.dark}] via-[${getThemeConfig(seasonalTheme)?.colors.secondary}]/30 to-[${getThemeConfig(seasonalTheme)?.colors.dark}]`
           : 'bg-gradient-to-br from-primary/10 via-background to-accent/15'
       }`}>
-        {halloweenHeroFlag ? (
+        {seasonalTheme ? (
           <>
-            {/* Halloween Theme */}
+            {/* Seasonal Theme Background */}
             <div className="absolute inset-0 opacity-20">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,hsl(var(--halloween-orange))_1px,transparent_1px)] bg-[length:32px_32px]" />
+              <div className={`absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,${getThemeConfig(seasonalTheme)?.colors.primary}_1px,transparent_1px)] bg-[length:32px_32px]`} />
             </div>
             <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-transparent" />
-            <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[hsl(var(--halloween-orange))]/30 rounded-full blur-[120px] animate-pulse" />
-            <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-[hsl(var(--halloween-purple))]/30 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
-            {/* Floating Ghosts */}
-            <div className="absolute top-20 left-10 text-6xl animate-bounce" style={{ animationDuration: '3s', animationDelay: '0s' }}>👻</div>
-            <div className="absolute top-40 right-20 text-5xl animate-bounce" style={{ animationDuration: '4s', animationDelay: '1s' }}>👻</div>
-            <div className="absolute bottom-32 left-20 text-4xl animate-bounce" style={{ animationDuration: '3.5s', animationDelay: '0.5s' }}>👻</div>
-            <div className="absolute top-60 right-40 text-3xl animate-bounce" style={{ animationDuration: '4.5s', animationDelay: '2s' }}>🎃</div>
+            <div className={`absolute top-0 left-1/4 w-[500px] h-[500px] bg-[${getThemeConfig(seasonalTheme)?.colors.primary}]/30 rounded-full blur-[120px] animate-pulse`} />
+            <div className={`absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-[${getThemeConfig(seasonalTheme)?.colors.secondary}]/30 rounded-full blur-[120px] animate-pulse`} style={{ animationDelay: '1s' }} />
+            {/* Floating Decorative Elements */}
+            {getThemeConfig(seasonalTheme)?.emoji.decorative.slice(0, 6).map((emoji, i) => {
+              const positions = [
+                { top: '5rem', left: '2.5rem', size: 'text-6xl', duration: '3s', delay: '0s' },
+                { top: '10rem', right: '5rem', size: 'text-5xl', duration: '4s', delay: '1s' },
+                { bottom: '8rem', left: '5rem', size: 'text-4xl', duration: '3.5s', delay: '0.5s' },
+                { top: '15rem', right: '10rem', size: 'text-3xl', duration: '4.5s', delay: '2s' },
+                { bottom: '15rem', right: '20%', size: 'text-5xl', duration: '3.8s', delay: '1.5s' },
+                { top: '30%', left: '10%', size: 'text-4xl', duration: '4.2s', delay: '0.8s' },
+              ];
+              const pos = positions[i];
+              return (
+                <div 
+                  key={i}
+                  className={`absolute ${pos.size} animate-bounce opacity-${seasonalTheme === 'easter' ? '70' : '60'}`}
+                  style={{
+                    ...Object.fromEntries(Object.entries(pos).filter(([k]) => ['top', 'bottom', 'left', 'right'].includes(k))),
+                    animationDuration: pos.duration,
+                    animationDelay: pos.delay,
+                  }}
+                >
+                  {emoji}
+                </div>
+              );
+            })}
           </>
         ) : (
           <>
@@ -160,14 +209,16 @@ const Index = () => {
         <div className="container py-24 md:py-36 relative">
           <div className="max-w-4xl mx-auto text-center space-y-8">
             <Badge className="text-sm px-4 py-1.5 font-semibold" variant="secondary">
-              {halloweenHeroFlag ? '🎃 Spooky Supplies for your Hedgehog' : '🦔 Everything for your Hedgehog'}
+              {seasonalTheme ? getThemeConfig(seasonalTheme)?.badge : '🦔 Everything for your Hedgehog'}
             </Badge>
             <h1 className="text-5xl md:text-8xl font-bold tracking-tight leading-[1.1]">
-              {halloweenHeroFlag ? (
+              {seasonalTheme ? (
                 <>
-                  Spooky Treats for
+                  {getThemeConfig(seasonalTheme)?.title.line1}
                   <br />
-                  <span className="text-[hsl(var(--halloween-orange))]">Your Little Hedgie</span>
+                  <span style={{ color: getThemeConfig(seasonalTheme)?.colors.primary }}>
+                    {getThemeConfig(seasonalTheme)?.title.line2}
+                  </span>
                 </>
               ) : (
                 <>
@@ -178,8 +229,8 @@ const Index = () => {
               )}
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              {halloweenHeroFlag 
-                ? 'Frighteningly good treats and supplies for your spiky companion this Halloween season! 🦔👻' 
+              {seasonalTheme 
+                ? getThemeConfig(seasonalTheme)?.description
                 : 'From premium nutrition to cozy habitats. Everything your spiky friend needs to thrive, delivered with love.'}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center pt-6">
@@ -279,27 +330,41 @@ const Index = () => {
 
       {/* Products Section */}
       <section id="products" className={`container py-16 md:py-24 relative ${
-        halloweenHeroFlag ? 'overflow-hidden' : ''
+        seasonalTheme ? 'overflow-hidden' : ''
       }`}>
-        {halloweenHeroFlag && (
-          <>
-            <div className="absolute top-10 left-5 text-4xl animate-bounce opacity-30" style={{ animationDuration: '4s' }}>🕸️</div>
-            <div className="absolute top-20 right-10 text-5xl animate-bounce opacity-30" style={{ animationDuration: '3.5s', animationDelay: '1s' }}>🕷️</div>
-            <div className="absolute bottom-20 left-[10%] text-6xl animate-bounce opacity-20" style={{ animationDuration: '5s', animationDelay: '0.5s' }}>🦇</div>
-            <div className="absolute top-[50%] right-[5%] text-4xl animate-bounce opacity-25" style={{ animationDuration: '4.5s', animationDelay: '2s' }}>👻</div>
-          </>
-        )}
+        {seasonalTheme && getThemeConfig(seasonalTheme)?.emoji.decorative.slice(0, 4).map((emoji, i) => {
+          const positions = [
+            { top: '2.5rem', left: '1.25rem', size: 'text-4xl', duration: '4s', delay: '0s', opacity: '30' },
+            { top: '5rem', right: '2.5rem', size: 'text-5xl', duration: '3.5s', delay: '1s', opacity: '30' },
+            { bottom: '5rem', left: '10%', size: 'text-6xl', duration: '5s', delay: '0.5s', opacity: '20' },
+            { top: '50%', right: '5%', size: 'text-4xl', duration: '4.5s', delay: '2s', opacity: '25' },
+          ];
+          const pos = positions[i];
+          return (
+            <div 
+              key={i}
+              className={`absolute ${pos.size} animate-bounce opacity-${pos.opacity}`}
+              style={{
+                ...Object.fromEntries(Object.entries(pos).filter(([k]) => ['top', 'bottom', 'left', 'right'].includes(k))),
+                animationDuration: pos.duration,
+                animationDelay: pos.delay,
+              }}
+            >
+              {emoji}
+            </div>
+          );
+        })}
         <div className="mb-12 relative">
           <div className="text-center mb-8">
-            <h2 className={`text-4xl md:text-5xl font-bold mb-4 ${
-              halloweenHeroFlag ? 'text-[hsl(var(--halloween-orange))] drop-shadow-[0_0_20px_hsl(var(--halloween-orange))]' : ''
-            }`}>
-              {halloweenHeroFlag ? '🎃 Spooky Shop by Category 👻' : 'Shop by Category'}
+            <h2 className={`text-4xl md:text-5xl font-bold mb-4`}
+                style={seasonalTheme ? { color: getThemeConfig(seasonalTheme)?.colors.primary, textShadow: `0 0 20px ${getThemeConfig(seasonalTheme)?.colors.primary}` } : {}}>
+              {seasonalTheme ? getThemeConfig(seasonalTheme)?.shopTitle : 'Shop by Category'}
             </h2>
             <p className={`text-lg ${
-              halloweenHeroFlag ? 'text-[hsl(var(--halloween-purple))]' : 'text-muted-foreground'
-            }`}>
-              {halloweenHeroFlag ? 'Frighteningly good supplies for your hedgehog! 🦔' : 'Find everything your hedgehog needs'}
+              seasonalTheme ? '' : 'text-muted-foreground'
+            }`}
+               style={seasonalTheme ? { color: getThemeConfig(seasonalTheme)?.colors.secondary } : {}}>
+              {seasonalTheme ? getThemeConfig(seasonalTheme)?.shopDescription : 'Find everything your hedgehog needs'}
             </p>
           </div>
           <div className="flex gap-2 flex-wrap justify-center mb-8">
@@ -344,33 +409,48 @@ const Index = () => {
 
       {/* Footer */}
       <footer className={`border-t mt-24 relative overflow-hidden ${
-        halloweenHeroFlag 
-          ? 'bg-gradient-to-br from-[hsl(var(--halloween-dark))] via-[hsl(var(--halloween-purple))]/20 to-[hsl(var(--halloween-dark))] border-[hsl(var(--halloween-orange))]/30' 
+        seasonalTheme 
+          ? `bg-gradient-to-br from-[${getThemeConfig(seasonalTheme)?.colors.dark}] via-[${getThemeConfig(seasonalTheme)?.colors.secondary}]/20 to-[${getThemeConfig(seasonalTheme)?.colors.dark}]`
           : 'bg-accent/5'
-      }`}>
-        {halloweenHeroFlag && (
-          <>
-            <div className="absolute top-5 left-10 text-3xl animate-bounce opacity-40" style={{ animationDuration: '3s' }}>🦇</div>
-            <div className="absolute top-10 right-20 text-4xl animate-bounce opacity-40" style={{ animationDuration: '4s', animationDelay: '1s' }}>👻</div>
-            <div className="absolute bottom-10 left-[30%] text-3xl animate-bounce opacity-30" style={{ animationDuration: '3.5s', animationDelay: '0.5s' }}>🎃</div>
-            <div className="absolute top-[50%] right-[10%] text-2xl animate-bounce opacity-35" style={{ animationDuration: '4.5s', animationDelay: '2s' }}>🕷️</div>
-          </>
-        )}
+      }`}
+              style={seasonalTheme ? { borderColor: `${getThemeConfig(seasonalTheme)?.colors.primary}40` } : {}}>
+        {seasonalTheme && getThemeConfig(seasonalTheme)?.emoji.decorative.slice(0, 4).map((emoji, i) => {
+          const positions = [
+            { top: '1.25rem', left: '2.5rem', size: 'text-3xl', duration: '3s', delay: '0s', opacity: '40' },
+            { top: '2.5rem', right: '5rem', size: 'text-4xl', duration: '4s', delay: '1s', opacity: '40' },
+            { bottom: '2.5rem', left: '30%', size: 'text-3xl', duration: '3.5s', delay: '0.5s', opacity: '30' },
+            { top: '50%', right: '10%', size: 'text-2xl', duration: '4.5s', delay: '2s', opacity: '35' },
+          ];
+          const pos = positions[i];
+          return (
+            <div 
+              key={i}
+              className={`absolute ${pos.size} animate-bounce opacity-${pos.opacity}`}
+              style={{
+                ...Object.fromEntries(Object.entries(pos).filter(([k]) => ['top', 'bottom', 'left', 'right'].includes(k))),
+                animationDuration: pos.duration,
+                animationDelay: pos.delay,
+              }}
+            >
+              {emoji}
+            </div>
+          );
+        })}
         <div className="container py-16 relative">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
             <div className="md:col-span-2">
               <h3 className={`font-bold text-2xl mb-4 ${
-                halloweenHeroFlag 
-                  ? 'text-[hsl(var(--halloween-orange))] drop-shadow-[0_0_10px_hsl(var(--halloween-orange))]' 
-                  : 'text-primary'
-              }`}>
-                {halloweenHeroFlag ? '👻 HogShop 🎃' : '🦔 HogShop'}
+                seasonalTheme ? '' : 'text-primary'
+              }`}
+                  style={seasonalTheme ? { color: getThemeConfig(seasonalTheme)?.colors.primary, textShadow: `0 0 10px ${getThemeConfig(seasonalTheme)?.colors.primary}` } : {}}>
+                {seasonalTheme ? getThemeConfig(seasonalTheme)?.footer.logo : '🦔 HogShop'}
               </h3>
               <p className={`max-w-sm leading-relaxed ${
-                halloweenHeroFlag ? 'text-[hsl(var(--halloween-purple))]/90' : 'text-muted-foreground'
-              }`}>
-                {halloweenHeroFlag 
-                  ? 'Your spooktacular source for premium hedgehog supplies! From frightfully good nutrition to haunted habitats, we provide everything your spiky companion needs! 🦔👻' 
+                seasonalTheme ? '' : 'text-muted-foreground'
+              }`}
+                 style={seasonalTheme ? { color: `${getThemeConfig(seasonalTheme)?.colors.secondary}e6` } : {}}>
+                {seasonalTheme 
+                  ? getThemeConfig(seasonalTheme)?.footer.description
                   : 'Your trusted source for premium hedgehog supplies. From nutrition to habitats, we provide everything your spiky companion needs to live their best life.'}
               </p>
             </div>

@@ -7,6 +7,7 @@ import { ShoppingCart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useFeatureFlagEnabled } from "posthog-js/react";
 import { useEffect } from "react";
+import { getThemeConfig, type SeasonalTheme } from "@/utils/seasonalThemes";
 
 // Import all product images
 import hedgehogFood from "@/assets/hedgehog-food.jpg";
@@ -56,8 +57,18 @@ export const ProductCard = ({
   const { addToCart } = useCart();
   const navigate = useNavigate();
   const halloweenMode = useFeatureFlagEnabled('hero_banner_halloween');
+  const christmasMode = useFeatureFlagEnabled('hero_banner_christmas');
+  const easterMode = useFeatureFlagEnabled('hero_banner_easter');
+  const summerMode = useFeatureFlagEnabled('hero_banner_summer');
+  
+  // Determine active seasonal theme
+  const seasonalMode = halloweenMode ? 'halloween' 
+    : christmasMode ? 'christmas'
+    : easterMode ? 'easter'
+    : summerMode ? 'summer'
+    : null;
 
-  // Track feature flag view (rich analytics)
+  // Track feature flag views (rich analytics)
   useEffect(() => {
     if (halloweenMode !== undefined) {
       posthog.capture('$feature_view', { feature_flag: 'hero_banner_halloween' });
@@ -101,36 +112,42 @@ export const ProductCard = ({
   };
 
   const imageSrc = imageMap[image_url] || image_url;
+  const themeConfig = seasonalMode ? getThemeConfig(seasonalMode as SeasonalTheme) : null;
 
   return (
     <Card 
       className={`overflow-hidden group transition-all duration-300 border-2 cursor-pointer ${
-        halloweenMode 
-          ? 'hover:shadow-[0_0_30px_hsl(var(--halloween-orange))] hover:border-[hsl(var(--halloween-orange))] border-[hsl(var(--halloween-purple))]/30 bg-gradient-to-br from-[hsl(var(--halloween-dark))]/50 to-background' 
+        seasonalMode 
+          ? '' 
           : 'hover:shadow-lg'
       }`}
+      style={seasonalMode && themeConfig ? {
+        boxShadow: 'hover: 0 0 30px ' + themeConfig.colors.primary,
+        borderColor: themeConfig.colors.secondary + '4d',
+        background: `linear-gradient(135deg, ${themeConfig.colors.dark}80 0%, hsl(var(--background)) 100%)`
+      } : {}}
       onClick={handleCardClick}
     >
       <div className={`relative aspect-square overflow-hidden ${
-        halloweenMode ? 'bg-[hsl(var(--halloween-dark))]/30' : 'bg-accent/5'
-      }`}>
+        seasonalMode && themeConfig ? '' : 'bg-accent/5'
+      }`}
+           style={seasonalMode && themeConfig ? { backgroundColor: themeConfig.colors.dark + '4d' } : {}}>
         <img
           src={imageSrc}
           alt={title}
           className={`object-cover w-full h-full transition-transform duration-300 ${
-            halloweenMode ? 'group-hover:scale-110 group-hover:brightness-110' : 'group-hover:scale-105'
+            seasonalMode ? 'group-hover:scale-110 group-hover:brightness-110' : 'group-hover:scale-105'
           }`}
         />
-        {halloweenMode && (
+        {seasonalMode && themeConfig && (
           <>
-            <div className="absolute top-2 left-2 text-2xl animate-bounce opacity-60" style={{ animationDuration: '2s' }}>🕷️</div>
-            <div className="absolute bottom-2 right-2 text-2xl animate-bounce opacity-60" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }}>👻</div>
+            <div className="absolute top-2 left-2 text-2xl animate-bounce opacity-60" style={{ animationDuration: '2s' }}>{themeConfig.emoji.decorative[0]}</div>
+            <div className="absolute bottom-2 right-2 text-2xl animate-bounce opacity-60" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }}>{themeConfig.emoji.decorative[1]}</div>
           </>
         )}
         {stock < 10 && stock > 0 && (
-          <Badge className={`absolute top-3 right-3 ${
-            halloweenMode ? 'bg-[hsl(var(--halloween-orange))] text-white' : 'bg-yellow text-yellow-foreground'
-          }`}>
+          <Badge className="absolute top-3 right-3 text-white"
+                 style={seasonalMode && themeConfig ? { backgroundColor: themeConfig.colors.primary } : {}}>
             Only {stock} left
           </Badge>
         )}
@@ -140,41 +157,42 @@ export const ProductCard = ({
           </Badge>
         )}
         {is_subscription && (
-          <Badge className={`absolute top-3 left-3 ${
-            halloweenMode ? 'bg-[hsl(var(--halloween-purple))] text-white' : 'bg-primary'
-          }`}>
-            {halloweenMode ? '🎃 Subscription' : 'Subscription'}
+          <Badge className="absolute top-3 left-3 text-white"
+                 style={seasonalMode && themeConfig ? { backgroundColor: themeConfig.colors.secondary } : {}}>
+            {seasonalMode && themeConfig ? `${themeConfig.emoji.primary} Subscription` : 'Subscription'}
           </Badge>
         )}
       </div>
       <CardContent className="p-5">
         <div className="mb-2">
-          <Badge variant="secondary" className={`text-xs font-medium ${
-            halloweenMode ? 'bg-[hsl(var(--halloween-purple))]/20 text-[hsl(var(--halloween-orange))] border border-[hsl(var(--halloween-orange))]/30' : ''
-          }`}>
+          <Badge variant="secondary" className="text-xs font-medium"
+                 style={seasonalMode && themeConfig ? {
+                   backgroundColor: themeConfig.colors.secondary + '33',
+                   color: themeConfig.colors.primary,
+                   border: `1px solid ${themeConfig.colors.primary}4d`
+                 } : {}}>
             {category}
           </Badge>
         </div>
-        <h3 className={`font-bold text-lg mb-2 line-clamp-1 ${
-          halloweenMode ? 'text-[hsl(var(--halloween-orange))]' : ''
-        }`}>
+        <h3 className="font-bold text-lg mb-2 line-clamp-1"
+            style={seasonalMode && themeConfig ? { color: themeConfig.colors.primary } : {}}>
           {title}
         </h3>
-        <p className={`text-sm line-clamp-2 mb-3 ${
-          halloweenMode ? 'text-[hsl(var(--halloween-purple))]/80' : 'text-muted-foreground'
-        }`}>
+        <p className="text-sm line-clamp-2 mb-3 text-muted-foreground"
+           style={seasonalMode && themeConfig ? { color: themeConfig.colors.secondary + 'cc' } : {}}>
           {description}
         </p>
         <div className="flex items-baseline gap-2">
-          <p className={`text-2xl font-bold ${
-            halloweenMode ? 'text-[hsl(var(--halloween-orange))] drop-shadow-[0_0_10px_hsl(var(--halloween-orange))]' : 'text-primary'
-          }`}>
+          <p className="text-2xl font-bold"
+             style={seasonalMode && themeConfig ? {
+               color: themeConfig.colors.primary,
+               textShadow: `0 0 10px ${themeConfig.colors.primary}`
+             } : {}}>
             ${price.toFixed(2)}
           </p>
           {is_subscription && (
-            <span className={`text-sm ${
-              halloweenMode ? 'text-[hsl(var(--halloween-purple))]' : 'text-muted-foreground'
-            }`}>
+            <span className="text-sm text-muted-foreground"
+                  style={seasonalMode && themeConfig ? { color: themeConfig.colors.secondary } : {}}>
               /{subscription_interval}
             </span>
           )}
@@ -182,15 +200,17 @@ export const ProductCard = ({
       </CardContent>
       <CardFooter className="p-5 pt-0">
         <Button
-          className={`w-full gap-2 font-semibold ${
-            halloweenMode ? 'bg-gradient-to-r from-[hsl(var(--halloween-orange))] to-[hsl(var(--halloween-purple))] hover:shadow-[0_0_20px_hsl(var(--halloween-orange))]' : ''
-          }`}
+          className="w-full gap-2 font-semibold"
+          style={seasonalMode && themeConfig ? {
+            background: `linear-gradient(to right, ${themeConfig.colors.primary}, ${themeConfig.colors.secondary})`,
+            boxShadow: `hover: 0 0 20px ${themeConfig.colors.primary}`
+          } : {}}
           onClick={handleAddToCart}
           disabled={stock === 0}
           size="lg"
         >
           <ShoppingCart className="h-4 w-4" />
-          {stock === 0 ? "Out of Stock" : halloweenMode ? "🎃 Add to Cart" : "Add to Cart"}
+          {stock === 0 ? "Out of Stock" : seasonalMode && themeConfig ? `${themeConfig.emoji.primary} Add to Cart` : "Add to Cart"}
         </Button>
       </CardFooter>
     </Card>

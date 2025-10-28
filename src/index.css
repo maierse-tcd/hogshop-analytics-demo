@@ -55,6 +55,24 @@ All colors MUST be HSL.
     --halloween-orange: 25 95% 53%;
     --halloween-purple: 270 50% 40%;
     --halloween-dark: 240 30% 10%;
+    
+    /* Christmas Theme Colors */
+    --christmas-red: 355 85% 48%;
+    --christmas-green: 145 63% 42%;
+    --christmas-gold: 43 100% 51%;
+    --christmas-dark: 355 30% 15%;
+    
+    /* Easter Theme Colors */
+    --easter-pink: 330 75% 70%;
+    --easter-lavender: 270 55% 75%;
+    --easter-mint: 165 60% 75%;
+    --easter-yellow: 52 100% 78%;
+    
+    /* Summer Theme Colors */
+    --summer-cyan: 185 84% 52%;
+    --summer-coral: 15 86% 65%;
+    --summer-yellow: 48 100% 67%;
+    --summer-blue: 200 100% 45%;
 
     --sidebar-background: 60 11% 93%;
     --sidebar-foreground: 0 0% 8%;
@@ -112,6 +130,24 @@ All colors MUST be HSL.
     --halloween-orange: 25 95% 53%;
     --halloween-purple: 270 50% 50%;
     --halloween-dark: 240 30% 15%;
+    
+    /* Christmas Theme Colors - Dark Mode */
+    --christmas-red: 355 85% 55%;
+    --christmas-green: 145 63% 48%;
+    --christmas-gold: 43 100% 58%;
+    --christmas-dark: 355 30% 20%;
+    
+    /* Easter Theme Colors - Dark Mode */
+    --easter-pink: 330 75% 65%;
+    --easter-lavender: 270 55% 70%;
+    --easter-mint: 165 60% 70%;
+    --easter-yellow: 52 100% 73%;
+    
+    /* Summer Theme Colors - Dark Mode */
+    --summer-cyan: 185 84% 58%;
+    --summer-coral: 15 86% 70%;
+    --summer-yellow: 48 100% 72%;
+    --summer-blue: 200 100% 50%;
 
     --sidebar-background: 0 0% 8%;
     --sidebar-foreground: 60 11% 93%;
