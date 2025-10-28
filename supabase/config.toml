@@ -6,3 +6,6 @@ verify_jwt = false
 [functions.track-success]
 verify_jwt = false
 
+[functions.create-posthog-dashboards]
+verify_jwt = false
+
