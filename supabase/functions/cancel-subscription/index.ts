@@ -71,6 +71,35 @@ serve(async (req) => {
     const cancelledSubscription = await stripe.subscriptions.cancel(subscription.id);
     logStep("Subscription cancelled", { subscriptionId: cancelledSubscription.id, status: cancelledSubscription.status });
 
+    // Update PostHog customer type to one-off
+    const POSTHOG_HOST = Deno.env.get("POSTHOG_HOST") || "https://eu.i.posthog.com";
+    const POSTHOG_KEY = Deno.env.get("POSTHOG_KEY") || "phc_mCl11WvLPwmqyjG7FlivcsSbTfSEY1J3TWcEnnR0CJa";
+
+    try {
+      const groupUpdatePayload = {
+        api_key: POSTHOG_KEY,
+        event: "subscription_cancelled",
+        distinct_id: user.email,
+        properties: {
+          subscription_id: cancelledSubscription.id,
+          cancelled_at: new Date(cancelledSubscription.canceled_at! * 1000).toISOString(),
+          $groups: {
+            customer_type: "One-Off Customer"
+          },
+        },
+      };
+
+      logStep("Sending PostHog customer type update", { email: user.email });
+      const phRes = await fetch(`${POSTHOG_HOST}/capture/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(groupUpdatePayload),
+      });
+      logStep("PostHog response", { status: phRes.status, ok: phRes.ok });
+    } catch (phError) {
+      logStep("PostHog update failed (non-critical)", { error: String(phError) });
+    }
+
     return new Response(JSON.stringify({
       success: true,
       subscription_id: cancelledSubscription.id,

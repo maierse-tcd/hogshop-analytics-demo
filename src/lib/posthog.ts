@@ -259,4 +259,32 @@ export const updateSubscriptionStatus = (subscriptionData: {
   }
 };
 
+/**
+ * Set customer type group in PostHog
+ * Groups users by "Subscription Customer" or "One-Off Customer"
+ */
+export const setCustomerTypeGroup = (customerType: "subscription" | "one-off") => {
+  if (typeof window !== "undefined") {
+    try {
+      const groupKey = customerType === "subscription" ? "Subscription Customer" : "One-Off Customer";
+      
+      // Associate user with the customer type group
+      posthog.group("customer_type", groupKey);
+      
+      // Also set as person property for easy filtering
+      posthog.setPersonProperties({
+        customer_type: groupKey,
+        customer_type_updated_at: new Date().toISOString(),
+      });
+      
+      console.log("PostHog customer type group set:", {
+        groupKey,
+        distinctId: posthog.get_distinct_id(),
+      });
+    } catch (error) {
+      console.error("PostHog customer type group error:", error);
+    }
+  }
+};
+
 export { posthog, initializeCLTV };

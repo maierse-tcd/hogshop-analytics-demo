@@ -56,16 +56,19 @@ serve(async (req) => {
     const customerName = session.customer_details?.name || "";
     const totalAmount = session.amount_total ? session.amount_total / 100 : 0;
     const currency = session.currency?.toUpperCase() || "USD";
-    const itemCount = lineItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
-    const hasSubscription = lineItems.some(item => item.is_subscription);
+    const itemCount = lineItems.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
+    const hasSubscription = lineItems.some((item: any) => item.is_subscription);
     const subscriptionValue = hasSubscription 
-      ? lineItems.filter(item => item.is_subscription).reduce((sum, item) => sum + item.price * item.quantity, 0)
+      ? lineItems.filter((item: any) => item.is_subscription).reduce((sum: number, item: any) => sum + item.price * item.quantity, 0)
       : 0;
 
     // PostHog capture (server-side) using public token
     const POSTHOG_HOST = Deno.env.get("POSTHOG_HOST") || "https://eu.i.posthog.com";
     const POSTHOG_KEY = Deno.env.get("POSTHOG_KEY") || "phc_mCl11WvLPwmqyjG7FlivcsSbTfSEY1J3TWcEnnR0CJa";
 
+    // Set customer type group
+    const customerTypeGroup = hasSubscription ? "Subscription Customer" : "One-Off Customer";
+    
     const capturePayload = {
       api_key: POSTHOG_KEY,
       event: "purchase_completed",
@@ -82,6 +85,9 @@ serve(async (req) => {
         items: lineItems,
         source: "edge_function",
         timestamp: new Date().toISOString(),
+        $groups: {
+          customer_type: customerTypeGroup
+        },
       },
     };
 

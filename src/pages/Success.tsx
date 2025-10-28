@@ -4,7 +4,7 @@ import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
-import { trackEvent, setUserProperties, updateCLTV, updateSubscriptionStatus } from "@/lib/posthog";
+import { trackEvent, setUserProperties, updateCLTV, updateSubscriptionStatus, setCustomerTypeGroup } from "@/lib/posthog";
 import { posthog } from "@/lib/posthog";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -185,12 +185,19 @@ const Success = () => {
       if (hasSubscription) {
         const subscriptionItem = basketItems.find((item: any) => item.is_subscription);
         setTimeout(() => {
-          console.log("PostHog: Setting subscription_active to true");
+          console.log("PostHog: Setting subscription_active to true and customer type group");
           updateSubscriptionStatus({
             active: true,
             start_date: new Date().toISOString(),
             monthly_value: subscriptionItem?.price || basketValue,
           });
+          setCustomerTypeGroup("subscription");
+        }, 500);
+      } else {
+        // One-off purchase - set customer type to one-off
+        setTimeout(() => {
+          console.log("PostHog: Setting customer type group to one-off");
+          setCustomerTypeGroup("one-off");
         }, 500);
       }
       
