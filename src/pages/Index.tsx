@@ -155,19 +155,51 @@ const Index = () => {
       
       {/* Hero Section */}
       <section className={`relative border-b overflow-hidden ${
-        seasonalTheme 
-          ? `bg-gradient-to-br from-[${getThemeConfig(seasonalTheme)?.colors.dark}] via-[${getThemeConfig(seasonalTheme)?.colors.secondary}]/30 to-[${getThemeConfig(seasonalTheme)?.colors.dark}]`
+        seasonalTheme === 'halloween' 
+          ? 'bg-gradient-to-br from-[hsl(var(--halloween-dark))] via-[hsl(var(--halloween-purple))]/30 to-[hsl(var(--halloween-dark))]'
+        : seasonalTheme === 'christmas'
+          ? 'bg-gradient-to-br from-[hsl(var(--christmas-dark))] via-[hsl(var(--christmas-green))]/30 to-[hsl(var(--christmas-dark))]'
+        : seasonalTheme === 'easter'
+          ? 'bg-gradient-to-br from-[hsl(var(--easter-lavender))]/20 via-[hsl(var(--easter-pink))]/20 to-[hsl(var(--easter-mint))]/20'
+        : seasonalTheme === 'summer'
+          ? 'bg-gradient-to-br from-[hsl(var(--summer-blue))]/30 via-[hsl(var(--summer-cyan))]/20 to-[hsl(var(--summer-yellow))]/10'
           : 'bg-gradient-to-br from-primary/10 via-background to-accent/15'
       }`}>
         {seasonalTheme ? (
           <>
             {/* Seasonal Theme Background */}
             <div className="absolute inset-0 opacity-20">
-              <div className={`absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,${getThemeConfig(seasonalTheme)?.colors.primary}_1px,transparent_1px)] bg-[length:32px_32px]`} />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,hsl(var(--primary))_1px,transparent_1px)] bg-[length:32px_32px]" />
             </div>
             <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-transparent" />
-            <div className={`absolute top-0 left-1/4 w-[500px] h-[500px] bg-[${getThemeConfig(seasonalTheme)?.colors.primary}]/30 rounded-full blur-[120px] animate-pulse`} />
-            <div className={`absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-[${getThemeConfig(seasonalTheme)?.colors.secondary}]/30 rounded-full blur-[120px] animate-pulse`} style={{ animationDelay: '1s' }} />
+            
+            {seasonalTheme === 'halloween' && (
+              <>
+                <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[hsl(var(--halloween-orange))]/30 rounded-full blur-[120px] animate-pulse" />
+                <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-[hsl(var(--halloween-purple))]/30 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
+              </>
+            )}
+            {seasonalTheme === 'christmas' && (
+              <>
+                <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[hsl(var(--christmas-red))]/30 rounded-full blur-[120px] animate-pulse" />
+                <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-[hsl(var(--christmas-green))]/30 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-[hsl(var(--christmas-gold))]/20 rounded-full blur-[100px]" />
+              </>
+            )}
+            {seasonalTheme === 'easter' && (
+              <>
+                <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[hsl(var(--easter-pink))]/40 rounded-full blur-[120px] animate-pulse" />
+                <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-[hsl(var(--easter-lavender))]/40 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
+                <div className="absolute top-1/2 right-1/4 w-[400px] h-[400px] bg-[hsl(var(--easter-mint))]/30 rounded-full blur-[100px]" style={{ animationDelay: '0.5s' }} />
+              </>
+            )}
+            {seasonalTheme === 'summer' && (
+              <>
+                <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[hsl(var(--summer-cyan))]/40 rounded-full blur-[120px] animate-pulse" />
+                <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-[hsl(var(--summer-coral))]/40 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[hsl(var(--summer-yellow))]/30 rounded-full blur-[100px]" />
+              </>
+            )}
             {/* Floating Decorative Elements */}
             {getThemeConfig(seasonalTheme)?.emoji.decorative.slice(0, 6).map((emoji, i) => {
               const positions = [
