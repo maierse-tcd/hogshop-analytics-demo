@@ -39,20 +39,24 @@ serve(async (req) => {
     console.log('[CREATE-DASHBOARDS] Project ID:', projectId);
 
     // ==================== TEST: CREATE SINGLE INSIGHT ====================
-    console.log('[CREATE-DASHBOARDS] Creating test insight...');
+    console.log('[CREATE-DASHBOARDS] Creating test insight with new query schema...');
 
     const testInsight = {
-      name: 'Test Purchase Funnel',
-      description: 'Simple funnel to test insight creation',
-      filters: {
-        insight: 'FUNNELS',
-        events: [
-          { id: 'product_viewed', name: 'Product Viewed', type: 'events', order: 0 },
-          { id: 'purchase_completed', name: 'Purchase Completed', type: 'events', order: 1 },
+      name: 'Product Views Trend',
+      description: 'Simple trend query to test insight creation',
+      query: {
+        kind: 'TrendsQuery',
+        series: [
+          {
+            kind: 'EventsNode',
+            event: 'product_viewed',
+            name: 'Product Viewed'
+          }
         ],
-        funnel_viz_type: 'steps',
-        date_from: '-30d',
-      },
+        dateRange: {
+          date_from: '-7d'
+        }
+      }
     };
 
     const response = await fetch(`${POSTHOG_HOST}/api/projects/${projectId}/insights/`, {
@@ -66,8 +70,10 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[CREATE-DASHBOARDS] Failed to create insight:', errorText);
-      throw new Error(`Failed to create insight: ${errorText}`);
+      console.error('[CREATE-DASHBOARDS] Failed to create insight. Status:', response.status);
+      console.error('[CREATE-DASHBOARDS] Response:', errorText);
+      console.error('[CREATE-DASHBOARDS] Request body:', JSON.stringify(testInsight, null, 2));
+      throw new Error(`Failed to create insight (${response.status}): ${errorText}`);
     }
 
     const createdInsight = await response.json();
