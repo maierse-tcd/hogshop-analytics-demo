@@ -2,17 +2,18 @@ import { Moon, Sun, LogIn, LogOut, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import { CartDrawer } from "./CartDrawer";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { LoginDialog } from "./LoginDialog";
 import { SubscriptionManagementDialog } from "./SubscriptionManagementDialog";
 import { posthog } from "@/lib/posthog";
 import { useFeatureFlagEnabled, useFeatureFlagVariantKey } from "posthog-js/react";
-import { getUser } from "@/lib/auth";
+import { getUser, clearUser } from "@/lib/auth";
 
 export const Header = () => {
   const { theme, setTheme } = useTheme();
   const location = useLocation();
+  const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState("");
   const [showLoginDialog, setShowLoginDialog] = useState(false);
@@ -20,6 +21,9 @@ export const Header = () => {
   const signupVariant = useFeatureFlagVariantKey('increase_sales_cta');
   const halloweenMode = useFeatureFlagEnabled('hero_banner_halloween');
   const showSubscription = useFeatureFlagEnabled('show_subscription');
+
+  // Debug log for subscription flag
+  console.log("Header: showSubscription flag =", showSubscription, "isLoggedIn =", isLoggedIn);
 
   // Check auth state on mount and when location changes
   useEffect(() => {
@@ -31,15 +35,23 @@ export const Header = () => {
       // Single reload on login - trust server-side tracking for updates
       posthog.reloadFeatureFlags();
       console.log("Header: User logged in, reloading feature flags", { email: user.email });
+    } else {
+      setIsLoggedIn(false);
+      setUserName("");
     }
-  }, [location]);
+  }, [location, isLoggedIn]);
 
   const handleLogout = () => {
-    const { clearUser } = require("@/lib/auth");
+    console.log("Header: handleLogout called");
     clearUser();
     posthog.reset();
+    // Reload flags after reset to ensure clean state
+    posthog.reloadFeatureFlags();
     setIsLoggedIn(false);
     setUserName("");
+    console.log("Header: User logged out, flags reloaded");
+    // Redirect to home page for clean state
+    navigate("/");
   };
 
   const handleLoginSuccess = (email: string, name: string) => {
