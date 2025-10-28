@@ -8,10 +8,11 @@ export const initPostHog = () => {
       import.meta.env.NEXT_PUBLIC_POSTHOG_KEY || 
       "phc_mCl11WvLPwmqyjG7FlivcsSbTfSEY1J3TWcEnnR0CJa";
     
+    // Use custom domain for first-party data collection via reverse proxy
     const POSTHOG_HOST = 
       import.meta.env.VITE_POSTHOG_HOST || 
       import.meta.env.NEXT_PUBLIC_POSTHOG_HOST || 
-      "https://eu.i.posthog.com";
+      "https://ph.hogflix.dev";
     
     if (!POSTHOG_KEY) {
       console.warn("PostHog: No API key provided. Tracking disabled.");
@@ -21,7 +22,7 @@ export const initPostHog = () => {
     try {
       posthog.init(POSTHOG_KEY, {
         api_host: POSTHOG_HOST,
-        ui_host: POSTHOG_HOST.includes("eu.i.posthog") ? "https://eu.posthog.com" : "https://us.posthog.com",
+        ui_host: "https://eu.posthog.com", // Always use EU UI host
         loaded: (posthog) => {
           console.log("PostHog loaded successfully!", { api_host: POSTHOG_HOST });
           if (import.meta.env.DEV) {
