@@ -169,6 +169,12 @@ export const useAIChat = () => {
         content: msg.content,
       }));
 
+      // Prepare clean output for PostHog
+      const outputChoice = {
+        role: "assistant",
+        content: assistantContent,
+      };
+
       // Track AI generation with PostHog LLM analytics (proper format)
       trackEvent("$ai_generation", {
         // Core properties
@@ -178,12 +184,10 @@ export const useAIChat = () => {
         $ai_model: "google/gemini-2.5-flash",
         $ai_provider: "google",
         
-        // Input/Output - properly formatted as PostHog expects
-        $ai_input: conversationHistory, // Full conversation context
-        $ai_output_choices: [{ 
-          role: "assistant", 
-          content: assistantContent 
-        }],
+        // Input/Output - PostHog expects these as JSON strings for conversation view
+        $ai_input: JSON.stringify(conversationHistory),
+        $ai_output: JSON.stringify(outputChoice.content),
+        $ai_output_choices: JSON.stringify([outputChoice]),
         
         // Token counts (use actual if available, fallback to estimates)
         $ai_input_tokens: actualInputTokens || Math.ceil(conversationHistory.map(m => m.content).join('').length / 4),
@@ -208,6 +212,11 @@ export const useAIChat = () => {
       console.error("Chat error:", error);
       
       // Track AI error with proper PostHog format
+      const errorInput = [...messages, userMsg].map(msg => ({
+        role: msg.role,
+        content: msg.content,
+      }));
+      
       trackEvent("$ai_generation", {
         $ai_trace_id: traceIdRef.current,
         $ai_span_id: spanId,
@@ -215,10 +224,7 @@ export const useAIChat = () => {
         $ai_provider: "google",
         $ai_is_error: true,
         $ai_error: error instanceof Error ? error.message : "Unknown error",
-        $ai_input: [...messages, userMsg].map(msg => ({
-          role: msg.role,
-          content: msg.content,
-        })),
+        $ai_input: JSON.stringify(errorInput),
       });
       
       // Also track custom error event
