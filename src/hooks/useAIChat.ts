@@ -178,9 +178,10 @@ export const useAIChat = () => {
         $ai_model: "google/gemini-2.5-flash",
         $ai_provider: "google",
         
-        // Input/Output - send as objects, PostHog handles serialization
+        // Input/Output - PostHog expects specific formats
         $ai_input: conversationHistory,
         $ai_output: assistantContent,
+        $ai_output_choices: [assistantContent], // Array of completion strings
         
         // Token counts (use actual if available, fallback to estimates)
         $ai_input_tokens: actualInputTokens || Math.ceil(conversationHistory.map(m => m.content).join('').length / 4),
