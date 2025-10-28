@@ -38,57 +38,161 @@ serve(async (req) => {
     const projectId = project.id;
     console.log('[CREATE-DASHBOARDS] Project ID:', projectId);
 
-    // ==================== TEST: CREATE SINGLE INSIGHT ====================
-    console.log('[CREATE-DASHBOARDS] Creating test insight with new query schema...');
+    // ==================== CREATE DASHBOARD ====================
+    console.log('[CREATE-DASHBOARDS] Creating dashboard...');
 
-    const testInsight = {
-      name: 'Product Views Trend',
-      description: 'Simple trend query to test insight creation',
-      query: {
-        kind: 'TrendsQuery',
-        series: [
-          {
-            kind: 'EventsNode',
-            event: 'product_viewed',
-            name: 'Product Viewed'
-          }
-        ],
-        dateRange: {
-          date_from: '-7d'
-        }
-      }
-    };
-
-    const response = await fetch(`${POSTHOG_HOST}/api/projects/${projectId}/insights/`, {
+    const dashboardResponse = await fetch(`${POSTHOG_HOST}/api/projects/${projectId}/dashboards/`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${POSTHOG_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(testInsight),
+      body: JSON.stringify({
+        name: 'E-Commerce Analytics',
+        description: 'Key metrics for hedgehog product sales',
+      }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('[CREATE-DASHBOARDS] Failed to create insight. Status:', response.status);
-      console.error('[CREATE-DASHBOARDS] Response:', errorText);
-      console.error('[CREATE-DASHBOARDS] Request body:', JSON.stringify(testInsight, null, 2));
-      throw new Error(`Failed to create insight (${response.status}): ${errorText}`);
+    if (!dashboardResponse.ok) {
+      const errorText = await dashboardResponse.text();
+      console.error('[CREATE-DASHBOARDS] Failed to create dashboard:', errorText);
+      throw new Error(`Failed to create dashboard: ${errorText}`);
     }
 
-    const createdInsight = await response.json();
-    console.log('[CREATE-DASHBOARDS] ✓ Successfully created insight:', createdInsight.name, createdInsight.id);
-    console.log('[CREATE-DASHBOARDS] Insight URL:', `${POSTHOG_HOST}/project/${projectId}/insights/${createdInsight.id}`);
+    const dashboard = await dashboardResponse.json();
+    console.log('[CREATE-DASHBOARDS] ✓ Created dashboard:', dashboard.id);
+
+    // ==================== CREATE INSIGHTS ====================
+    const insights = [
+      {
+        name: 'Product Views Trend',
+        description: 'Daily product views over time',
+        query: {
+          kind: 'TrendsQuery',
+          series: [
+            {
+              kind: 'EventsNode',
+              event: 'product_viewed',
+              name: 'Product Viewed'
+            }
+          ],
+          dateRange: {
+            date_from: '-30d'
+          }
+        }
+      },
+      {
+        name: 'Purchase Funnel',
+        description: 'Conversion from view to purchase',
+        query: {
+          kind: 'FunnelsQuery',
+          series: [
+            {
+              kind: 'EventsNode',
+              event: 'product_viewed',
+              name: 'Product Viewed'
+            },
+            {
+              kind: 'EventsNode',
+              event: 'add_to_cart',
+              name: 'Added to Cart'
+            },
+            {
+              kind: 'EventsNode',
+              event: 'purchase_completed',
+              name: 'Purchase Completed'
+            }
+          ],
+          dateRange: {
+            date_from: '-30d'
+          },
+          funnelsFilter: {
+            funnelVizType: 'steps'
+          }
+        }
+      },
+      {
+        name: 'Cart Additions',
+        description: 'Items added to cart',
+        query: {
+          kind: 'TrendsQuery',
+          series: [
+            {
+              kind: 'EventsNode',
+              event: 'add_to_cart',
+              name: 'Add to Cart'
+            }
+          ],
+          dateRange: {
+            date_from: '-30d'
+          }
+        }
+      }
+    ];
+
+    const createdInsights = [];
+    
+    for (const insight of insights) {
+      console.log(`[CREATE-DASHBOARDS] Creating insight: ${insight.name}`);
+      
+      const insightResponse = await fetch(`${POSTHOG_HOST}/api/projects/${projectId}/insights/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${POSTHOG_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(insight),
+      });
+
+      if (!insightResponse.ok) {
+        const errorText = await insightResponse.text();
+        console.error(`[CREATE-DASHBOARDS] Failed to create insight ${insight.name}:`, errorText);
+        continue;
+      }
+
+      const createdInsight = await insightResponse.json();
+      createdInsights.push(createdInsight);
+      console.log(`[CREATE-DASHBOARDS] ✓ Created insight: ${createdInsight.name} (${createdInsight.id})`);
+    }
+
+    // ==================== ADD INSIGHTS TO DASHBOARD ====================
+    console.log('[CREATE-DASHBOARDS] Adding insights to dashboard...');
+
+    for (let i = 0; i < createdInsights.length; i++) {
+      const insight = createdInsights[i];
+      
+      const tileResponse = await fetch(`${POSTHOG_HOST}/api/projects/${projectId}/dashboards/${dashboard.id}/tiles/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${POSTHOG_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          insight: insight.id,
+        }),
+      });
+
+      if (!tileResponse.ok) {
+        const errorText = await tileResponse.text();
+        console.error(`[CREATE-DASHBOARDS] Failed to add insight ${insight.name} to dashboard:`, errorText);
+      } else {
+        console.log(`[CREATE-DASHBOARDS] ✓ Added ${insight.name} to dashboard`);
+      }
+    }
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Successfully created test insight',
-        insight: {
-          id: createdInsight.id,
-          name: createdInsight.name,
-          url: `${POSTHOG_HOST}/project/${projectId}/insights/${createdInsight.id}`,
+        message: 'Successfully created dashboard with insights',
+        dashboard: {
+          id: dashboard.id,
+          name: dashboard.name,
+          url: `${POSTHOG_HOST}/project/${projectId}/dashboard/${dashboard.id}`,
         },
+        insights: createdInsights.map(i => ({
+          id: i.id,
+          name: i.name,
+        })),
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
