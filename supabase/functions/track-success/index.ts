@@ -127,6 +127,33 @@ serve(async (req) => {
     const text = await phRes.text();
     log("PostHog response", { status: phRes.status, ok, body: text });
 
+    // Set person properties (including subscription_active for feature flags)
+    if (customerEmail) {
+      const personPropertiesPayload = {
+        api_key: POSTHOG_KEY,
+        event: "$set",
+        distinct_id: customerEmail,
+        properties: {
+          $set: {
+            subscription_active: hasSubscription,
+            subscription_start_date: hasSubscription ? new Date().toISOString() : null,
+            subscription_monthly_value: subscriptionValue || null,
+            customer_type: customerTypeGroup,
+            last_purchase_date: new Date().toISOString(),
+            last_purchase_amount: totalAmount,
+          },
+        },
+      };
+
+      log("Sending PostHog person properties", { email: customerEmail, subscription_active: hasSubscription });
+      const propsRes = await fetch(`${POSTHOG_HOST}/capture/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(personPropertiesPayload),
+      });
+      log("PostHog person properties response", { status: propsRes.status, ok: propsRes.ok });
+    }
+
     // If redirect specified, forward user there with the session_id preserved
     if (redirect) {
       const redirectUrl = new URL(redirect);

@@ -119,6 +119,28 @@ serve(async (req) => {
         body: JSON.stringify(groupUpdatePayload),
       });
       logStep("PostHog response", { status: phRes.status, ok: phRes.ok });
+
+      // Update person properties to reflect cancelled subscription
+      const personPropertiesPayload = {
+        api_key: POSTHOG_KEY,
+        event: "$set",
+        distinct_id: user.email,
+        properties: {
+          $set: {
+            subscription_active: false,
+            subscription_cancelled: true,
+            subscription_cancelled_at: new Date(cancelledSubscription.canceled_at! * 1000).toISOString(),
+            customer_type: "One-Off Customer",
+          },
+        },
+      };
+
+      logStep("Sending PostHog person properties update");
+      await fetch(`${POSTHOG_HOST}/capture/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(personPropertiesPayload),
+      });
     } catch (phError) {
       logStep("PostHog update failed (non-critical)", { error: String(phError) });
     }
