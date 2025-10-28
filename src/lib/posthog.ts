@@ -268,13 +268,19 @@ export const setCustomerTypeGroup = (customerType: "subscription" | "one-off") =
     try {
       const groupKey = customerType === "subscription" ? "Subscription Customer" : "One-Off Customer";
       
-      // Associate user with the customer type group
+      // Associate the user with the group
       posthog.group("customer_type", groupKey);
       
       // Also set as person property for easy filtering
       posthog.setPersonProperties({
         customer_type: groupKey,
         customer_type_updated_at: new Date().toISOString(),
+      });
+      
+      // Send a custom event to track the group assignment
+      posthog.capture("customer_type_set", {
+        customer_type: groupKey,
+        type: customerType,
       });
       
       console.log("PostHog customer type group set:", {

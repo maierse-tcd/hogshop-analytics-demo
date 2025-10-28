@@ -93,6 +93,30 @@ serve(async (req) => {
 
     log("Sending PostHog capture", { host: POSTHOG_HOST, distinct_id: capturePayload.distinct_id });
 
+    // FIRST: Send $groupidentify event to create/update the group
+    const groupIdentifyPayload = {
+      api_key: POSTHOG_KEY,
+      event: "$groupidentify",
+      distinct_id: customerEmail || sessionId,
+      properties: {
+        $group_type: "customer_type",
+        $group_key: customerTypeGroup,
+        $group_set: {
+          name: customerTypeGroup,
+          type: hasSubscription ? "subscription" : "one-off",
+        },
+      },
+    };
+
+    log("Sending PostHog groupIdentify", { group_type: "customer_type", group_key: customerTypeGroup });
+    const groupRes = await fetch(`${POSTHOG_HOST}/capture/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(groupIdentifyPayload),
+    });
+    log("PostHog groupIdentify response", { status: groupRes.status, ok: groupRes.ok });
+
+    // THEN: Send purchase_completed event with the group association
     const phRes = await fetch(`${POSTHOG_HOST}/capture/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

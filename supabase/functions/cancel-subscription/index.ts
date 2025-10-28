@@ -76,6 +76,29 @@ serve(async (req) => {
     const POSTHOG_KEY = Deno.env.get("POSTHOG_KEY") || "phc_mCl11WvLPwmqyjG7FlivcsSbTfSEY1J3TWcEnnR0CJa";
 
     try {
+      // FIRST: Send $groupidentify to update the group
+      const groupIdentifyPayload = {
+        api_key: POSTHOG_KEY,
+        event: "$groupidentify",
+        distinct_id: user.email,
+        properties: {
+          $group_type: "customer_type",
+          $group_key: "One-Off Customer",
+          $group_set: {
+            name: "One-Off Customer",
+            type: "one-off",
+          },
+        },
+      };
+
+      logStep("Sending PostHog groupIdentify", { email: user.email, group: "One-Off Customer" });
+      await fetch(`${POSTHOG_HOST}/capture/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(groupIdentifyPayload),
+      });
+
+      // THEN: Send subscription_cancelled event with the group
       const groupUpdatePayload = {
         api_key: POSTHOG_KEY,
         event: "subscription_cancelled",
@@ -89,7 +112,7 @@ serve(async (req) => {
         },
       };
 
-      logStep("Sending PostHog customer type update", { email: user.email });
+      logStep("Sending PostHog subscription_cancelled event");
       const phRes = await fetch(`${POSTHOG_HOST}/capture/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
