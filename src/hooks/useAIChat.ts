@@ -45,18 +45,22 @@ export const useAIChat = () => {
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
 
+    // Generate unique span ID for this generation
+    const spanId = `span_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
     // Track user message
     trackEvent("chat_message_sent", {
       trace_id: traceIdRef.current,
+      span_id: spanId,
       message_length: userMessage.length,
       message_number: Math.floor(messages.length / 2) + 1,
     });
 
-    // Estimate input tokens (rough approximation: 1 token ≈ 4 characters)
-    const estimatedInputTokens = Math.ceil(userMessage.length / 4);
-    tokenCountRef.current.input += estimatedInputTokens;
-
     let assistantContent = "";
+    let actualInputTokens = 0;
+    let actualOutputTokens = 0;
+    let actualTotalTokens = 0;
+    let actualCost = 0;
     const generationStartTime = Date.now();
 
     try {
@@ -110,6 +114,18 @@ export const useAIChat = () => {
             const parsed = JSON.parse(jsonStr);
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
             
+            // Capture actual usage data from the final chunk
+            if (parsed.usage) {
+              actualInputTokens = parsed.usage.prompt_tokens || 0;
+              actualOutputTokens = parsed.usage.completion_tokens || 0;
+              actualTotalTokens = parsed.usage.total_tokens || 0;
+              actualCost = parsed.usage.cost || 0;
+              
+              // Update running totals
+              tokenCountRef.current.input += actualInputTokens;
+              tokenCountRef.current.output += actualOutputTokens;
+            }
+            
             if (content) {
               assistantContent += content;
               setMessages(prev => {
@@ -147,21 +163,43 @@ export const useAIChat = () => {
       const generationEndTime = Date.now();
       const latencyMs = generationEndTime - generationStartTime;
 
-      // Estimate output tokens
-      const estimatedOutputTokens = Math.ceil(assistantContent.length / 4);
-      tokenCountRef.current.output += estimatedOutputTokens;
+      // Build conversation history for PostHog (full context)
+      const conversationHistory = [...messages, userMsg].map(msg => ({
+        role: msg.role,
+        content: msg.content,
+      }));
 
-      // Track AI generation with PostHog LLM analytics
+      // Track AI generation with PostHog LLM analytics (proper format)
       trackEvent("$ai_generation", {
-        $ai_model: "google/gemini-2.5-flash",
-        $ai_provider: "lovable",
-        $ai_input: userMessage,
-        $ai_output_choices: [assistantContent],
-        $ai_input_tokens: estimatedInputTokens,
-        $ai_output_tokens: estimatedOutputTokens,
-        $ai_total_tokens: estimatedInputTokens + estimatedOutputTokens,
-        $ai_latency: latencyMs / 1000, // Convert to seconds
+        // Core properties
         $ai_trace_id: traceIdRef.current,
+        $ai_span_id: spanId,
+        $ai_span_name: "chat_response",
+        $ai_model: "google/gemini-2.5-flash",
+        $ai_provider: "google",
+        
+        // Input/Output - properly formatted as PostHog expects
+        $ai_input: conversationHistory, // Full conversation context
+        $ai_output_choices: [{ 
+          role: "assistant", 
+          content: assistantContent 
+        }],
+        
+        // Token counts (use actual if available, fallback to estimates)
+        $ai_input_tokens: actualInputTokens || Math.ceil(conversationHistory.map(m => m.content).join('').length / 4),
+        $ai_output_tokens: actualOutputTokens || Math.ceil(assistantContent.length / 4),
+        $ai_total_tokens: actualTotalTokens || (actualInputTokens + actualOutputTokens),
+        
+        // Performance
+        $ai_latency: latencyMs / 1000, // Convert to seconds
+        
+        // Cost (if available from API)
+        ...(actualCost > 0 && { $ai_total_cost_usd: actualCost }),
+        
+        // Model parameters
+        $ai_stream: true,
+        
+        // Custom properties
         conversation_turn: Math.floor(messages.length / 2) + 1,
         response_length: assistantContent.length,
       });
@@ -169,9 +207,24 @@ export const useAIChat = () => {
     } catch (error) {
       console.error("Chat error:", error);
       
-      // Track AI error
+      // Track AI error with proper PostHog format
+      trackEvent("$ai_generation", {
+        $ai_trace_id: traceIdRef.current,
+        $ai_span_id: spanId,
+        $ai_model: "google/gemini-2.5-flash",
+        $ai_provider: "google",
+        $ai_is_error: true,
+        $ai_error: error instanceof Error ? error.message : "Unknown error",
+        $ai_input: [...messages, userMsg].map(msg => ({
+          role: msg.role,
+          content: msg.content,
+        })),
+      });
+      
+      // Also track custom error event
       trackEvent("ai_error", {
         trace_id: traceIdRef.current,
+        span_id: spanId,
         error_message: error instanceof Error ? error.message : "Unknown error",
         error_type: "chat_generation_failed",
       });
