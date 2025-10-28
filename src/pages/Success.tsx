@@ -47,11 +47,10 @@ const Success = () => {
                 
                 console.log("Success: User identified and groups set", { email: userData.email, cltv });
                 
-                // Force reload feature flags after groups are set
-                // Use longer delay to allow server-side events to propagate
+                // Single strategic reload after server-side tracking confirmation
                 setTimeout(() => {
                   posthog.reloadFeatureFlags();
-                  console.log("Success: Feature flags reloaded after server tracking");
+                  console.log("Success: Feature flags reloaded (server tracking confirmed)");
                 }, 2000);
               }, 500);
             }
@@ -262,13 +261,6 @@ const Success = () => {
           // Set both lifecycle and value tier groups
           const currentCLTV = parseFloat(localStorage.getItem("user_cltv") || "0");
           setCustomerGroups("Active Subscriber", currentCLTV);
-          
-          // Force reload feature flags after setting subscription properties
-          // Use longer delay to ensure server-side events have propagated
-          setTimeout(() => {
-            posthog.reloadFeatureFlags();
-            console.log("Success: Feature flags reloaded after subscription activation");
-          }, 3000);
         }, 500);
       } else {
         // One-off purchase - set lifecycle to One-Time Buyer with value tier
@@ -276,12 +268,6 @@ const Success = () => {
           console.log("PostHog: Setting customer groups for one-time buyer");
           const currentCLTV = parseFloat(localStorage.getItem("user_cltv") || "0");
           setCustomerGroups("One-Time Buyer", currentCLTV);
-          
-          // Reload flags for one-off customers too
-          setTimeout(() => {
-            posthog.reloadFeatureFlags();
-            console.log("Success: Feature flags reloaded after one-time purchase");
-          }, 2000);
         }, 500);
       }
       

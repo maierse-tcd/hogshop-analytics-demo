@@ -17,7 +17,6 @@ export const Header = () => {
   const [userName, setUserName] = useState("");
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
-  const [flagsReloaded, setFlagsReloaded] = useState(0); // Force re-check counter
   const signupVariant = useFeatureFlagVariantKey('increase_sales_cta');
   const halloweenMode = useFeatureFlagEnabled('hero_banner_halloween');
   const showSubscription = useFeatureFlagEnabled('show_subscription');
@@ -29,26 +28,9 @@ export const Header = () => {
       setIsLoggedIn(true);
       setUserName(user.name);
       
-      // Force reload flags when user is logged in
+      // Single reload on login - trust server-side tracking for updates
       posthog.reloadFeatureFlags();
       console.log("Header: User logged in, reloading feature flags", { email: user.email });
-    }
-  }, [location]);
-
-  // Reload feature flags periodically on Success page to ensure subscription menu appears
-  useEffect(() => {
-    if (location.pathname === '/success') {
-      // Immediate reload
-      posthog.reloadFeatureFlags();
-      console.log("Header: On Success page, reloading feature flags immediately");
-      
-      const interval = setInterval(() => {
-        posthog.reloadFeatureFlags();
-        setFlagsReloaded(prev => prev + 1); // Trigger re-render
-        console.log("Header: Reloading feature flags on Success page");
-      }, 5000); // Every 5 seconds
-      
-      return () => clearInterval(interval);
     }
   }, [location]);
 
