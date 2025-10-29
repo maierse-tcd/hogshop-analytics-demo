@@ -1,0 +1,25 @@
+[Unit]
+Description=Playwright Hedgehog Bots - HogShop Demo Traffic Generator
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/playwright-hedgehog-bots
+ExecStart=/usr/bin/npm run bots:start
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hedgehog-bots
+
+# Environment
+Environment="NODE_ENV=production"
+Environment="DISPLAY=:99"
+
+# Resource limits
+LimitNOFILE=4096
+MemoryLimit=4G
+
+[Install]
+WantedBy=multi-user.target
