@@ -1,4 +1,4 @@
-import { chromium, Browser, BrowserContext } from '@playwright/test';
+import { spawn } from 'child_process';
 import { getRandomPersona, getPersonaBehavior } from '../lib/userPersonas.js';
 import { createUser, getUserByEmail, updateUser, createSession, updateSession, getRandomUser } from '../database/db.js';
 import { randomDelay, randomInt, log } from '../lib/helpers.js';
@@ -11,7 +11,6 @@ const BOT_COUNT = randomInt(
 );
 
 class BackgroundBotScheduler {
-  private browsers: Browser[] = [];
   private isRunning = false;
 
   async start() {
@@ -26,18 +25,6 @@ class BackgroundBotScheduler {
   private async launchBot(botIndex: number) {
     while (this.isRunning) {
       try {
-        const browser = await chromium.launch({
-          headless: false,
-          slowMo: 500,
-          args: ['--start-maximized'],
-        });
-
-        const context = await browser.newContext({
-          viewport: { width: 1920, height: 1080 },
-        });
-
-        const page = await context.newPage();
-        
         // Select persona and get/create user
         const persona = getRandomPersona();
         const behavior = getPersonaBehavior(persona);
@@ -55,12 +42,11 @@ class BackgroundBotScheduler {
         // Create session
         const sessionId = createSession({ user_id: user.id! });
 
-        // Execute journey based on persona
-        const journeyScript = this.getJourneyScript(persona);
-        await page.goto(`${BASE_URL}${journeyScript}`);
+        // Execute journey test using Playwright
+        const journeyFile = this.getJourneyFile(persona);
+        await this.runPlaywrightTest(journeyFile, botIndex);
 
         const sessionDuration = randomInt(behavior.sessionDuration[0], behavior.sessionDuration[1]);
-        await randomDelay(sessionDuration * 1000, sessionDuration * 1000 + 5000);
 
         // Update session
         updateSession(sessionId, {
@@ -73,7 +59,6 @@ class BackgroundBotScheduler {
           session_count: (user.session_count || 0) + 1,
         });
 
-        await browser.close();
         log(`Bot ${botIndex}: Journey completed`);
 
         // Wait before next journey
@@ -89,16 +74,38 @@ class BackgroundBotScheduler {
     }
   }
 
-  private getJourneyScript(persona: string): string {
-    const scripts: Record<string, string> = {
-      CASUAL_BROWSER: '/tests/journeys/casualBrowser.spec.ts',
-      ENGAGED_SHOPPER: '/tests/journeys/engagedShopper.spec.ts',
-      READY_BUYER: '/tests/journeys/readyBuyer.spec.ts',
-      NEWSLETTER_SUBSCRIBER: '/tests/journeys/newsletterSubscriber.spec.ts',
-      CART_ABANDONER: '/tests/journeys/cartAbandoner.spec.ts',
-      GIFT_FUNNEL_TESTER: '/tests/journeys/giftFunnelTester.spec.ts',
+  private runPlaywrightTest(testFile: string, botIndex: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const testProcess = spawn('npx', ['playwright', 'test', testFile, '--headed', '--workers=1'], {
+        cwd: process.cwd(),
+        stdio: 'pipe',
+        env: { ...process.env, BASE_URL }
+      });
+
+      testProcess.on('close', (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`Test failed with code ${code}`));
+        }
+      });
+
+      testProcess.on('error', (error) => {
+        reject(error);
+      });
+    });
+  }
+
+  private getJourneyFile(persona: string): string {
+    const journeyFiles: Record<string, string> = {
+      CASUAL_BROWSER: 'tests/journeys/casualBrowser.spec.ts',
+      ENGAGED_SHOPPER: 'tests/journeys/engagedShopper.spec.ts',
+      READY_BUYER: 'tests/journeys/readyBuyer.spec.ts',
+      NEWSLETTER_SUBSCRIBER: 'tests/journeys/newsletterSubscriber.spec.ts',
+      CART_ABANDONER: 'tests/journeys/cartAbandoner.spec.ts',
+      GIFT_FUNNEL_TESTER: 'tests/journeys/giftFunnelTester.spec.ts',
     };
-    return scripts[persona] || scripts.CASUAL_BROWSER;
+    return journeyFiles[persona] || journeyFiles.CASUAL_BROWSER;
   }
 
   stop() {
