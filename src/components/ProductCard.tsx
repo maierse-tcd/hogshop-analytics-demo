@@ -17,6 +17,9 @@ import hedgehogWheel from "@/assets/hedgehog-wheel.jpg";
 import hedgehogCareKit from "@/assets/hedgehog-care-kit.jpg";
 import hedgehogHideout from "@/assets/hedgehog-hideout.jpg";
 import hedgehogPlushie from "@/assets/hedgehog-plushie.jpg";
+import hedgehogSleepingBag from "@/assets/hedgehog-sleeping-bag.jpg";
+import hedgehogClimbingToys from "@/assets/hedgehog-climbing-toys.jpg";
+import hedgehogBowls from "@/assets/hedgehog-bowls.jpg";
 
 interface ProductCardProps {
   id: string;
@@ -40,6 +43,9 @@ const imageMap: Record<string, string> = {
   "hedgehog-care-kit.jpg": hedgehogCareKit,
   "hedgehog-hideout.jpg": hedgehogHideout,
   "hedgehog-plushie.jpg": hedgehogPlushie,
+  "hedgehog-sleeping-bag.jpg": hedgehogSleepingBag,
+  "hedgehog-climbing-toys.jpg": hedgehogClimbingToys,
+  "hedgehog-bowls.jpg": hedgehogBowls,
 };
 
 export const ProductCard = ({ 
