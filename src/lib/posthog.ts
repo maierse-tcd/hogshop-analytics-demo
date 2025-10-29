@@ -215,9 +215,9 @@ export const captureException = (
       posthog.capture('$exception', {
         $exception_list: [
           {
-            $exception_message: error.message,
-            $exception_type: error.name,
-            $exception_stack_trace_raw: error.stack,
+            type: error.name,
+            value: error.message,
+            mechanism: { handled: false, synthetic: false },
           }
         ],
         $exception_personURL: posthog.get_session_replay_url(),
