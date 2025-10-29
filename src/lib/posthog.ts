@@ -213,9 +213,13 @@ export const captureException = (
   if (typeof window !== "undefined") {
     try {
       posthog.capture('$exception', {
-        $exception_message: error.message,
-        $exception_type: error.name,
-        $exception_stack_trace_raw: error.stack,
+        $exception_list: [
+          {
+            $exception_message: error.message,
+            $exception_type: error.name,
+            $exception_stack_trace_raw: error.stack,
+          }
+        ],
         $exception_personURL: posthog.get_session_replay_url(),
         context: context || 'unknown',
         timestamp: new Date().toISOString(),

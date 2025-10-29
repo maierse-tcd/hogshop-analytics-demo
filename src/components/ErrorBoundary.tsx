@@ -26,9 +26,13 @@ export class ErrorBoundary extends Component<Props, State> {
     console.error('Error caught by boundary:', error, errorInfo);
     
     posthog.capture('$exception', {
-      $exception_message: error.message,
-      $exception_type: error.name,
-      $exception_stack_trace_raw: error.stack,
+      $exception_list: [
+        {
+          $exception_message: error.message,
+          $exception_type: error.name,
+          $exception_stack_trace_raw: error.stack,
+        }
+      ],
       $exception_personURL: posthog.get_session_replay_url(),
       componentStack: errorInfo.componentStack,
     });
