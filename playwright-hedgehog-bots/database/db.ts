@@ -109,10 +109,10 @@ export const updateUser = (id: number, updates: Partial<User>): void => {
 
 export const getRandomUser = (persona?: string): User | undefined => {
   if (persona) {
-    const stmt = db.prepare('SELECT * FROM users WHERE persona = ? AND status = "active" ORDER BY RANDOM() LIMIT 1');
+    const stmt = db.prepare('SELECT * FROM users WHERE persona = ? AND status = \'active\' ORDER BY RANDOM() LIMIT 1');
     return stmt.get(persona) as User | undefined;
   }
-  const stmt = db.prepare('SELECT * FROM users WHERE status = "active" ORDER BY RANDOM() LIMIT 1');
+  const stmt = db.prepare('SELECT * FROM users WHERE status = \'active\' ORDER BY RANDOM() LIMIT 1');
   return stmt.get() as User | undefined;
 };
 
