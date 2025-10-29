@@ -1,18 +1,18 @@
-import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Home, ArrowLeft } from "lucide-react";
+import { Home, Package } from "lucide-react";
 import { trackEvent, captureException, posthog } from "@/lib/posthog";
 
-const NotFound = () => {
+const GiftCheckoutNotFound = () => {
   const location = useLocation();
 
   useEffect(() => {
-    // Enhanced error tracking with PostHog
-    const error = new Error("404 Error: Page not found");
+    // Enhanced error tracking for funnel drop-off
+    const error = new Error("404 Error: Gift checkout page not found");
     
     // Capture exception with session replay
-    captureException(error, "404_page_not_found", {
+    captureException(error, "gift_funnel_drop_off", {
       attempted_route: location.pathname,
       referrer: document.referrer,
       session_replay_url: posthog.get_session_replay_url(),
@@ -20,36 +20,43 @@ const NotFound = () => {
       timestamp: new Date().toISOString(),
     });
 
-    // Track 404 event
-    trackEvent("404_error", {
+    // Track specific funnel drop-off event
+    trackEvent("funnel_drop_off", {
+      stage: "gift_checkout",
       route: location.pathname,
       referrer: document.referrer,
       session_replay_url: posthog.get_session_replay_url(),
+      error_type: "404_not_found",
       timestamp: new Date().toISOString(),
     });
 
-    console.error("404 Error: User attempted to access non-existent route:", location.pathname);
+    console.error("Gift Funnel Drop-off: User attempted to access gift checkout:", location.pathname);
   }, [location.pathname]);
 
   const handleRecovery = (action: string) => {
     trackEvent("404_recovery_attempted", {
       recovery_action: action,
-      from_page: location.pathname,
+      from_page: "gift_checkout",
       timestamp: new Date().toISOString(),
     });
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background to-accent/5">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background to-primary/5">
       <div className="mx-auto max-w-2xl px-6 text-center space-y-8">
         <div className="space-y-2">
           <h1 className="text-8xl font-bold text-primary">404</h1>
-          <p className="text-3xl font-semibold">Page Not Found</p>
+          <p className="text-3xl font-semibold">Gift Checkout Unavailable</p>
         </div>
         
-        <p className="text-xl text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
-        </p>
+        <div className="space-y-4">
+          <p className="text-xl text-muted-foreground">
+            We're currently working on our free gift checkout process.
+          </p>
+          <p className="text-lg text-muted-foreground">
+            Our team has been notified and will have this fixed soon! In the meantime, explore our other amazing products.
+          </p>
+        </div>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6">
           <Button 
@@ -66,23 +73,24 @@ const NotFound = () => {
           <Button 
             size="lg" 
             variant="outline"
-            onClick={() => {
-              handleRecovery("back");
-              window.history.back();
-            }}
+            asChild
+            onClick={() => handleRecovery("products")}
             className="gap-2"
           >
-            <ArrowLeft className="h-5 w-5" />
-            Go Back
+            <a href="/#products">
+              <Package className="h-5 w-5" />
+              Browse Products
+            </a>
           </Button>
         </div>
 
         <div className="pt-8 text-sm text-muted-foreground">
-          <p>Error tracked with session replay for analysis</p>
+          <p>Error Code: GIFT_CHECKOUT_404</p>
+          <p className="mt-1">This incident has been logged with session replay for analysis</p>
         </div>
       </div>
     </div>
   );
 };
 
-export default NotFound;
+export default GiftCheckoutNotFound;

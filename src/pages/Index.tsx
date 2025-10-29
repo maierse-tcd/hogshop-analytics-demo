@@ -8,11 +8,12 @@ import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 import { trackEvent, posthog } from "@/lib/posthog";
 import { useFeatureFlagEnabled, useFeatureFlagVariantKey } from "posthog-js/react";
-import { ArrowRight, X } from "lucide-react";
+import { ArrowRight, X, Gift } from "lucide-react";
 import { Newsletter } from "@/components/Newsletter";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { simulateDemoErrors } from "@/utils/demoErrorSimulator";
 import { getThemeConfig, type SeasonalTheme } from "@/utils/seasonalThemes";
+import { useNavigate } from "react-router-dom";
 
 
 interface Product {
@@ -29,6 +30,7 @@ interface Product {
 }
 
 const Index = () => {
+  const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
 
   const { data: products, isLoading } = useQuery({
@@ -182,6 +184,38 @@ const Index = () => {
             </div>
           </div>
         )}
+
+      {/* Free Gift CTA Banner */}
+      <div className="bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 border-b">
+        <div className="container py-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 max-w-5xl mx-auto">
+            <div className="flex items-center gap-4">
+              <div className="bg-primary/10 p-3 rounded-full">
+                <Gift className="h-8 w-8 text-primary" />
+              </div>
+              <div className="text-center md:text-left">
+                <p className="font-bold text-lg">Get Max's Starter Kit FREE</p>
+                <p className="text-sm text-muted-foreground">Everything your new hedgehog needs • $45 value</p>
+              </div>
+            </div>
+            <Button 
+              size="lg"
+              onClick={() => {
+                trackEvent("gift_cta_clicked", {
+                  location: "homepage_banner",
+                  cta_text: "Claim Free Gift",
+                  timestamp: new Date().toISOString(),
+                });
+                navigate("/gift");
+              }}
+              className="gap-2 whitespace-nowrap"
+            >
+              Claim Free Gift
+              <ArrowRight className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+      </div>
       
       {/* Hero Section */}
       <section className={`relative border-b overflow-hidden ${

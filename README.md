@@ -384,6 +384,127 @@ VITE_SUPABASE_URL=auto
 VITE_SUPABASE_PUBLISHABLE_KEY=auto
 ```
 
+## Funnel Drop-off Demo
+
+Hogshop includes a **deliberate funnel drop-off demonstration** to showcase PostHog's error tracking, session replay, and funnel analysis capabilities. This demo simulates a real-world scenario where users encounter a broken checkout page.
+
+### Demo Flow
+
+1. **Homepage CTA**: Full-width banner promoting "Max's Starter Kit" free gift
+2. **Gift Landing Page** (`/gift`): Product showcase with benefits and "Claim Your Free Gift" button
+3. **Broken Checkout** (`/checkout/gift`): Intentionally non-existent route that triggers custom 404
+4. **Enhanced 404 Page**: Custom error page with full tracking and recovery options
+
+### User Journey
+
+```
+Homepage → Gift CTA Click → Gift Landing → Order Button → 404 Page → Recovery
+```
+
+### Tracking Events
+
+```typescript
+// Step 1: Homepage banner interaction
+gift_cta_clicked: {
+  location: "homepage_banner",
+  cta_text: string,
+  timestamp: string
+}
+
+// Step 2: Gift page view
+gift_page_viewed: {
+  referrer: string,
+  product_name: "Max's Starter Kit",
+  timestamp: string
+}
+
+// Step 3: Order attempt (before drop-off)
+gift_order_attempted: {
+  product_name: "Max's Starter Kit",
+  intended_destination: "/checkout/gift",
+  retail_value: 45,
+  timestamp: string
+}
+
+// Step 4: Funnel drop-off (on 404)
+funnel_drop_off: {
+  stage: "gift_checkout",
+  route: "/checkout/gift",
+  referrer: string,
+  session_replay_url: string,
+  error_type: "404_not_found",
+  timestamp: string
+}
+
+// Additional: Generic 404 tracking
+404_error: {
+  route: string,
+  referrer: string,
+  session_replay_url: string,
+  timestamp: string
+}
+
+// Recovery tracking
+404_recovery_attempted: {
+  recovery_action: "home" | "products" | "back",
+  from_page: string,
+  timestamp: string
+}
+```
+
+### PostHog Analysis
+
+This demo enables demonstration of:
+
+1. **Funnel Analysis**:
+   - Create funnel: `gift_cta_clicked` → `gift_page_viewed` → `gift_order_attempted` → `order_completed`
+   - Identify 100% drop-off at checkout step
+   - Analyze time spent on each step
+
+2. **Session Replay**:
+   - Watch user sessions that encountered the 404
+   - See exact user actions leading to error
+   - Access via `session_replay_url` in event properties
+
+3. **Error Tracking**:
+   - All 404 errors captured as `$exception` events
+   - Full stack traces and context
+   - User properties and session data attached
+
+4. **User Paths**:
+   - Identify common paths leading to 404
+   - Analyze recovery behavior (which CTA users clicked)
+   - Track successful recovery vs bounce
+
+### Testing the Demo
+
+1. Navigate to homepage
+2. Click "Claim Free Gift" banner
+3. View gift landing page
+4. Click "Claim Your Free Gift Now"
+5. Observe custom 404 page
+6. Check PostHog for all tracked events
+7. Review session replay for full journey
+
+### Implementation Details
+
+**Files**:
+- `/src/pages/GiftLanding.tsx` - Gift product showcase
+- `/src/pages/GiftCheckoutNotFound.tsx` - Custom 404 for gift funnel
+- `/src/pages/NotFound.tsx` - Enhanced general 404 page
+- `/src/pages/Index.tsx` - Homepage with gift CTA banner
+
+**Error Capture**:
+```typescript
+captureException(error, "gift_funnel_drop_off", {
+  attempted_route: location.pathname,
+  referrer: document.referrer,
+  session_replay_url: posthog.get_session_replay_url(),
+  user_agent: navigator.userAgent,
+  timestamp: new Date().toISOString(),
+});
+```
+
 ## Testing
 
 ### Stripe Test Cards
