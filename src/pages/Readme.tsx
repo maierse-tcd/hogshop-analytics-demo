@@ -10,9 +10,12 @@ const Readme = () => {
       
       <main className="container mx-auto px-4 py-12 max-w-4xl">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-4">Welcome to Hogster Demo 🦔</h1>
+          <h1 className="text-4xl font-bold mb-4">Hogshop Technical Demo 🦔</h1>
           <p className="text-xl text-muted-foreground">
-            A showcase of advanced product analytics, AI integration, and experimentation
+            Production-grade PostHog analytics implementation featuring Max the Hedgehog
+          </p>
+          <p className="text-sm text-muted-foreground mt-2">
+            A comprehensive e-commerce platform demonstrating product analytics, AI/LLM tracking, feature flags, experiments, and session replay
           </p>
         </div>
 
@@ -26,17 +29,21 @@ const Readme = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <p>
-                Hogster is a fully functional e-commerce demo that demonstrates real-world implementation 
-                of product analytics, AI-powered customer support, A/B testing, and user behavior tracking.
+                Hogshop is a production-grade technical demo showcasing comprehensive PostHog integration. 
+                Built with React 18, TypeScript, and Lovable Cloud (Supabase), it demonstrates advanced 
+                analytics patterns including AI/LLM tracking, experiments, and real-time event capture.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                <strong>Mascot:</strong> Max the Hedgehog | <strong>Product Catalog:</strong> 18 hedgehog care products across 6 categories
               </p>
               <div className="grid gap-3">
                 <div className="flex gap-3">
                   <MessageCircle className="h-5 w-5 text-primary mt-0.5" />
                   <div>
-                    <p className="font-semibold">AI Hedgehog Care Assistant</p>
+                    <p className="font-semibold">AI Hedgehog Care Assistant (Max)</p>
                     <p className="text-sm text-muted-foreground">
-                      Chat with our AI assistant powered by Gemini 2.5 Flash. Every conversation is tracked 
-                      with token usage, latency, and cost metrics.
+                      AI chatbot powered by Lovable AI (Google Gemini 2.5 Flash). Tracks full AI traces with 
+                      $ai_generation events including token counts, costs ($ai_total_cost_usd), and conversation IDs.
                     </p>
                   </div>
                 </div>
@@ -45,18 +52,18 @@ const Readme = () => {
                   <div>
                     <p className="font-semibold">Complete E-commerce Flow</p>
                     <p className="text-sm text-muted-foreground">
-                      Browse products, add to cart, and complete purchases with Stripe integration. 
-                      Every action is tracked for analytics.
+                      18 products (Food, Housing, Toys, Care, Bedding, Merchandise) with cart operations, 
+                      Stripe checkout, and subscription management. Tracks Customer Lifetime Value (CLTV) on purchases.
                     </p>
                   </div>
                 </div>
                 <div className="flex gap-3">
                   <FlaskConical className="h-5 w-5 text-primary mt-0.5" />
                   <div>
-                    <p className="font-semibold">Live A/B Experiments</p>
+                    <p className="font-semibold">Feature Flags & Experiments</p>
                     <p className="text-sm text-muted-foreground">
-                      Experience real-time feature flag experiments testing different UI variants 
-                      and messaging strategies.
+                      9 active feature flags including seasonal themes, product card designs, discount banners, 
+                      and newsletter CTAs. Proper $feature_view and $feature_interaction tracking.
                     </p>
                   </div>
                 </div>
@@ -68,10 +75,10 @@ const Readme = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BarChart3 className="h-5 w-5" />
-                Events We Track
+                Event Taxonomy
               </CardTitle>
               <CardDescription>
-                Every interaction is captured to provide actionable insights
+                Comprehensive event tracking with structured properties for advanced analytics
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -210,9 +217,10 @@ const Readme = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
-              <p><strong>Customer Segments:</strong> Users are grouped by CLTV (high_value, medium_value, low_value)</p>
-              <p><strong>Engagement Levels:</strong> Classified as power_user, active, or casual based on session count</p>
-              <p><strong>Subscription Tiers:</strong> Tracked for subscription vs one-time purchase customers</p>
+              <p><strong>Tech Stack:</strong> React 18.3 + TypeScript 5.x, Vite 6, Tailwind CSS 3, TanStack Query v5</p>
+              <p><strong>Backend:</strong> Lovable Cloud (Supabase) with PostgreSQL 15, Edge Functions (Deno runtime)</p>
+              <p><strong>Analytics:</strong> PostHog (posthog-js v1.280+) with session replay, feature flags, and web experiments</p>
+              <p><strong>Customer Segments:</strong> CLTV-based (high_value, medium_value, low_value), engagement tracking</p>
             </CardContent>
           </Card>
 
@@ -225,15 +233,18 @@ const Readme = () => {
             </CardHeader>
             <CardContent className="text-sm space-y-2">
               <p>
-                This is a demo environment. All purchases use Stripe test mode with dummy card numbers. 
-                No real transactions occur.
+                <strong>Demo Environment:</strong> All purchases use Stripe test mode. No real transactions occur.
               </p>
               <p>
-                Analytics data helps us understand user behavior and improve the shopping experience. 
-                Session recordings capture UI interactions (not form inputs) to identify usability issues.
+                <strong>Security:</strong> Row Level Security (RLS) on all tables, server-side payment processing, 
+                environment variables secured in Supabase secrets, CORS configured for edge functions.
               </p>
-              <p className="text-muted-foreground">
-                Test card: 4242 4242 4242 4242 • Exp: Any future date • CVV: Any 3 digits
+              <p>
+                <strong>Session Replay:</strong> Captures UI interactions, console logs, and network requests 
+                (form inputs are masked by default).
+              </p>
+              <p className="font-mono text-xs bg-muted p-2 rounded">
+                Test Card: 4242 4242 4242 4242 | Exp: Any future date | CVV: Any 3 digits
               </p>
             </CardContent>
           </Card>
