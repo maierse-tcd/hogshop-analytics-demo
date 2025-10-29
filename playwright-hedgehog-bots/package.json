@@ -11,7 +11,7 @@
     "users:create": "tsx scripts/userGenerator.ts --run-once",
     "churn:test": "tsx scripts/churnEngine.ts --test",
     "churn:process": "tsx scripts/churnEngine.ts --process",
-    "test:journey": "playwright test tests/journeys/"
+    "test:journey": "playwright test tests/"
   },
   "keywords": ["playwright", "automation", "e-commerce", "posthog"],
   "author": "",

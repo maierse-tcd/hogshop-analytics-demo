@@ -98,12 +98,12 @@ class BackgroundBotScheduler {
 
   private getJourneyFile(persona: string): string {
     const journeyFiles: Record<string, string> = {
-      CASUAL_BROWSER: 'tests/journeys/casualBrowser.spec.ts',
-      ENGAGED_SHOPPER: 'tests/journeys/engagedShopper.spec.ts',
-      READY_BUYER: 'tests/journeys/readyBuyer.spec.ts',
-      NEWSLETTER_SUBSCRIBER: 'tests/journeys/newsletterSubscriber.spec.ts',
-      CART_ABANDONER: 'tests/journeys/cartAbandoner.spec.ts',
-      GIFT_FUNNEL_TESTER: 'tests/journeys/giftFunnelTester.spec.ts',
+      CASUAL_BROWSER: 'tests/casualBrowser.spec.ts',
+      ENGAGED_SHOPPER: 'tests/engagedShopper.spec.ts',
+      READY_BUYER: 'tests/readyBuyer.spec.ts',
+      NEWSLETTER_SUBSCRIBER: 'tests/newsletterSubscriber.spec.ts',
+      CART_ABANDONER: 'tests/cartAbandoner.spec.ts',
+      GIFT_FUNNEL_TESTER: 'tests/giftFunnelTester.spec.ts',
     };
     return journeyFiles[persona] || journeyFiles.CASUAL_BROWSER;
   }
