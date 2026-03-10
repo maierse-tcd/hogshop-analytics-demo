@@ -41,6 +41,22 @@ export const CartDrawer = () => {
       identified_at: new Date().toISOString(),
     });
     
+    // Set initial person properties
+    setUserProperties({
+      $name: name,
+      $email: email,
+      first_seen_at: new Date().toISOString(),
+      registration_source: "checkout",
+    });
+    
+    // Track registration completion event
+    trackEvent("checkout_registration_completed", {
+      email,
+      name,
+      registration_source: "checkout_dialog",
+      timestamp: new Date().toISOString(),
+    });
+    
     // NOW initialize CLTV (after user is identified)
     initializeCLTV();
     

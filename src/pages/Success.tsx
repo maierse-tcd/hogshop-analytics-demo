@@ -27,7 +27,7 @@ const Success = () => {
       });
       
       // Set up a 10-second safety net timer for dual-track approach
-      let safetyNetTimer: NodeJS.Timeout | null = null;
+      let safetyNetTimer: ReturnType<typeof setTimeout> | null = null;
       
       // Short-circuit if server-side tracking indicated via URL
       if (trackedParam === "1") {
