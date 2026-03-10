@@ -182,18 +182,12 @@ const initializeCLTV = () => {
 export const ensureIdentified = async (email: string, properties?: Record<string, any>) => {
   if (typeof window !== "undefined") {
     return new Promise<void>((resolve) => {
-      // If already identified, resolve immediately
-      if (posthog.get_distinct_id() && posthog.get_distinct_id() !== 'anonymous') {
-        resolve();
-        return;
-      }
-      
-      // Otherwise, identify and wait for it to complete
+      // Always identify the user with their email - this will merge anonymous events
       posthog.identify(email, properties);
       
-      // Wait a small amount for identification to propagate
+      // Wait for identification to propagate
       setTimeout(() => {
-        console.log("PostHog: User identification complete", email);
+        console.log("PostHog: User identified with email", email);
         resolve();
       }, 100);
     });
