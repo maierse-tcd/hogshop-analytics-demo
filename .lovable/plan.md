@@ -1,92 +1,74 @@
 
 
-## Update PostHog SDK, Enable Managed Reverse Proxy, and Fill Event Tracking Gaps
+## Design Polish -- Light & Dark Mode Improvements
 
-### Current State
-- **PostHog SDK**: `posthog-js` v1.280.1 (latest is ~1.363.x)
-- **Proxy**: Already using a custom reverse proxy at `https://ph.hogflix.dev` -- this is a self-managed proxy, not PostHog's managed reverse proxy
-- **Event coverage**: Good overall, but several gaps exist
+After reviewing all major components, here are targeted design refinements to add visual polish and a modern feel without breaking any functionality.
 
-### Changes
+### Changes Overview
 
-#### 1. Update PostHog SDK to latest
-- Update `package.json`: `"posthog-js": "^1.363.0"`
+#### 1. CSS Design System (`src/index.css`)
+- Add smooth global transitions for theme switching (`transition: background-color 0.3s, color 0.3s, border-color 0.3s`)
+- Add subtle selection color styling
+- Improve dark mode card color to a slightly warmer tone for depth
+- Add a subtle body texture/grain overlay for premium feel (CSS-only, no images)
 
-#### 2. Switch to PostHog Managed Reverse Proxy
-The project already uses `ph.hogflix.dev` as a reverse proxy. PostHog now offers a managed reverse proxy that handles SSL, routing, and maintenance automatically. However, the managed proxy requires DNS CNAME setup on the user's domain.
+#### 2. Header (`src/components/Header.tsx`)
+- Add a subtle bottom shadow instead of just a border for depth
+- Active nav link indicator (underline for current route)
+- Smooth hover transitions on nav links with slight translateY micro-interaction
 
-**Decision needed**: The current `ph.hogflix.dev` proxy appears to already be working. The managed proxy requires creating a CNAME in DNS settings pointing to PostHog's proxy domain. Since `ph.hogflix.dev` is already configured, we should keep using it but ensure the SDK config is optimal for the latest version.
+#### 3. Product Cards (`src/components/ProductCard.tsx`)
+- Add `hover:-translate-y-1` for a lift effect on hover
+- Subtle gradient overlay on image on hover for depth
+- Smoother border-radius and shadow transitions
+- Price styling with a slight background pill
 
-**Update `src/lib/posthog.ts` init config** to add newer SDK options:
-- Add `person_profiles: 'identified_only'` (best practice, reduces anonymous person volume)
-- Ensure `ui_host` is set correctly (already `https://eu.posthog.com`)
-- Add `capture_performance: true` for web vitals
-- Add `enable_heatmaps: true` for click heatmaps
-- Remove deprecated options
+#### 4. Hero Section (`src/pages/Index.tsx`)
+- Refine the hero gradient to be more subtle and sophisticated
+- Reduce the dot pattern opacity slightly for cleanliness
+- Add a subtle text-shadow to the hero heading for depth
+- Improve the gift CTA banner with a cleaner glass-morphism look
+- Better category filter pill styling with active state ring
 
-#### 3. Fill Event Tracking Gaps
+#### 5. Footer (`src/pages/Index.tsx`)
+- Add a subtle gradient separator line instead of plain border
+- Slightly increase padding and spacing for breathing room
 
-**Missing events identified:**
+#### 6. About Page (`src/pages/About.tsx`)
+- Fix the gradient text on "HogShop" heading (same issue as logo was -- use solid `text-primary` instead)
+- Add subtle hover effects on the feature cards
 
-| Location | Missing Event | Description |
-|---|---|---|
-| `CartContext.tsx` | `cart_cleared` | When cart is emptied (no event on `clearCart`) |
-| `ProductCard.tsx` | `product_card_impression` | No impression tracking for product cards in viewport |
-| `Header.tsx` | `nav_link_clicked` | Navigation clicks not tracked |
-| `Header.tsx` | `theme_toggled` | Dark/light mode toggle not tracked |
-| `Header.tsx` | `user_logged_out` | Logout action not tracked as event |
-| `FAQ.tsx` | `faq_item_expanded` | No tracking when FAQ accordion items are opened |
-| `Index.tsx` | `category_filter_changed` | Category filter selection not tracked |
-| `Index.tsx` | `banner_viewed` | Discount banner impression not tracked |
-| `Index.tsx` | `gift_banner_viewed` | Gift CTA banner impression not tracked |
-| `ProductDetail.tsx` | `product_detail_time_spent` | No engagement time tracking |
-| `Newsletter.tsx` | `newsletter_form_started` | No event when user starts typing email |
-| `CartDrawer.tsx` | `quantity_changed` | Quantity +/- not tracked separately from cart update |
-| `RegistrationDialog.tsx` | No PostHog tracking at all | Form interactions completely untracked |
-| `LoginDialog.tsx` | `login_form_started` | No event when form interaction begins |
+#### 7. FAQ Page (`src/pages/FAQ.tsx`)
+- Add hover background transition on accordion items
+- Subtle left border accent on expanded items
 
-### Files to Modify
+#### 8. Shipping Page (`src/pages/Shipping.tsx`)
+- Add hover lift effect on shipping method cards
+- Icon containers with subtle background circles
 
-1. **`package.json`** -- Bump `posthog-js` to `^1.363.0`
-2. **`src/lib/posthog.ts`** -- Update SDK init config with modern options (`capture_performance`, `enable_heatmaps`, `person_profiles`)
-3. **`src/contexts/CartContext.tsx`** -- Add `cart_cleared` event
-4. **`src/components/Header.tsx`** -- Add `nav_link_clicked`, `theme_toggled`, `user_logged_out` events
-5. **`src/pages/Index.tsx`** -- Add `category_filter_changed`, `banner_viewed`, `gift_banner_viewed` events
-6. **`src/pages/FAQ.tsx`** -- Add `faq_item_expanded` tracking on accordion items
-7. **`src/components/RegistrationDialog.tsx`** -- Add `registration_form_opened`, `registration_form_submitted` events
-8. **`src/components/Newsletter.tsx`** -- Add `newsletter_form_started` event on input focus
+#### 9. Global Button Polish (`src/components/ui/button.tsx`)
+- Add `transition-all` instead of just `transition-colors` so transforms and shadows also animate
+- Add subtle active state `scale-[0.98]` for tactile feel
 
-### PostHog Init Config Changes (posthog.ts)
+#### 10. Card Component (`src/components/ui/card.tsx`)
+- Add `transition-all duration-300` for smooth hover effects globally
 
-```typescript
-posthog.init(POSTHOG_KEY, {
-  api_host: POSTHOG_HOST,
-  ui_host: "https://eu.posthog.com",
-  person_profiles: 'identified_only',
-  capture_pageview: true,
-  capture_pageleave: true,
-  capture_performance: true,
-  enable_heatmaps: true,
-  persistence: "localStorage+cookie",
-  cross_subdomain_cookie: false,
-  disable_session_recording: false,
-  disable_web_experiments: false,
-  session_recording: {
-    recordCrossOriginIframes: false,
-  },
-  loaded: (posthog) => {
-    console.log("PostHog loaded successfully!", { api_host: POSTHOG_HOST });
-    if (import.meta.env.DEV) {
-      posthog.debug();
-    }
-  },
-});
-```
+#### 11. Tailwind Config (`tailwind.config.ts`)
+- Add a subtle `float` keyframe animation for decorative elements (alternative to aggressive bounce)
 
-Removes deprecated/unnecessary options: `respect_dnt`, `opt_out_capturing_by_default`, `sanitize_properties: null`, `bootstrap: { distinctID: undefined }`.
+### Technical Details
 
-### Outcome
-- Latest SDK with all modern features (heatmaps, web vitals, improved session replay)
-- Comprehensive event tracking covering every user interaction
-- Cleaner PostHog init config following current best practices
+**Files to modify:**
+1. `src/index.css` -- Global transitions, selection colors, subtle grain texture
+2. `src/components/Header.tsx` -- Shadow, active link styling
+3. `src/components/ProductCard.tsx` -- Hover lift, image overlay
+4. `src/pages/Index.tsx` -- Hero refinements, gift banner glass-morphism, footer gradient
+5. `src/pages/About.tsx` -- Fix gradient text, card hover
+6. `src/pages/FAQ.tsx` -- Accordion hover/active styling
+7. `src/pages/Shipping.tsx` -- Card hover lift
+8. `src/components/ui/button.tsx` -- `transition-all` + active scale
+9. `src/components/ui/card.tsx` -- Default transition
+10. `tailwind.config.ts` -- Float animation keyframe
+
+All changes are CSS/className-only. No logic, state, or event tracking changes. No functionality affected.
 
