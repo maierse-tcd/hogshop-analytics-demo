@@ -19,45 +19,21 @@ interface LogEntry {
   severityNumber: number;
   severityText: string;
   body: { stringValue: string };
-  attributes: Array<{ key: string; value: { stringValue?: string; intValue?: number; boolValue?: boolean } }>;
+  attributes: Array<{ key: string; value: { stringValue?: string; intValue?: string; boolValue?: boolean } }>;
 }
 
-// Buffer logs and flush in batch
-const logBuffer: LogEntry[] = [];
-let flushTimeout: ReturnType<typeof setTimeout> | null = null;
-
-const POSTHOG_HOST = "https://eu.i.posthog.com";
+const POSTHOG_HOST = "https://ph.hogflix.dev";
 const POSTHOG_KEY = Deno.env.get("POSTHOG_KEY") || Deno.env.get("POSTHOG_PROJECT_API_KEY") || "phc_mCl11WvLPwmqyjG7FlivcsSbTfSEY1J3TWcEnnR0CJa";
 
 function toAttributes(obj: Record<string, unknown>): LogEntry["attributes"] {
   return Object.entries(obj).map(([key, value]) => {
-    if (typeof value === "number") return { key, value: { intValue: value } };
+    if (typeof value === "number") return { key, value: { intValue: String(value) } };
     if (typeof value === "boolean") return { key, value: { boolValue: value } };
     return { key, value: { stringValue: String(value ?? "") } };
   });
 }
 
-function addLog(level: LogLevel, message: string, attrs: Record<string, unknown> = {}) {
-  const now = BigInt(Date.now()) * 1_000_000n; // nanoseconds
-  const sev = SEVERITY_MAP[level];
-
-  logBuffer.push({
-    timeUnixNano: now.toString(),
-    severityNumber: sev.number,
-    severityText: sev.text,
-    body: { stringValue: message },
-    attributes: [
-      { key: "service.name", value: { stringValue: attrs["service.name"] as string || "hogshop-edge" } },
-      ...toAttributes(attrs),
-    ],
-  });
-
-  // Also log to console for edge function logs visibility
-  const d = Object.keys(attrs).length > 0 ? ` ${JSON.stringify(attrs)}` : "";
-  console.log(`[${sev.text}] ${message}${d}`);
-}
-
-async function flush() {
+async function flushBuffer(logBuffer: LogEntry[]) {
   if (logBuffer.length === 0) return;
 
   const entries = logBuffer.splice(0, logBuffer.length);
@@ -99,9 +75,31 @@ async function flush() {
 
 /**
  * Create a logger scoped to a specific edge function.
+ * Each logger instance has its own isolated buffer to prevent cross-request leaks.
  */
 export function createLogger(functionName: string) {
   const baseAttrs = { "function.name": functionName };
+  const logBuffer: LogEntry[] = [];
+
+  function addLog(level: LogLevel, message: string, attrs: Record<string, unknown> = {}) {
+    const now = BigInt(Date.now()) * 1_000_000n; // nanoseconds
+    const sev = SEVERITY_MAP[level];
+
+    logBuffer.push({
+      timeUnixNano: now.toString(),
+      severityNumber: sev.number,
+      severityText: sev.text,
+      body: { stringValue: message },
+      attributes: [
+        { key: "service.name", value: { stringValue: attrs["service.name"] as string || "hogshop-edge" } },
+        ...toAttributes(attrs),
+      ],
+    });
+
+    // Also log to console for edge function logs visibility
+    const d = Object.keys(attrs).length > 0 ? ` ${JSON.stringify(attrs)}` : "";
+    console.log(`[${sev.text}] ${message}${d}`);
+  }
 
   return {
     debug: (msg: string, attrs?: Record<string, unknown>) =>
@@ -115,6 +113,6 @@ export function createLogger(functionName: string) {
     /**
      * Flush all buffered logs to PostHog. Call at end of request.
      */
-    flush,
+    flush: () => flushBuffer(logBuffer),
   };
 }
