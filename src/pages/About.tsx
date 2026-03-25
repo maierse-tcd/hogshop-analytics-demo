@@ -71,7 +71,7 @@ const About = () => {
           <section>
             <h2 className="text-3xl font-semibold mb-4">What We Do</h2>
             <div className="grid gap-4">
-              <div className="p-6 rounded-lg border bg-card">
+              <div className="p-6 rounded-lg border bg-card hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
                 <h3 className="font-semibold text-lg mb-2">Premium Merchandise</h3>
                 <p className="text-muted-foreground">
                   Every product is designed with love and inspected by our quality assurance team of highly trained hedgehogs. 
