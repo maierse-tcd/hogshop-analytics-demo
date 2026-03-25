@@ -41,6 +41,23 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
+    // Find or create Stripe customer
+    let customerId: string | undefined;
+    if (customer_email) {
+      const existing = await stripe.customers.list({ email: customer_email, limit: 1 });
+      if (existing.data.length > 0) {
+        customerId = existing.data[0].id;
+        log.info("Found existing Stripe customer", { customerId });
+      } else {
+        const newCustomer = await stripe.customers.create({
+          email: customer_email,
+          name: customer_name || undefined,
+        });
+        customerId = newCustomer.id;
+        log.info("Created new Stripe customer", { customerId });
+      }
+    }
+
     const lineItems = items.map((item: any) => {
       const priceId = PRICE_MAP[item.title];
       if (priceId) {
@@ -76,7 +93,8 @@ serve(async (req) => {
       cancel_url: `${origin}/`,
       allow_promotion_codes: true,
       billing_address_collection: "required",
-      customer_email: customer_email || undefined,
+      customer: customerId,
+      customer_email: customerId ? undefined : customer_email || undefined,
       ...(customer_name && {
         custom_fields: [{
           key: "customer_name",
