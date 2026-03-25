@@ -293,7 +293,7 @@ const Index = () => {
 
           <>
             {/* Regular Theme */}
-            <div className="absolute inset-0 opacity-[0.15]">
+            <div className="absolute inset-0 opacity-[0.08]">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,hsl(var(--primary))_1px,transparent_1px)] bg-[length:32px_32px]" />
             </div>
             <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
