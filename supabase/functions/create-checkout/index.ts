@@ -100,7 +100,7 @@ serve(async (req) => {
     log.info("Building checkout session", { mode, origin, successUrl });
 
     const session = await stripe.checkout.sessions.create({
-      line_items: lineItems,
+      line_items: sessionLineItems,
       mode,
       success_url: successUrl,
       cancel_url: `${origin}/`,
