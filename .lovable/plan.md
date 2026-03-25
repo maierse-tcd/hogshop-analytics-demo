@@ -1,74 +1,36 @@
 
 
-## Design Polish -- Light & Dark Mode Improvements
+## Additional Visual Improvements
 
-After reviewing all major components, here are targeted design refinements to add visual polish and a modern feel without breaking any functionality.
+After reviewing both light and dark modes, here are refinements that would add more polish:
 
-### Changes Overview
+### Issues Spotted
 
-#### 1. CSS Design System (`src/index.css`)
-- Add smooth global transitions for theme switching (`transition: background-color 0.3s, color 0.3s, border-color 0.3s`)
-- Add subtle selection color styling
-- Improve dark mode card color to a slightly warmer tone for depth
-- Add a subtle body texture/grain overlay for premium feel (CSS-only, no images)
+1. **Light mode hero feels washed out** -- The gradient is too subtle, making the hero section look flat compared to the rich dark mode version. The dot pattern and glow orbs are barely visible.
 
-#### 2. Header (`src/components/Header.tsx`)
-- Add a subtle bottom shadow instead of just a border for depth
-- Active nav link indicator (underline for current route)
-- Smooth hover transitions on nav links with slight translateY micro-interaction
+2. **Large empty gap before footer** -- There's significant whitespace between the last product row and the footer, making the page feel unfinished.
 
-#### 3. Product Cards (`src/components/ProductCard.tsx`)
-- Add `hover:-translate-y-1` for a lift effect on hover
-- Subtle gradient overlay on image on hover for depth
-- Smoother border-radius and shadow transitions
-- Price styling with a slight background pill
+3. **Category filter pills lack active distinction** -- Selected vs unselected pills could use more visual differentiation (ring, shadow, or scale).
 
-#### 4. Hero Section (`src/pages/Index.tsx`)
-- Refine the hero gradient to be more subtle and sophisticated
-- Reduce the dot pattern opacity slightly for cleanliness
-- Add a subtle text-shadow to the hero heading for depth
-- Improve the gift CTA banner with a cleaner glass-morphism look
-- Better category filter pill styling with active state ring
+4. **Footer lacks visual warmth** -- The footer is minimal and could benefit from a subtle top gradient divider and slightly warmer background treatment.
 
-#### 5. Footer (`src/pages/Index.tsx`)
-- Add a subtle gradient separator line instead of plain border
-- Slightly increase padding and spacing for breathing room
+5. **"Sign up for newsletter" button is flat in light mode** -- The outline variant blends into the background; it could benefit from a subtle hover glow or border accent.
 
-#### 6. About Page (`src/pages/About.tsx`)
-- Fix the gradient text on "HogShop" heading (same issue as logo was -- use solid `text-primary` instead)
-- Add subtle hover effects on the feature cards
+6. **Product card images have no loading state polish** -- When images load, there's no smooth fade-in, which can feel jarring.
 
-#### 7. FAQ Page (`src/pages/FAQ.tsx`)
-- Add hover background transition on accordion items
-- Subtle left border accent on expanded items
+7. **No scroll-to-top behavior** -- When navigating between pages, scroll position isn't always reset.
 
-#### 8. Shipping Page (`src/pages/Shipping.tsx`)
-- Add hover lift effect on shipping method cards
-- Icon containers with subtle background circles
+### Proposed Changes
 
-#### 9. Global Button Polish (`src/components/ui/button.tsx`)
-- Add `transition-all` instead of just `transition-colors` so transforms and shadows also animate
-- Add subtle active state `scale-[0.98]` for tactile feel
-
-#### 10. Card Component (`src/components/ui/card.tsx`)
-- Add `transition-all duration-300` for smooth hover effects globally
-
-#### 11. Tailwind Config (`tailwind.config.ts`)
-- Add a subtle `float` keyframe animation for decorative elements (alternative to aggressive bounce)
+| File | Change |
+|---|---|
+| `src/pages/Index.tsx` | Increase hero gradient intensity for light mode (`from-primary/15` instead of `/10`), reduce gap before footer (`mt-24` to `mt-12`) |
+| `src/pages/Index.tsx` | Add `ring-2 ring-primary ring-offset-2` to active category button for stronger visual distinction |
+| `src/components/ProductCard.tsx` | Add image `loading="lazy"` and a CSS fade-in on load for smoother image appearance |
+| `src/index.css` | Add a subtle `@keyframes fadeIn` for image load transitions |
+| `src/pages/Index.tsx` | Outline newsletter button: add `border-primary/30 hover:border-primary` for more presence in light mode |
 
 ### Technical Details
 
-**Files to modify:**
-1. `src/index.css` -- Global transitions, selection colors, subtle grain texture
-2. `src/components/Header.tsx` -- Shadow, active link styling
-3. `src/components/ProductCard.tsx` -- Hover lift, image overlay
-4. `src/pages/Index.tsx` -- Hero refinements, gift banner glass-morphism, footer gradient
-5. `src/pages/About.tsx` -- Fix gradient text, card hover
-6. `src/pages/FAQ.tsx` -- Accordion hover/active styling
-7. `src/pages/Shipping.tsx` -- Card hover lift
-8. `src/components/ui/button.tsx` -- `transition-all` + active scale
-9. `src/components/ui/card.tsx` -- Default transition
-10. `tailwind.config.ts` -- Float animation keyframe
-
-All changes are CSS/className-only. No logic, state, or event tracking changes. No functionality affected.
+All changes are CSS/className only -- no logic or tracking changes. Estimated 5 small edits across 3 files.
 
