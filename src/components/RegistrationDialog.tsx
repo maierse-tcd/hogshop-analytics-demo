@@ -53,8 +53,11 @@ export const RegistrationDialog = ({ open, onOpenChange, onComplete }: Registrat
     e.preventDefault();
     
     if (validateForm()) {
+      trackEvent("registration_form_submitted", {
+        source: "checkout",
+        timestamp: new Date().toISOString(),
+      });
       onComplete(email.trim(), name.trim());
-      // Reset form
       setEmail("");
       setName("");
       setErrors({});
