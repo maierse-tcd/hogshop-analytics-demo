@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Mail, User } from "lucide-react";
 import { trackEvent } from "@/lib/posthog";
 
@@ -17,12 +17,19 @@ export const RegistrationDialog = ({ open, onOpenChange, onComplete }: Registrat
   const [name, setName] = useState("");
   const [formStarted, setFormStarted] = useState(false);
 
-  // Track form opened
-  useState(() => {
+  useEffect(() => {
     if (open) {
       trackEvent("registration_form_opened", { source: "checkout" });
+      setFormStarted(false);
     }
-  });
+  }, [open]);
+
+  const handleInputFocus = () => {
+    if (!formStarted) {
+      setFormStarted(true);
+      trackEvent("registration_form_started", { source: "checkout" });
+    }
+  };
   const [errors, setErrors] = useState<{ email?: string; name?: string }>({});
 
   const validateForm = () => {
