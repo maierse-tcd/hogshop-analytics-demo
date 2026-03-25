@@ -15,6 +15,7 @@ const PRICE_MAP: Record<string, string> = {
   "Hedgehog Care Starter Kit": "price_1SMoRjLVW76jxQhlJXAdsXoC",
   "Cozy Hedgehog Hideout": "price_1SMoRkLVW76jxQhl9AOgqSsm",
   "Hedgehog Plushie": "price_1SMnmLLVW76jxQhl2ZTnrB7P",
+  "Hedgehog Lover T-Shirt": "price_1TEsUvLVW76jxQhlUX20Txyz",
 };
 
 serve(async (req) => {
