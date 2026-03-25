@@ -90,6 +90,10 @@ export default {
             boxShadow: "0 0 40px hsl(var(--primary) / 0.8)",
           },
         },
+        "float": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-6px)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
