@@ -23,7 +23,7 @@ export const initPostHog = () => {
       posthog.init(POSTHOG_KEY, {
         api_host: POSTHOG_HOST,
         ui_host: "https://eu.posthog.com",
-        person_profiles: 'identified_only',
+        person_profiles: 'always',
         capture_pageview: true,
         capture_pageleave: true,
         capture_performance: true,
