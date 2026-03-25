@@ -1,39 +1,43 @@
 
 
-## Fix: Missing Web Analytics Data for Playwright Bots
+## Create Stripe Customers During Checkout
 
-### Root Cause
+### Problem
+The checkout uses `customer_email` which creates "guest" checkout sessions — Stripe processes payments but doesn't create reusable Customer objects. This means you can't track repeat buyers, manage subscriptions properly, or see customer profiles in Stripe.
 
-`person_profiles: 'identified_only'` (line 26 in `src/lib/posthog.ts`).
+### Solution
+Before creating the checkout session, look up or create a Stripe Customer, then pass `customer` (not `customer_email`) to the session.
 
-With this setting, events from unidentified users are **personless** -- they exist in the raw event stream but PostHog's Web Analytics dashboard ignores them because it needs person-level data to calculate visitors, sessions, session duration, entry/exit paths, channels, etc.
+### Changes
 
-The Playwright bots (casualBrowser, engagedShopper, etc.) browse the site **without ever calling `posthog.identify()`**. Only bots that go through registration/login get identified. So all anonymous bot sessions are invisible to web analytics.
+**File: `supabase/functions/create-checkout/index.ts`**
 
-### Fix
+After initializing Stripe and before creating the session:
 
-Change `person_profiles` from `'identified_only'` to `'always'` in `src/lib/posthog.ts`.
+1. If `customer_email` is provided, search for an existing Stripe customer with that email
+2. If none found, create a new Stripe Customer with the email and name
+3. Pass `customer: customerId` to `stripe.checkout.sessions.create()` instead of `customer_email`
 
 ```typescript
-person_profiles: 'always',
+// Find or create Stripe customer
+let customerId: string | undefined;
+if (customer_email) {
+  const existing = await stripe.customers.list({ email: customer_email, limit: 1 });
+  if (existing.data.length > 0) {
+    customerId = existing.data[0].id;
+  } else {
+    const newCustomer = await stripe.customers.create({
+      email: customer_email,
+      name: customer_name || undefined,
+    });
+    customerId = newCustomer.id;
+  }
+}
+
+// Then in session create:
+customer: customerId,
+customer_email: customerId ? undefined : customer_email || undefined,
 ```
 
-This single-line change ensures every visitor (identified or not) gets a person profile, which is what Web Analytics requires for:
-- Unique visitors
-- Pageviews
-- Sessions & session duration
-- Entry/exit paths
-- Channels & referrers
-
-### Trade-off
-
-`'always'` creates person profiles for all anonymous visitors, slightly increasing PostHog event volume. For a demo/analytics site like HogShop this is the correct setting -- you *want* to track all visitors, not just registered ones. Real e-commerce sites almost always use `'always'` for this reason.
-
-### Files Changed
-
-| File | Change |
-|------|--------|
-| `src/lib/posthog.ts` | Line 26: `'identified_only'` → `'always'` |
-
-One line, one file.
+This ensures every checkout creates a proper Stripe Customer profile, linking all future transactions to the same person.
 
