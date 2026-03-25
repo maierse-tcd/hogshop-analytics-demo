@@ -93,7 +93,8 @@ serve(async (req) => {
       cancel_url: `${origin}/`,
       allow_promotion_codes: true,
       billing_address_collection: "required",
-      customer_email: customer_email || undefined,
+      customer: customerId,
+      customer_email: customerId ? undefined : customer_email || undefined,
       ...(customer_name && {
         custom_fields: [{
           key: "customer_name",
