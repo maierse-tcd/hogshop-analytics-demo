@@ -39,13 +39,22 @@ export const Header = () => {
   }, [halloweenMode]);
 
   // Check auth state on mount and when location changes
+  // Set UX Choice group based on current theme
+  useEffect(() => {
+    if (theme) {
+      const resolvedTheme = theme === "system" 
+        ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+        : theme;
+      posthog.group("ux_choice", `${resolvedTheme}_mode`, { theme: resolvedTheme });
+    }
+  }, [theme]);
+
   useEffect(() => {
     const user = getUser();
     if (user) {
       setIsLoggedIn(true);
       setUserName(user.name);
       
-      // Single reload on login - trust server-side tracking for updates
       posthog.reloadFeatureFlags();
       console.log("Header: User logged in, reloading feature flags", { email: user.email });
     } else {
