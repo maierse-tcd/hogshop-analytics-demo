@@ -55,6 +55,21 @@ const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const enterTimeRef = useRef(Date.now());
+
+  // Track time spent on product detail page
+  useEffect(() => {
+    enterTimeRef.current = Date.now();
+    return () => {
+      const timeSpent = Math.round((Date.now() - enterTimeRef.current) / 1000);
+      if (timeSpent > 1) {
+        trackEvent("product_detail_time_spent", {
+          product_id: id,
+          time_spent_seconds: timeSpent,
+        });
+      }
+    };
+  }, [id]);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ["product", id],

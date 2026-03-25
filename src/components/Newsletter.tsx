@@ -77,6 +77,7 @@ export const Newsletter = ({ variant = "card", onSubscribed }: NewsletterProps) 
           placeholder="your@email.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          onFocus={handleEmailFocus}
           required
           className="flex-1"
         />

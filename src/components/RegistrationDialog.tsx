@@ -103,6 +103,7 @@ export const RegistrationDialog = ({ open, onOpenChange, onComplete }: Registrat
                 placeholder="john@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onFocus={handleInputFocus}
                 className="pl-10"
               />
             </div>
