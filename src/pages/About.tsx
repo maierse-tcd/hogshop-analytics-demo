@@ -16,7 +16,7 @@ const About = () => {
           <Badge className="mb-4">Est. 2025</Badge>
           <h1 className="text-5xl font-bold mb-4">
             About{" "}
-            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            <span className="text-primary">
               HogShop
             </span>
           </h1>
