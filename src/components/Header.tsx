@@ -6,7 +6,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { LoginDialog } from "./LoginDialog";
 import { SubscriptionManagementDialog } from "./SubscriptionManagementDialog";
-import { posthog } from "@/lib/posthog";
+import { posthog, trackEvent } from "@/lib/posthog";
 import { useFeatureFlagEnabled, useFeatureFlagVariantKey } from "posthog-js/react";
 import { getUser, clearUser } from "@/lib/auth";
 
@@ -56,14 +56,15 @@ export const Header = () => {
 
   const handleLogout = () => {
     console.log("Header: handleLogout called");
+    trackEvent("user_logged_out", {
+      timestamp: new Date().toISOString(),
+    });
     clearUser();
     posthog.reset();
-    // Reload flags after reset to ensure clean state
     posthog.reloadFeatureFlags();
     setIsLoggedIn(false);
     setUserName("");
     console.log("Header: User logged out, flags reloaded");
-    // Redirect to home page for clean state
     navigate("/");
   };
 
@@ -231,7 +232,11 @@ export const Header = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            onClick={() => {
+              const newTheme = theme === "dark" ? "light" : "dark";
+              setTheme(newTheme);
+              trackEvent("theme_toggled", { from: theme, to: newTheme });
+            }}
             className="rounded-full"
           >
             <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />

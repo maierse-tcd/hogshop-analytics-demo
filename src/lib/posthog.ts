@@ -22,27 +22,24 @@ export const initPostHog = () => {
     try {
       posthog.init(POSTHOG_KEY, {
         api_host: POSTHOG_HOST,
-        ui_host: "https://eu.posthog.com", // Always use EU UI host
+        ui_host: "https://eu.posthog.com",
+        person_profiles: 'identified_only',
+        capture_pageview: true,
+        capture_pageleave: true,
+        capture_performance: true,
+        enable_heatmaps: true,
+        persistence: "localStorage+cookie",
+        cross_subdomain_cookie: false,
+        disable_session_recording: false,
+        disable_web_experiments: false,
+        session_recording: {
+          recordCrossOriginIframes: false,
+        },
         loaded: (posthog) => {
           console.log("PostHog loaded successfully!", { api_host: POSTHOG_HOST });
           if (import.meta.env.DEV) {
             posthog.debug();
           }
-        },
-        capture_pageview: true,
-        capture_pageleave: true,
-        persistence: "localStorage+cookie",
-        cross_subdomain_cookie: false,
-        disable_session_recording: false,
-        disable_web_experiments: false,
-        respect_dnt: false,
-        opt_out_capturing_by_default: false,
-        sanitize_properties: null,
-        bootstrap: {
-          distinctID: undefined,
-        },
-        session_recording: {
-          recordCrossOriginIframes: false,
         },
       });
       

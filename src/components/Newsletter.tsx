@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -11,6 +11,17 @@ interface NewsletterProps {
 
 export const Newsletter = ({ variant = "card", onSubscribed }: NewsletterProps) => {
   const [email, setEmail] = useState("");
+  const formStartedRef = useRef(false);
+
+  const handleEmailFocus = () => {
+    if (!formStartedRef.current) {
+      formStartedRef.current = true;
+      trackEvent("newsletter_form_started", {
+        source: variant === "banner" ? "hero_banner" : "newsletter_card",
+        variant,
+      });
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,6 +48,7 @@ export const Newsletter = ({ variant = "card", onSubscribed }: NewsletterProps) 
             placeholder="your@email.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            onFocus={handleEmailFocus}
             required
             className="flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 h-10"
           />
@@ -65,6 +77,7 @@ export const Newsletter = ({ variant = "card", onSubscribed }: NewsletterProps) 
           placeholder="your@email.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          onFocus={handleEmailFocus}
           required
           className="flex-1"
         />

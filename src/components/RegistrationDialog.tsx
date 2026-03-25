@@ -2,8 +2,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Mail, User } from "lucide-react";
+import { trackEvent } from "@/lib/posthog";
 
 interface RegistrationDialogProps {
   open: boolean;
@@ -14,6 +15,21 @@ interface RegistrationDialogProps {
 export const RegistrationDialog = ({ open, onOpenChange, onComplete }: RegistrationDialogProps) => {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [formStarted, setFormStarted] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      trackEvent("registration_form_opened", { source: "checkout" });
+      setFormStarted(false);
+    }
+  }, [open]);
+
+  const handleInputFocus = () => {
+    if (!formStarted) {
+      setFormStarted(true);
+      trackEvent("registration_form_started", { source: "checkout" });
+    }
+  };
   const [errors, setErrors] = useState<{ email?: string; name?: string }>({});
 
   const validateForm = () => {
@@ -37,8 +53,11 @@ export const RegistrationDialog = ({ open, onOpenChange, onComplete }: Registrat
     e.preventDefault();
     
     if (validateForm()) {
+      trackEvent("registration_form_submitted", {
+        source: "checkout",
+        timestamp: new Date().toISOString(),
+      });
       onComplete(email.trim(), name.trim());
-      // Reset form
       setEmail("");
       setName("");
       setErrors({});
@@ -65,6 +84,7 @@ export const RegistrationDialog = ({ open, onOpenChange, onComplete }: Registrat
                 placeholder="John Doe"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                onFocus={handleInputFocus}
                 className="pl-10"
               />
             </div>
@@ -83,6 +103,7 @@ export const RegistrationDialog = ({ open, onOpenChange, onComplete }: Registrat
                 placeholder="john@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onFocus={handleInputFocus}
                 className="pl-10"
               />
             </div>
