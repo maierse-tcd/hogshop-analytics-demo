@@ -78,7 +78,7 @@ const About = () => {
                   From plushies to hoodies, each item embodies the HogShop spirit of quality and cuteness.
                 </p>
               </div>
-              <div className="p-6 rounded-lg border bg-card">
+              <div className="p-6 rounded-lg border bg-card hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
                 <h3 className="font-semibold text-lg mb-2">Analytics Subscriptions</h3>
                 <p className="text-muted-foreground">
                   Access PostHog's powerful analytics platform through our subscription plans. Track user behavior, 
