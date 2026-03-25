@@ -85,7 +85,7 @@ const About = () => {
                   run A/B tests, deploy feature flags, and watch session replays – all while being supported by hedgehogs.
                 </p>
               </div>
-              <div className="p-6 rounded-lg border bg-card">
+              <div className="p-6 rounded-lg border bg-card hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
                 <h3 className="font-semibold text-lg mb-2">Demo Environment</h3>
                 <p className="text-muted-foreground">
                   HogShop serves as a fully functional demonstration of how PostHog can be integrated into an e-commerce 

@@ -261,7 +261,7 @@ export const ProductCard = ({
           {description}
         </p>
         <div className="flex items-baseline gap-2">
-          <p className="text-2xl font-bold"
+          <p className="text-2xl font-bold bg-primary/10 px-2 py-0.5 rounded-md w-fit"
              style={seasonalMode && themeConfig ? {
                color: themeConfig.colors.primary,
                textShadow: `0 0 10px ${themeConfig.colors.primary}`

@@ -579,7 +579,7 @@ const Index = () => {
               </ul>
             </div>
           </div>
-          <div className="border-t pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="border-t border-transparent bg-gradient-to-r from-transparent via-primary/20 to-transparent bg-[length:100%_1px] bg-no-repeat bg-top pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm text-muted-foreground">
               © 2026 HogShop. All rights reserved. Made with ❤️ for hedgehogs.
             </p>

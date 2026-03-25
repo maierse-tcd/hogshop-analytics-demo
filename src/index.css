@@ -163,9 +163,20 @@ All colors MUST be HSL.
 @layer base {
   * {
     @apply border-border;
+    transition: background-color 0.3s ease, color 0.15s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  /* Exclude elements where transition causes issues */
+  input, textarea, select, button, a, [class*="animate-"] {
+    transition: none;
   }
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  ::selection {
+    background-color: hsl(var(--primary) / 0.2);
+    color: hsl(var(--foreground));
   }
 }
