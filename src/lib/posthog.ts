@@ -37,9 +37,7 @@ export const initPostHog = () => {
         },
         loaded: (posthog) => {
           console.log("PostHog loaded successfully!", { api_host: POSTHOG_HOST });
-          if (import.meta.env.DEV) {
-            posthog.debug();
-          }
+          posthog.debug();
         },
       });
       
