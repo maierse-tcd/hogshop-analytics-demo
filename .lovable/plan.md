@@ -1,47 +1,39 @@
 
 
-## Fix: Empty Conversion Funnel -- Server-Side Events Not Creating Person Profiles
+## Fix: Missing Web Analytics Data for Playwright Bots
 
 ### Root Cause
 
-The PostHog client is configured with `person_profiles: 'identified_only'`. This means PostHog only creates person profiles when an explicit `$identify` event is received.
+`person_profiles: 'identified_only'` (line 26 in `src/lib/posthog.ts`).
 
-The `track-success` edge function sends `purchase_completed` with `distinct_id: customerEmail`, but it never sends an `$identify` event first. PostHog accepts the event (200 response) but treats it as a **personless event** -- it exists in the raw event stream but is invisible to funnels, which require person-level analysis.
+With this setting, events from unidentified users are **personless** -- they exist in the raw event stream but PostHog's Web Analytics dashboard ignores them because it needs person-level data to calculate visitors, sessions, session duration, entry/exit paths, channels, etc.
 
-The `$set` event IS sent later, but AFTER `purchase_completed`, so the purchase event was already ingested without a person profile.
+The Playwright bots (casualBrowser, engagedShopper, etc.) browse the site **without ever calling `posthog.identify()`**. Only bots that go through registration/login get identified. So all anonymous bot sessions are invisible to web analytics.
 
 ### Fix
 
-**File: `supabase/functions/track-success/index.ts`**
-
-Add an `$identify` call BEFORE sending `$groupidentify` and `purchase_completed` events. This ensures PostHog creates the person profile first, so all subsequent events are properly attributed.
+Change `person_profiles` from `'identified_only'` to `'always'` in `src/lib/posthog.ts`.
 
 ```typescript
-// Send $identify FIRST to create person profile
-const identifyPayload = {
-  api_key: POSTHOG_KEY,
-  event: "$identify",
-  distinct_id: customerEmail || sessionId,
-  properties: {
-    $set: {
-      email: customerEmail,
-      name: customerName,
-    },
-  },
-};
-
-await fetch(`${POSTHOG_HOST}/capture/`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify(identifyPayload),
-});
+person_profiles: 'always',
 ```
 
-Insert this block right after computing `valueTier` (around line 98) and before the `$groupidentify` calls. The rest of the function stays the same.
+This single-line change ensures every visitor (identified or not) gets a person profile, which is what Web Analytics requires for:
+- Unique visitors
+- Pageviews
+- Sessions & session duration
+- Entry/exit paths
+- Channels & referrers
 
-### Why This Works
+### Trade-off
 
-PostHog's `identified_only` mode requires an `$identify` event to "activate" a person profile. Once identified, all events with that `distinct_id` (email) become person-level events visible in funnels. The existing `$set` call at the end of the function is redundant with this but harmless.
+`'always'` creates person profiles for all anonymous visitors, slightly increasing PostHog event volume. For a demo/analytics site like HogShop this is the correct setting -- you *want* to track all visitors, not just registered ones. Real e-commerce sites almost always use `'always'` for this reason.
 
-### Single file change, ~15 lines added.
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `src/lib/posthog.ts` | Line 26: `'identified_only'` → `'always'` |
+
+One line, one file.
 
