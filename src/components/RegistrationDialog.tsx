@@ -84,6 +84,7 @@ export const RegistrationDialog = ({ open, onOpenChange, onComplete }: Registrat
                 placeholder="John Doe"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                onFocus={handleInputFocus}
                 className="pl-10"
               />
             </div>
