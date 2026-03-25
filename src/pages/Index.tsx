@@ -504,7 +504,7 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className={`border-t mt-24 relative overflow-hidden ${
+      <footer className={`border-t mt-12 relative overflow-hidden ${
         seasonalTheme ?
         `bg-gradient-to-br from-[${getThemeConfig(seasonalTheme)?.colors.dark}] via-[${getThemeConfig(seasonalTheme)?.colors.secondary}]/20 to-[${getThemeConfig(seasonalTheme)?.colors.dark}]` :
         'bg-accent/5'}`
