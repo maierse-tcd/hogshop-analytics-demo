@@ -1,9 +1,5 @@
 import { posthog } from "@/lib/posthog";
 
-/**
- * Captures a demo exception to PostHog with rich metadata
- * This is a safe wrapper that never throws errors itself
- */
 const captureDemoException = (
   error: Error,
   context: string,
@@ -26,209 +22,142 @@ const captureDemoException = (
   }
 };
 
+interface DemoError {
+  create: () => { error: Error; context: string; props: Record<string, any> };
+}
+
+const errorTypes: DemoError[] = [
+  {
+    create: () => ({
+      error: new Error("Failed to fetch user preferences from API"),
+      context: "network_request",
+      props: { endpoint: "/api/user/preferences", method: "GET", status_code: 503 },
+    }),
+  },
+  {
+    create: () => ({
+      error: new TypeError("Cannot read property 'price' of undefined"),
+      context: "data_processing",
+      props: { operation: "product_transformation", affected_product_id: "prod_123" },
+    }),
+  },
+  {
+    create: () => ({
+      error: new Error("Email format validation failed"),
+      context: "validation_error",
+      props: { field: "email", input_value: "invalid-email", validator: "email_regex" },
+    }),
+  },
+  {
+    create: () => ({
+      error: new Error("Async image upload failed"),
+      context: "async_operation",
+      props: { operation_type: "file_upload", file_type: "image/jpeg", file_size: 2048000 },
+    }),
+  },
+  {
+    create: () => ({
+      error: new Error("Stripe payment processing timeout"),
+      context: "third_party_integration",
+      props: { service: "stripe", operation: "create_payment_intent", timeout_ms: 30000 },
+    }),
+  },
+  {
+    create: () => ({
+      error: new ReferenceError("cartData is not defined"),
+      context: "reference_error",
+      props: { missing_variable: "cartData", scope: "checkout_flow" },
+    }),
+  },
+  {
+    create: () => ({
+      error: new RangeError("Maximum cart item limit (50) exceeded"),
+      context: "range_error",
+      props: { limit: 50, attempted_value: 75, resource: "cart_items" },
+    }),
+  },
+  {
+    create: () => ({
+      error: new Error("User session expired - please log in again"),
+      context: "authentication_error",
+      props: { auth_type: "jwt", session_duration_minutes: 120 },
+    }),
+  },
+  {
+    create: () => ({
+      error: new Error("Payment declined by card issuer"),
+      context: "payment_failed",
+      props: { payment_method: "card", decline_code: "insufficient_funds", amount: 89.99, currency: "USD" },
+    }),
+  },
+  {
+    create: () => ({
+      error: new Error("AI response timeout after 30 seconds"),
+      context: "ai_timeout",
+      props: { model: "gemini-2.5-flash", timeout_ms: 30000, prompt_length: 512 },
+    }),
+  },
+  {
+    create: () => ({
+      error: new Error("Product out of stock during checkout"),
+      context: "out_of_stock",
+      props: { product_id: "prod_hedgehog_food", product_name: "Premium Hedgehog Food", quantity_requested: 5, stock_available: 0 },
+    }),
+  },
+  {
+    create: () => ({
+      error: new Error("Rate limit exceeded: 100 requests per minute"),
+      context: "api_rate_limit",
+      props: { api_endpoint: "/api/v1/products", limit: 100, window: "1 minute", retry_after: 45 },
+    }),
+  },
+  // New error types
+  {
+    create: () => ({
+      error: new Error("WebSocket connection closed unexpectedly"),
+      context: "websocket_disconnect",
+      props: { url: "wss://realtime.hogflix.dev", close_code: 1006, reconnect_attempts: 3 },
+    }),
+  },
+  {
+    create: () => ({
+      error: new DOMException("Failed to execute 'setItem' on 'Storage': Setting the value exceeded the quota"),
+      context: "storage_quota_exceeded",
+      props: { storage_type: "localStorage", key: "cart_cache", estimated_size_kb: 5120 },
+    }),
+  },
+  {
+    create: () => ({
+      error: new Error("Image failed to load: /images/product-hero.webp"),
+      context: "image_load_failure",
+      props: { src: "/images/product-hero.webp", component: "ProductCard", fallback_used: true },
+    }),
+  },
+];
+
 /**
- * Simulates various error types for PostHog demonstration
- * All errors are caught and isolated - will never affect UI
+ * Simulates random errors for PostHog error tracking demonstration.
+ * Picks 3-5 random error types per session, staggered over 5-30 seconds.
  */
 export const simulateDemoErrors = () => {
-  // Only run in development or when explicitly enabled
-  const isDemoMode = import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEMO_ERRORS === 'true';
-  
-  if (!isDemoMode) {
-    console.log("[Demo Errors] Skipped - not in demo mode");
-    return;
-  }
+  const count = 3 + Math.floor(Math.random() * 3); // 3-5 errors
+  const selected = [...errorTypes].sort(() => 0.5 - Math.random()).slice(0, count);
 
-  console.log("[Demo Errors] Starting background error simulation...");
+  console.log(`[Demo Errors] Scheduling ${selected.length} random errors...`);
 
-  // 1. Network Request Failure
-  setTimeout(() => {
-    try {
-      throw new Error("Failed to fetch user preferences from API");
-    } catch (error) {
-      if (error instanceof Error) {
-        captureDemoException(error, "network_request", {
-          endpoint: "/api/user/preferences",
-          method: "GET",
-          status_code: 503,
-        });
+  selected.forEach((errorDef) => {
+    const delay = 5000 + Math.random() * 25000; // 5-30 seconds
+    setTimeout(() => {
+      try {
+        const { error, context, props } = errorDef.create();
+        captureDemoException(error, context, props);
+      } catch (e) {
+        // never break the app
       }
-    }
-  }, 1000);
-
-  // 2. Data Processing Error
-  setTimeout(() => {
-    try {
-      throw new TypeError("Cannot read property 'price' of undefined");
-    } catch (error) {
-      if (error instanceof Error) {
-        captureDemoException(error, "data_processing", {
-          operation: "product_transformation",
-          affected_product_id: "prod_123",
-        });
-      }
-    }
-  }, 2000);
-
-  // 3. Validation Error
-  setTimeout(() => {
-    try {
-      throw new Error("Email format validation failed");
-    } catch (error) {
-      if (error instanceof Error) {
-        captureDemoException(error, "validation_error", {
-          field: "email",
-          input_value: "invalid-email",
-          validator: "email_regex",
-        });
-      }
-    }
-  }, 3000);
-
-  // 4. Async Operation Failure
-  setTimeout(() => {
-    try {
-      const promise = Promise.reject(new Error("Async image upload failed"));
-      promise.catch((error) => {
-        captureDemoException(error, "async_operation", {
-          operation_type: "file_upload",
-          file_type: "image/jpeg",
-          file_size: 2048000,
-        });
-      });
-    } catch (error) {
-      // Already handled in promise.catch
-    }
-  }, 4000);
-
-  // 5. Third-party Integration Error
-  setTimeout(() => {
-    try {
-      throw new Error("Stripe payment processing timeout");
-    } catch (error) {
-      if (error instanceof Error) {
-        captureDemoException(error, "third_party_integration", {
-          service: "stripe",
-          operation: "create_payment_intent",
-          timeout_ms: 30000,
-        });
-      }
-    }
-  }, 5000);
-
-  // 6. ReferenceError
-  setTimeout(() => {
-    try {
-      throw new ReferenceError("cartData is not defined");
-    } catch (error) {
-      if (error instanceof Error) {
-        captureDemoException(error, "reference_error", {
-          missing_variable: "cartData",
-          scope: "checkout_flow",
-        });
-      }
-    }
-  }, 6000);
-
-  // 7. RangeError
-  setTimeout(() => {
-    try {
-      throw new RangeError("Maximum cart item limit (50) exceeded");
-    } catch (error) {
-      if (error instanceof Error) {
-        captureDemoException(error, "range_error", {
-          limit: 50,
-          attempted_value: 75,
-          resource: "cart_items",
-        });
-      }
-    }
-  }, 7000);
-
-  // 8. Auth/Session Error
-  setTimeout(() => {
-    try {
-      throw new Error("User session expired - please log in again");
-    } catch (error) {
-      if (error instanceof Error) {
-        captureDemoException(error, "authentication_error", {
-          auth_type: "jwt",
-          session_duration_minutes: 120,
-          last_activity: new Date(Date.now() - 7200000).toISOString(),
-        });
-      }
-    }
-  }, 8000);
-
-  // 9. Payment Failed Error
-  setTimeout(() => {
-    try {
-      throw new Error("Payment declined by card issuer");
-    } catch (error) {
-      if (error instanceof Error) {
-        captureDemoException(error, "payment_failed", {
-          payment_method: "card",
-          decline_code: "insufficient_funds",
-          amount: 89.99,
-          currency: "USD",
-        });
-      }
-    }
-  }, 9000);
-
-  // 10. AI Timeout Error
-  setTimeout(() => {
-    try {
-      throw new Error("AI response timeout after 30 seconds");
-    } catch (error) {
-      if (error instanceof Error) {
-        captureDemoException(error, "ai_timeout", {
-          model: "gemini-2.5-flash",
-          timeout_ms: 30000,
-          prompt_length: 512,
-        });
-      }
-    }
-  }, 10000);
-
-  // 11. Out of Stock Error
-  setTimeout(() => {
-    try {
-      throw new Error("Product out of stock during checkout");
-    } catch (error) {
-      if (error instanceof Error) {
-        captureDemoException(error, "out_of_stock", {
-          product_id: "prod_hedgehog_food",
-          product_name: "Premium Hedgehog Food",
-          quantity_requested: 5,
-          stock_available: 0,
-        });
-      }
-    }
-  }, 11000);
-
-  // 12. API Rate Limit Error
-  setTimeout(() => {
-    try {
-      throw new Error("Rate limit exceeded: 100 requests per minute");
-    } catch (error) {
-      if (error instanceof Error) {
-        captureDemoException(error, "api_rate_limit", {
-          api_endpoint: "/api/v1/products",
-          limit: 100,
-          window: "1 minute",
-          retry_after: 45,
-        });
-      }
-    }
-  }, 12000);
-
-  console.log("[Demo Errors] All background errors scheduled (12 types)");
+    }, delay);
+  });
 };
 
-/**
- * Manual error trigger for testing (can be called from dev tools)
- */
 export const triggerDemoError = (errorType: string = "generic") => {
   try {
     throw new Error(`Manual demo error: ${errorType}`);
@@ -242,7 +171,6 @@ export const triggerDemoError = (errorType: string = "generic") => {
   }
 };
 
-// Export for use in window object (debugging)
 if (typeof window !== "undefined") {
   (window as any).triggerDemoError = triggerDemoError;
   (window as any).simulateDemoErrors = simulateDemoErrors;
