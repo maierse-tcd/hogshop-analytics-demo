@@ -1,18 +1,16 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { createLogger } from "../_shared/posthog-logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[CANCEL-SUBSCRIPTION] ${step}${detailsStr}`);
-};
-
 serve(async (req) => {
+  const log = createLogger("cancel-subscription");
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -24,59 +22,44 @@ serve(async (req) => {
   );
 
   try {
-    logStep("Function started");
+    log.info("Function started");
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
-    logStep("Stripe key verified");
+    log.info("Stripe key verified");
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("No authorization header provided");
-    logStep("Authorization header found");
 
     const token = authHeader.replace("Bearer ", "");
-    logStep("Authenticating user with token");
-    
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError) throw new Error(`Authentication error: ${userError.message}`);
     const user = userData.user;
     if (!user?.email) throw new Error("User not authenticated or email not available");
-    logStep("User authenticated", { userId: user.id, email: user.email });
+    log.info("User authenticated", { userId: user.id, email: user.email });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     
-    if (customers.data.length === 0) {
-      throw new Error("No Stripe customer found for this user");
-    }
+    if (customers.data.length === 0) throw new Error("No Stripe customer found for this user");
 
     const customerId = customers.data[0].id;
-    logStep("Found Stripe customer", { customerId });
+    log.info("Found Stripe customer", { customerId });
 
-    // Get active subscriptions
-    const subscriptions = await stripe.subscriptions.list({
-      customer: customerId,
-      status: "active",
-      limit: 1,
-    });
-
-    if (subscriptions.data.length === 0) {
-      throw new Error("No active subscription found to cancel");
-    }
+    const subscriptions = await stripe.subscriptions.list({ customer: customerId, status: "active", limit: 1 });
+    if (subscriptions.data.length === 0) throw new Error("No active subscription found to cancel");
 
     const subscription = subscriptions.data[0];
-    logStep("Found active subscription", { subscriptionId: subscription.id });
+    log.info("Found active subscription", { subscriptionId: subscription.id });
 
-    // Cancel the subscription immediately
     const cancelledSubscription = await stripe.subscriptions.cancel(subscription.id);
-    logStep("Subscription cancelled", { subscriptionId: cancelledSubscription.id, status: cancelledSubscription.status });
+    log.info("Subscription cancelled", { subscriptionId: cancelledSubscription.id, status: cancelledSubscription.status });
 
-    // Update PostHog to mark as churned subscriber
+    // Update PostHog
     const POSTHOG_HOST = Deno.env.get("POSTHOG_HOST") || "https://eu.i.posthog.com";
     const POSTHOG_KEY = Deno.env.get("POSTHOG_KEY") || "phc_mCl11WvLPwmqyjG7FlivcsSbTfSEY1J3TWcEnnR0CJa";
 
     try {
-      // FIRST: Send $groupidentify to update lifecycle to Churned Subscriber
       const groupIdentifyPayload = {
         api_key: POSTHOG_KEY,
         event: "$groupidentify",
@@ -84,22 +67,17 @@ serve(async (req) => {
         properties: {
           $group_type: "customer_lifecycle",
           $group_key: "Churned Subscriber",
-          $group_set: {
-            name: "Churned Subscriber",
-            is_subscriber: false,
-            churned: true,
-          },
+          $group_set: { name: "Churned Subscriber", is_subscriber: false, churned: true },
         },
       };
 
-      logStep("Sending PostHog groupIdentify", { email: user.email, lifecycle: "Churned Subscriber" });
+      log.info("Sending PostHog groupIdentify", { email: user.email, lifecycle: "Churned Subscriber" });
       await fetch(`${POSTHOG_HOST}/capture/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(groupIdentifyPayload),
       });
 
-      // THEN: Send subscription_cancelled event with the group
       const groupUpdatePayload = {
         api_key: POSTHOG_KEY,
         event: "subscription_cancelled",
@@ -107,21 +85,18 @@ serve(async (req) => {
         properties: {
           subscription_id: cancelledSubscription.id,
           cancelled_at: new Date(cancelledSubscription.canceled_at! * 1000).toISOString(),
-          $groups: {
-            customer_lifecycle: "Churned Subscriber"
-          },
+          $groups: { customer_lifecycle: "Churned Subscriber" },
         },
       };
 
-      logStep("Sending PostHog subscription_cancelled event");
+      log.info("Sending PostHog subscription_cancelled event");
       const phRes = await fetch(`${POSTHOG_HOST}/capture/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(groupUpdatePayload),
       });
-      logStep("PostHog response", { status: phRes.status, ok: phRes.ok });
+      log.info("PostHog response", { status: phRes.status, ok: phRes.ok });
 
-      // Update person properties to reflect cancelled subscription
       const personPropertiesPayload = {
         api_key: POSTHOG_KEY,
         event: "$set",
@@ -136,15 +111,17 @@ serve(async (req) => {
         },
       };
 
-      logStep("Sending PostHog person properties update");
       await fetch(`${POSTHOG_HOST}/capture/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(personPropertiesPayload),
       });
+      log.info("PostHog person properties updated");
     } catch (phError) {
-      logStep("PostHog update failed (non-critical)", { error: String(phError) });
+      log.warn("PostHog update failed (non-critical)", { error: String(phError) });
     }
+
+    await log.flush();
 
     return new Response(JSON.stringify({
       success: true,
@@ -156,11 +133,9 @@ serve(async (req) => {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR in cancel-subscription", { message: errorMessage });
-    return new Response(JSON.stringify({ 
-      success: false,
-      error: errorMessage 
-    }), {
+    log.error("Cancel subscription error", { message: errorMessage });
+    await log.flush();
+    return new Response(JSON.stringify({ success: false, error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });

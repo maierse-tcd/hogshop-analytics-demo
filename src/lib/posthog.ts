@@ -32,6 +32,7 @@ export const initPostHog = () => {
         cross_subdomain_cookie: false,
         disable_session_recording: false,
         disable_web_experiments: false,
+        enable_recording_console_log: true,
         session_recording: {
           recordCrossOriginIframes: false,
         },

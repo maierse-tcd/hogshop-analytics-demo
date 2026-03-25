@@ -1,13 +1,12 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { createLogger } from "../_shared/posthog-logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Mapping of product titles to Stripe price IDs
 const PRICE_MAP: Record<string, string> = {
   "Premium Hedgehog Food": "price_1SMoRdLVW76jxQhlNLBKgkjF",
   "Deluxe Hedgehog Habitat": "price_1SMoRgLVW76jxQhlkgmMqwBU",
@@ -19,22 +18,22 @@ const PRICE_MAP: Record<string, string> = {
 };
 
 serve(async (req) => {
+  const log = createLogger("create-checkout");
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log("🔵 CREATE-CHECKOUT: Function invoked");
+    log.info("Function invoked");
     
     const { items, customer_email, customer_name } = await req.json();
     
-    console.log("🔵 CREATE-CHECKOUT: Request data:", { 
-      itemCount: items?.length, 
-      customer_email, 
-      customer_name 
-    });
+    log.info("Request data", { itemCount: items?.length, customer_email, customer_name });
     
     if (!items || items.length === 0) {
+      log.error("No items in cart");
+      await log.flush();
       throw new Error("No items in cart");
     }
 
@@ -42,39 +41,24 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
-    // Build line items for Stripe
     const lineItems = items.map((item: any) => {
-      // Try to find the Stripe price ID by product title
       const priceId = PRICE_MAP[item.title];
-
-      // If we have a price ID, use it
       if (priceId) {
-        return {
-          price: priceId,
-          quantity: item.quantity || 1,
-        };
+        return { price: priceId, quantity: item.quantity || 1 };
       }
 
-      // Fallback to price_data for items without a mapping
-      // Note: Stripe doesn't require images for line items, so we omit them to avoid URL validation errors
-      console.log(`No price mapping found for: ${item.title}, using price_data`);
+      log.warn("No price mapping found, using price_data", { title: item.title });
       return {
         price_data: {
           currency: "usd",
           unit_amount: Math.round(item.price * 100),
-          product_data: {
-            name: item.title,
-            description: item.description || "",
-          },
-          recurring: item.is_subscription ? {
-            interval: item.subscription_interval || "month",
-          } : undefined,
+          product_data: { name: item.title, description: item.description || "" },
+          recurring: item.is_subscription ? { interval: item.subscription_interval || "month" } : undefined,
         },
         quantity: item.quantity || 1,
       };
     });
 
-    // Determine if this is a subscription or one-time payment
     const hasSubscription = items.some((item: any) => item.is_subscription);
     const mode = hasSubscription ? "subscription" : "payment";
 
@@ -82,16 +66,9 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const functionsBase = `${supabaseUrl}/functions/v1`;
     
-    console.log("🔵 CREATE-CHECKOUT: Building success URL with:", {
-      origin,
-      supabaseUrl,
-      functionsBase,
-    });
-    
     const successUrl = `${functionsBase}/track-success?session_id={CHECKOUT_SESSION_ID}&redirect=${encodeURIComponent(origin + "/success")}`;
-    console.log("🔵 CREATE-CHECKOUT: Full success URL:", successUrl);
+    log.info("Building checkout session", { mode, origin, successUrl });
 
-    console.log("🔵 CREATE-CHECKOUT: Creating Stripe session with mode:", mode);
     const session = await stripe.checkout.sessions.create({
       line_items: lineItems,
       mode,
@@ -110,12 +87,8 @@ serve(async (req) => {
       }),
     });
 
-    console.log("🔵 CREATE-CHECKOUT: Stripe session created successfully:", {
-      sessionId: session.id,
-      checkoutUrl: session.url,
-      mode: session.mode,
-      successUrl: session.success_url,
-    });
+    log.info("Stripe session created", { sessionId: session.id, checkoutUrl: session.url, mode: session.mode });
+    await log.flush();
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -123,7 +96,8 @@ serve(async (req) => {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error("Checkout error:", errorMessage);
+    log.error("Checkout error", { message: errorMessage });
+    await log.flush();
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

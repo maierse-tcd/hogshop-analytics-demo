@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
+import { createLogger } from "../_shared/posthog-logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,6 +8,8 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  const log = createLogger("get-session");
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -25,8 +28,12 @@ serve(async (req) => {
     }
 
     if (!sessionId) {
+      log.error("No session_id provided");
+      await log.flush();
       throw new Error("No session_id provided");
     }
+
+    log.info("Retrieving session", { sessionId });
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
@@ -36,13 +43,15 @@ serve(async (req) => {
       expand: ['line_items.data.price.product']
     });
 
-    // Extract line items for fallback tracking
     const lineItems = session.line_items?.data.map((item: any) => ({
       name: item.description,
-      price: item.amount_total / 100, // Convert from cents
+      price: item.amount_total / 100,
       quantity: item.quantity,
       is_subscription: item.price?.type === 'recurring'
     })) || [];
+
+    log.info("Session retrieved", { email: session.customer_details?.email, itemCount: lineItems.length });
+    await log.flush();
 
     return new Response(
       JSON.stringify({
@@ -51,14 +60,12 @@ serve(async (req) => {
         line_items: lineItems,
         total_amount: session.amount_total ? session.amount_total / 100 : 0,
       }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error("Get session error:", errorMessage);
+    log.error("Get session error", { message: errorMessage });
+    await log.flush();
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

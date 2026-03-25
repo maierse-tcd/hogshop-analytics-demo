@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createLogger } from "../_shared/posthog-logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,7 +7,8 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
+  const log = createLogger("ai-chat");
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -16,11 +18,12 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
-      console.error("LOVABLE_API_KEY is not configured");
+      log.error("LOVABLE_API_KEY is not configured");
+      await log.flush();
       throw new Error("AI service not configured");
     }
 
-    console.log("AI Chat - Processing request with", messages.length, "messages");
+    log.info("Processing AI chat request", { messageCount: messages.length });
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -161,32 +164,28 @@ Be friendly, concise, and helpful. Keep responses under 100 words unless detaile
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
+      log.error("AI gateway error", { status: response.status, error: errorText });
+      await log.flush();
       
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), 
-          {
-            status: 429,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       
       if (response.status === 402) {
         return new Response(
           JSON.stringify({ error: "AI service temporarily unavailable. Please try again later." }), 
-          {
-            status: 402,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       
       throw new Error(`AI gateway error: ${response.status}`);
     }
 
-    console.log("AI Chat - Streaming response");
+    log.info("Streaming AI response");
+    await log.flush();
     
     return new Response(response.body, {
       headers: { 
@@ -197,15 +196,11 @@ Be friendly, concise, and helpful. Keep responses under 100 words unless detaile
       },
     });
   } catch (error) {
-    console.error("AI chat error:", error);
+    log.error("AI chat error", { message: error instanceof Error ? error.message : String(error) });
+    await log.flush();
     return new Response(
-      JSON.stringify({ 
-        error: error instanceof Error ? error.message : "Unknown error occurred" 
-      }), 
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error occurred" }), 
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
