@@ -236,6 +236,7 @@ export const Header = () => {
               const newTheme = theme === "dark" ? "light" : "dark";
               setTheme(newTheme);
               trackEvent("theme_toggled", { from: theme, to: newTheme });
+              posthog.group("ux_choice", `${newTheme}_mode`, { theme: newTheme });
             }}
             className="rounded-full"
           >
