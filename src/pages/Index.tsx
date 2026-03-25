@@ -227,7 +227,7 @@ const Index = () => {
         'bg-gradient-to-br from-[hsl(var(--easter-lavender))]/20 via-[hsl(var(--easter-pink))]/20 to-[hsl(var(--easter-mint))]/20' :
         seasonalTheme === 'summer' ?
         'bg-gradient-to-br from-[hsl(var(--summer-blue))]/30 via-[hsl(var(--summer-cyan))]/20 to-[hsl(var(--summer-yellow))]/10' :
-        'bg-gradient-to-br from-primary/10 via-background to-accent/15'}`
+        'bg-gradient-to-br from-primary/15 via-background to-accent/20'}`
         }>
         {seasonalTheme ?
           <>
