@@ -129,7 +129,7 @@ export const Header = () => {
             <span className={`text-2xl font-bold ${
               halloweenMode 
                 ? 'bg-gradient-to-r from-[hsl(var(--halloween-orange))] to-[hsl(var(--halloween-purple))] bg-clip-text text-transparent drop-shadow-[0_0_10px_hsl(var(--halloween-orange))]' 
-                : 'bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent'
+                : 'text-primary'
             }`}>
               {halloweenMode ? '👻 HogShop 🎃' : 'HogShop'}
             </span>
