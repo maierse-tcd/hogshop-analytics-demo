@@ -96,6 +96,27 @@ serve(async (req) => {
       return "Bronze";
     };
     const valueTier = getValueTier(totalAmount);
+
+    // Send $identify FIRST to create person profile (required for identified_only mode)
+    const identifyPayload = {
+      api_key: POSTHOG_KEY,
+      event: "$identify",
+      distinct_id: customerEmail || sessionId,
+      properties: {
+        $set: {
+          email: customerEmail,
+          name: customerName,
+        },
+      },
+    };
+
+    log("🟢 TRACK-SUCCESS: Sending PostHog $identify", { distinct_id: customerEmail || sessionId });
+    const identifyRes = await fetch(`${POSTHOG_HOST}/capture/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(identifyPayload),
+    });
+    log("🟢 TRACK-SUCCESS: PostHog $identify response", { status: identifyRes.status, ok: identifyRes.ok });
     
     const capturePayload = {
       api_key: POSTHOG_KEY,
