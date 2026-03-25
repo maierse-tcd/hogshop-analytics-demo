@@ -1,44 +1,21 @@
 
 
-## Fix: Save Payment Method to Stripe Customer During Checkout
+## Plan: Enable Random Errors for PostHog Error Tracking
 
-### Root Cause
-The checkout session is created without instructing Stripe to save the payment method. By default, Stripe Checkout processes the payment but does **not** attach the card to the Customer object. This is why customers show up in Stripe but have no "primary payment method" recorded.
+### Problem
+The existing `demoErrorSimulator.ts` only fires in development mode (`import.meta.env.DEV`), so PostHog error tracking has nothing to report in production/preview.
 
-### Fix
-Add `payment_intent_data.setup_future_usage` to the checkout session creation in `supabase/functions/create-checkout/index.ts`.
+### Changes
 
-### Change
+**1. `src/utils/demoErrorSimulator.ts`** — Remove the dev-only guard so errors fire on every environment. Also add randomization so only a subset of errors fire per session (more realistic), and stagger them over a longer time window.
 
-**File: `supabase/functions/create-checkout/index.ts`**
+- Remove the `isDemoMode` check that blocks production
+- Randomly select 3-5 of the 12 error types per session instead of firing all 12
+- Spread them out over 5-30 seconds with random delays
+- Add a few new realistic error types: WebSocket disconnect, localStorage quota exceeded, image load failure
 
-In the `stripe.checkout.sessions.create()` call, add:
-- For `payment` mode: `payment_intent_data: { setup_future_usage: 'off_session' }`
-- For `subscription` mode: no change needed (subscriptions automatically save the payment method)
+**2. `src/pages/Index.tsx`** — No changes needed (already calls `simulateDemoErrors` on mount).
 
-```typescript
-const session = await stripe.checkout.sessions.create({
-  line_items: sessionLineItems,
-  mode,
-  success_url: successUrl,
-  cancel_url: `${origin}/`,
-  allow_promotion_codes: true,
-  billing_address_collection: "required",
-  customer: customerId,
-  customer_email: customerId ? undefined : customer_email || undefined,
-  // Save payment method to customer for one-time payments
-  ...(mode === "payment" && {
-    payment_intent_data: {
-      setup_future_usage: "off_session",
-    },
-  }),
-  // ... rest unchanged
-});
-```
-
-### Impact
-- Future one-time checkouts will save the card to the Stripe Customer
-- The customer's "primary payment method" will appear in Stripe
-- No impact on subscription checkouts (they already save the method)
-- No frontend changes needed
+### Result
+Every visitor session will generate 3-5 random errors in PostHog, providing realistic error tracking data including stack traces, session replay URLs, and contextual metadata.
 
