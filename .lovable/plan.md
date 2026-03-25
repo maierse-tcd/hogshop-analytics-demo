@@ -1,36 +1,47 @@
 
 
-## Additional Visual Improvements
+## Fix: Empty Conversion Funnel -- Server-Side Events Not Creating Person Profiles
 
-After reviewing both light and dark modes, here are refinements that would add more polish:
+### Root Cause
 
-### Issues Spotted
+The PostHog client is configured with `person_profiles: 'identified_only'`. This means PostHog only creates person profiles when an explicit `$identify` event is received.
 
-1. **Light mode hero feels washed out** -- The gradient is too subtle, making the hero section look flat compared to the rich dark mode version. The dot pattern and glow orbs are barely visible.
+The `track-success` edge function sends `purchase_completed` with `distinct_id: customerEmail`, but it never sends an `$identify` event first. PostHog accepts the event (200 response) but treats it as a **personless event** -- it exists in the raw event stream but is invisible to funnels, which require person-level analysis.
 
-2. **Large empty gap before footer** -- There's significant whitespace between the last product row and the footer, making the page feel unfinished.
+The `$set` event IS sent later, but AFTER `purchase_completed`, so the purchase event was already ingested without a person profile.
 
-3. **Category filter pills lack active distinction** -- Selected vs unselected pills could use more visual differentiation (ring, shadow, or scale).
+### Fix
 
-4. **Footer lacks visual warmth** -- The footer is minimal and could benefit from a subtle top gradient divider and slightly warmer background treatment.
+**File: `supabase/functions/track-success/index.ts`**
 
-5. **"Sign up for newsletter" button is flat in light mode** -- The outline variant blends into the background; it could benefit from a subtle hover glow or border accent.
+Add an `$identify` call BEFORE sending `$groupidentify` and `purchase_completed` events. This ensures PostHog creates the person profile first, so all subsequent events are properly attributed.
 
-6. **Product card images have no loading state polish** -- When images load, there's no smooth fade-in, which can feel jarring.
+```typescript
+// Send $identify FIRST to create person profile
+const identifyPayload = {
+  api_key: POSTHOG_KEY,
+  event: "$identify",
+  distinct_id: customerEmail || sessionId,
+  properties: {
+    $set: {
+      email: customerEmail,
+      name: customerName,
+    },
+  },
+};
 
-7. **No scroll-to-top behavior** -- When navigating between pages, scroll position isn't always reset.
+await fetch(`${POSTHOG_HOST}/capture/`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(identifyPayload),
+});
+```
 
-### Proposed Changes
+Insert this block right after computing `valueTier` (around line 98) and before the `$groupidentify` calls. The rest of the function stays the same.
 
-| File | Change |
-|---|---|
-| `src/pages/Index.tsx` | Increase hero gradient intensity for light mode (`from-primary/15` instead of `/10`), reduce gap before footer (`mt-24` to `mt-12`) |
-| `src/pages/Index.tsx` | Add `ring-2 ring-primary ring-offset-2` to active category button for stronger visual distinction |
-| `src/components/ProductCard.tsx` | Add image `loading="lazy"` and a CSS fade-in on load for smoother image appearance |
-| `src/index.css` | Add a subtle `@keyframes fadeIn` for image load transitions |
-| `src/pages/Index.tsx` | Outline newsletter button: add `border-primary/30 hover:border-primary` for more presence in light mode |
+### Why This Works
 
-### Technical Details
+PostHog's `identified_only` mode requires an `$identify` event to "activate" a person profile. Once identified, all events with that `distinct_id` (email) become person-level events visible in funnels. The existing `$set` call at the end of the function is redundant with this but harmless.
 
-All changes are CSS/className only -- no logic or tracking changes. Estimated 5 small edits across 3 files.
+### Single file change, ~15 lines added.
 
