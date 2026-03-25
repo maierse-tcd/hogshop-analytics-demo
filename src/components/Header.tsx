@@ -114,7 +114,7 @@ export const Header = () => {
     <header className={`sticky top-0 z-50 w-full border-b backdrop-blur supports-[backdrop-filter]:bg-background/60 ${
       halloweenMode 
         ? 'bg-gradient-to-r from-[hsl(var(--halloween-dark))] via-[hsl(var(--halloween-purple))]/40 to-[hsl(var(--halloween-dark))]/95 border-[hsl(var(--halloween-orange))]/30' 
-        : 'bg-background/95'
+        : 'bg-background/95 shadow-[0_1px_3px_0_hsl(var(--foreground)/0.04)]'
     }`}>
       {halloweenMode && (
         <>
