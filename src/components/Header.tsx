@@ -56,14 +56,15 @@ export const Header = () => {
 
   const handleLogout = () => {
     console.log("Header: handleLogout called");
+    trackEvent("user_logged_out", {
+      timestamp: new Date().toISOString(),
+    });
     clearUser();
     posthog.reset();
-    // Reload flags after reset to ensure clean state
     posthog.reloadFeatureFlags();
     setIsLoggedIn(false);
     setUserName("");
     console.log("Header: User logged out, flags reloaded");
-    // Redirect to home page for clean state
     navigate("/");
   };
 
