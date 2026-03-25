@@ -190,10 +190,10 @@ export const ProductCard = ({
   // Default vertical card
   return (
     <Card 
-      className={`overflow-hidden group transition-all duration-300 border-2 cursor-pointer ${
+      className={`overflow-hidden group transition-all duration-300 border-2 cursor-pointer hover:-translate-y-1 ${
         seasonalMode 
           ? '' 
-          : 'hover:shadow-lg'
+          : 'hover:shadow-xl'
       }`}
       style={seasonalMode && themeConfig ? {
         boxShadow: 'hover: 0 0 30px ' + themeConfig.colors.primary,
