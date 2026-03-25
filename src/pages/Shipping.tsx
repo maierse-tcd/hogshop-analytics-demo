@@ -15,8 +15,8 @@ const Shipping = () => {
         <h1 className="text-4xl font-bold mb-8">Shipping & Handling</h1>
         
         <div className="grid gap-6 mb-12">
-          <div className="flex gap-4 p-6 rounded-lg border bg-card">
-            <Package className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
+          <div className="flex gap-4 p-6 rounded-lg border bg-card hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
+            <div className="bg-primary/10 p-2 rounded-full h-fit"><Package className="h-5 w-5 text-primary flex-shrink-0" /></div>
             <div>
               <h3 className="font-semibold text-lg mb-2">Hedgebox™ Packaging</h3>
               <p className="text-muted-foreground">
