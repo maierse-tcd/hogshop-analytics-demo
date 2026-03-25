@@ -114,7 +114,7 @@ export const Header = () => {
     <header className={`sticky top-0 z-50 w-full border-b backdrop-blur supports-[backdrop-filter]:bg-background/60 ${
       halloweenMode 
         ? 'bg-gradient-to-r from-[hsl(var(--halloween-dark))] via-[hsl(var(--halloween-purple))]/40 to-[hsl(var(--halloween-dark))]/95 border-[hsl(var(--halloween-orange))]/30' 
-        : 'bg-background/95'
+        : 'bg-background/95 shadow-[0_1px_3px_0_hsl(var(--foreground)/0.04)]'
     }`}>
       {halloweenMode && (
         <>
@@ -135,34 +135,27 @@ export const Header = () => {
             </span>
           </Link>
           <nav className="hidden md:flex gap-6">
-            <Link to="/" className={`text-sm font-medium transition-colors ${
-              halloweenMode 
-                ? 'text-[hsl(var(--halloween-orange))]/80 hover:text-[hsl(var(--halloween-orange))]' 
-                : 'text-muted-foreground hover:text-foreground'
-            }`}>
-              {halloweenMode ? '🛒 Shop' : 'Shop'}
-            </Link>
-            <Link to="/about" className={`text-sm font-medium transition-colors ${
-              halloweenMode 
-                ? 'text-[hsl(var(--halloween-orange))]/80 hover:text-[hsl(var(--halloween-orange))]' 
-                : 'text-muted-foreground hover:text-foreground'
-            }`}>
-              {halloweenMode ? '🦔 About' : 'About'}
-            </Link>
-            <Link to="/faq" className={`text-sm font-medium transition-colors ${
-              halloweenMode 
-                ? 'text-[hsl(var(--halloween-orange))]/80 hover:text-[hsl(var(--halloween-orange))]' 
-                : 'text-muted-foreground hover:text-foreground'
-            }`}>
-              {halloweenMode ? '❓ FAQ' : 'FAQ'}
-            </Link>
-            <Link to="/shipping" className={`text-sm font-medium transition-colors ${
-              halloweenMode 
-                ? 'text-[hsl(var(--halloween-orange))]/80 hover:text-[hsl(var(--halloween-orange))]' 
-                : 'text-muted-foreground hover:text-foreground'
-            }`}>
-              {halloweenMode ? '📦 Shipping' : 'Shipping'}
-            </Link>
+            {[
+              { to: "/", label: "Shop", emoji: "🛒" },
+              { to: "/about", label: "About", emoji: "🦔" },
+              { to: "/faq", label: "FAQ", emoji: "❓" },
+              { to: "/shipping", label: "Shipping", emoji: "📦" },
+            ].map(({ to, label, emoji }) => (
+              <Link
+                key={to}
+                to={to}
+                className={`text-sm font-medium transition-all duration-200 relative py-1 hover:-translate-y-[1px] ${
+                  halloweenMode 
+                    ? 'text-[hsl(var(--halloween-orange))]/80 hover:text-[hsl(var(--halloween-orange))]' 
+                    : 'text-muted-foreground hover:text-foreground'
+                } ${location.pathname === to ? (halloweenMode ? 'text-[hsl(var(--halloween-orange))]' : '!text-foreground') : ''}`}
+              >
+                {halloweenMode ? `${emoji} ${label}` : label}
+                {location.pathname === to && (
+                  <span className="absolute -bottom-[1px] left-0 right-0 h-[2px] bg-primary rounded-full" />
+                )}
+              </Link>
+            ))}
             {isLoggedIn && showSubscription && (
               <button
                 onClick={() => {

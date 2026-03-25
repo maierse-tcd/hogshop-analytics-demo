@@ -16,7 +16,7 @@ const About = () => {
           <Badge className="mb-4">Est. 2025</Badge>
           <h1 className="text-5xl font-bold mb-4">
             About{" "}
-            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            <span className="text-primary">
               HogShop
             </span>
           </h1>
@@ -71,21 +71,21 @@ const About = () => {
           <section>
             <h2 className="text-3xl font-semibold mb-4">What We Do</h2>
             <div className="grid gap-4">
-              <div className="p-6 rounded-lg border bg-card">
+              <div className="p-6 rounded-lg border bg-card hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
                 <h3 className="font-semibold text-lg mb-2">Premium Merchandise</h3>
                 <p className="text-muted-foreground">
                   Every product is designed with love and inspected by our quality assurance team of highly trained hedgehogs. 
                   From plushies to hoodies, each item embodies the HogShop spirit of quality and cuteness.
                 </p>
               </div>
-              <div className="p-6 rounded-lg border bg-card">
+              <div className="p-6 rounded-lg border bg-card hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
                 <h3 className="font-semibold text-lg mb-2">Analytics Subscriptions</h3>
                 <p className="text-muted-foreground">
                   Access PostHog's powerful analytics platform through our subscription plans. Track user behavior, 
                   run A/B tests, deploy feature flags, and watch session replays – all while being supported by hedgehogs.
                 </p>
               </div>
-              <div className="p-6 rounded-lg border bg-card">
+              <div className="p-6 rounded-lg border bg-card hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
                 <h3 className="font-semibold text-lg mb-2">Demo Environment</h3>
                 <p className="text-muted-foreground">
                   HogShop serves as a fully functional demonstration of how PostHog can be integrated into an e-commerce 

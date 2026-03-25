@@ -45,7 +45,7 @@ const FAQ = () => {
         
         <Accordion type="single" collapsible className="space-y-4" value={openItem} onValueChange={handleValueChange}>
           {faqItems.map((item) => (
-            <AccordionItem key={item.value} value={item.value} className="border rounded-lg px-6">
+            <AccordionItem key={item.value} value={item.value} className={`border rounded-lg px-6 transition-all duration-300 hover:bg-accent/30 ${openItem === item.value ? 'border-l-4 border-l-primary shadow-sm' : ''}`}>
               <AccordionTrigger className="text-left">
                 {item.question}
               </AccordionTrigger>

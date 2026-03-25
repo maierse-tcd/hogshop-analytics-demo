@@ -186,9 +186,9 @@ const Index = () => {
         }
 
       {/* Free Gift CTA Banner */}
-      <div className="bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 border-b">
+      <div className="bg-background/60 backdrop-blur-md border-b">
         <div className="container py-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 max-w-5xl mx-auto">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 max-w-5xl mx-auto bg-primary/5 border border-primary/10 rounded-xl px-6 py-4">
             <div className="flex items-center gap-4">
               <div className="bg-primary/10 p-3 rounded-full">
                 <Gift className="h-8 w-8 text-primary" />
@@ -293,7 +293,7 @@ const Index = () => {
 
           <>
             {/* Regular Theme */}
-            <div className="absolute inset-0 opacity-[0.15]">
+            <div className="absolute inset-0 opacity-[0.08]">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,hsl(var(--primary))_1px,transparent_1px)] bg-[length:32px_32px]" />
             </div>
             <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
@@ -579,7 +579,7 @@ const Index = () => {
               </ul>
             </div>
           </div>
-          <div className="border-t pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="border-t border-transparent bg-gradient-to-r from-transparent via-primary/20 to-transparent bg-[length:100%_1px] bg-no-repeat bg-top pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm text-muted-foreground">
               © 2026 HogShop. All rights reserved. Made with ❤️ for hedgehogs.
             </p>
