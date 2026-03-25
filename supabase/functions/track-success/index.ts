@@ -117,6 +117,8 @@ serve(async (req) => {
     });
     log.info("PostHog $identify response", { status: identifyRes.status, ok: identifyRes.ok });
     
+    const subscriptionId = (session as any).subscription || null;
+
     const capturePayload = {
       api_key: POSTHOG_KEY,
       event: "purchase_completed",
@@ -124,7 +126,9 @@ serve(async (req) => {
       properties: {
         session_id: sessionId,
         total_amount: totalAmount,
+        revenue: Math.round(totalAmount * 100),
         currency: currency,
+        subscription_id: subscriptionId,
         item_count: itemCount,
         has_subscription: hasSubscription,
         subscription_value: subscriptionValue,
