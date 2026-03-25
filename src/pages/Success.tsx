@@ -239,12 +239,14 @@ const Success = () => {
         itemCount: basketItems.length
       });
 
+      const hasSubscriptionItem = basketItems.some((item: any) => item.is_subscription);
+
       trackEvent("purchase_completed", {
         session_id: sessionId,
         total_amount: basketValue,
         revenue: Math.round(basketValue * 100),
         currency: "USD",
-        subscription_id: hasSubscription ? sessionId : null,
+        subscription_id: hasSubscriptionItem ? sessionId : null,
         customer_email: userEmail,
         items: basketItems,
       });
