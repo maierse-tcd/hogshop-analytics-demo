@@ -6,6 +6,9 @@ export const RouteTracker = () => {
   const location = useLocation();
 
   useEffect(() => {
+    // Scroll to top on route change
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
     if (typeof window !== "undefined" && posthog) {
       // Track pageview with PostHog's built-in event
       posthog.capture("$pageview", {

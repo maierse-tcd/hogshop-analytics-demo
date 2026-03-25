@@ -209,7 +209,8 @@ export const ProductCard = ({
         <img
           src={imageSrc}
           alt={title}
-          className={`object-cover w-full h-full transition-transform duration-300 ${
+          loading="lazy"
+          className={`object-cover w-full h-full transition-all duration-300 animate-fade-in ${
             seasonalMode ? 'group-hover:scale-110 group-hover:brightness-110' : 'group-hover:scale-105'
           }`}
         />

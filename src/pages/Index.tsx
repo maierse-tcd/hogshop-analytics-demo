@@ -227,7 +227,7 @@ const Index = () => {
         'bg-gradient-to-br from-[hsl(var(--easter-lavender))]/20 via-[hsl(var(--easter-pink))]/20 to-[hsl(var(--easter-mint))]/20' :
         seasonalTheme === 'summer' ?
         'bg-gradient-to-br from-[hsl(var(--summer-blue))]/30 via-[hsl(var(--summer-cyan))]/20 to-[hsl(var(--summer-yellow))]/10' :
-        'bg-gradient-to-br from-primary/10 via-background to-accent/15'}`
+        'bg-gradient-to-br from-primary/15 via-background to-accent/20'}`
         }>
         {seasonalTheme ?
           <>
@@ -368,7 +368,7 @@ const Index = () => {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="h-12 px-8 text-base font-semibold"
+                  className="h-12 px-8 text-base font-semibold border-primary/30 hover:border-primary"
                   onClick={() => {
                     setShowNewsletterModal(true);
                     // Track feature interaction with person property
@@ -468,7 +468,7 @@ const Index = () => {
               <Button
                 key={category}
                 variant={selectedCategory === category ? "default" : "outline"}
-                className="font-semibold"
+                className={`font-semibold ${selectedCategory === category ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
                 onClick={() => {
                   setSelectedCategory(category);
                   trackEvent("category_filtered", { category });
@@ -504,7 +504,7 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className={`border-t mt-24 relative overflow-hidden ${
+      <footer className={`border-t mt-12 relative overflow-hidden ${
         seasonalTheme ?
         `bg-gradient-to-br from-[${getThemeConfig(seasonalTheme)?.colors.dark}] via-[${getThemeConfig(seasonalTheme)?.colors.secondary}]/20 to-[${getThemeConfig(seasonalTheme)?.colors.dark}]` :
         'bg-accent/5'}`

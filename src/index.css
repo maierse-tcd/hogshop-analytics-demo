@@ -179,4 +179,13 @@ All colors MUST be HSL.
     background-color: hsl(var(--primary) / 0.2);
     color: hsl(var(--foreground));
   }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out;
+  }
 }
