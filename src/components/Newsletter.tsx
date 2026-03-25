@@ -11,6 +11,17 @@ interface NewsletterProps {
 
 export const Newsletter = ({ variant = "card", onSubscribed }: NewsletterProps) => {
   const [email, setEmail] = useState("");
+  const formStartedRef = useRef(false);
+
+  const handleEmailFocus = () => {
+    if (!formStartedRef.current) {
+      formStartedRef.current = true;
+      trackEvent("newsletter_form_started", {
+        source: variant === "banner" ? "hero_banner" : "newsletter_card",
+        variant,
+      });
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
