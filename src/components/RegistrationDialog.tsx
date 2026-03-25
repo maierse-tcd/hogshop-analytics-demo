@@ -15,6 +15,14 @@ interface RegistrationDialogProps {
 export const RegistrationDialog = ({ open, onOpenChange, onComplete }: RegistrationDialogProps) => {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [formStarted, setFormStarted] = useState(false);
+
+  // Track form opened
+  useState(() => {
+    if (open) {
+      trackEvent("registration_form_opened", { source: "checkout" });
+    }
+  });
   const [errors, setErrors] = useState<{ email?: string; name?: string }>({});
 
   const validateForm = () => {

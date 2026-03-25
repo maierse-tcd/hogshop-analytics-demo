@@ -111,7 +111,16 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  const clearCart = () => setItems([]);
+  const clearCart = () => {
+    const totalValue = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const totalCount = items.reduce((sum, item) => sum + item.quantity, 0);
+    trackEvent("cart_cleared", {
+      items_count: totalCount,
+      cart_value: totalValue,
+      items: items.map(item => ({ id: item.id, title: item.title, quantity: item.quantity })),
+    });
+    setItems([]);
+  };
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce(
