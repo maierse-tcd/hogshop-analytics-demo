@@ -56,7 +56,7 @@ serve(async (req) => {
     log.info("Subscription cancelled", { subscriptionId: cancelledSubscription.id, status: cancelledSubscription.status });
 
     // Update PostHog
-    const POSTHOG_HOST = Deno.env.get("POSTHOG_HOST") || "https://eu.i.posthog.com";
+    const POSTHOG_HOST = Deno.env.get("POSTHOG_HOST") || "https://ph.hogflix.dev";
     const POSTHOG_KEY = Deno.env.get("POSTHOG_KEY") || "phc_mCl11WvLPwmqyjG7FlivcsSbTfSEY1J3TWcEnnR0CJa";
 
     try {

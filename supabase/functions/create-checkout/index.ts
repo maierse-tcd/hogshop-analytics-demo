@@ -77,8 +77,20 @@ serve(async (req) => {
       };
     });
 
-    const hasSubscription = items.some((item: any) => item.is_subscription);
+    const subscriptionItems = lineItems.filter((_: any, i: number) => items[i].is_subscription);
+    const oneTimeItems = lineItems.filter((_: any, i: number) => !items[i].is_subscription);
+    const hasSubscription = subscriptionItems.length > 0;
+    const hasOneTime = oneTimeItems.length > 0;
+
+    if (hasSubscription && hasOneTime) {
+      log.warn("Mixed cart: subscription + one-time items. One-time items will be excluded from subscription session.", {
+        subscriptionCount: subscriptionItems.length,
+        oneTimeCount: oneTimeItems.length,
+      });
+    }
+
     const mode = hasSubscription ? "subscription" : "payment";
+    const sessionLineItems = hasSubscription ? subscriptionItems : lineItems;
 
     const origin = req.headers.get("origin") || "http://localhost:3000";
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
