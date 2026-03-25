@@ -242,6 +242,9 @@ const Success = () => {
       trackEvent("purchase_completed", {
         session_id: sessionId,
         total_amount: basketValue,
+        revenue: Math.round(basketValue * 100),
+        currency: "USD",
+        subscription_id: hasSubscription ? sessionId : null,
         customer_email: userEmail,
         items: basketItems,
       });
