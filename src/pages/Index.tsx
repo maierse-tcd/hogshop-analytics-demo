@@ -186,9 +186,9 @@ const Index = () => {
         }
 
       {/* Free Gift CTA Banner */}
-      <div className="bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 border-b">
+      <div className="bg-background/60 backdrop-blur-md border-b">
         <div className="container py-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 max-w-5xl mx-auto">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 max-w-5xl mx-auto bg-primary/5 border border-primary/10 rounded-xl px-6 py-4">
             <div className="flex items-center gap-4">
               <div className="bg-primary/10 p-3 rounded-full">
                 <Gift className="h-8 w-8 text-primary" />
