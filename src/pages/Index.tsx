@@ -468,7 +468,7 @@ const Index = () => {
               <Button
                 key={category}
                 variant={selectedCategory === category ? "default" : "outline"}
-                className="font-semibold"
+                className={`font-semibold ${selectedCategory === category ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
                 onClick={() => {
                   setSelectedCategory(category);
                   trackEvent("category_filtered", { category });
