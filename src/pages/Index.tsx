@@ -368,7 +368,7 @@ const Index = () => {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="h-12 px-8 text-base font-semibold"
+                  className="h-12 px-8 text-base font-semibold border-primary/30 hover:border-primary"
                   onClick={() => {
                     setShowNewsletterModal(true);
                     // Track feature interaction with person property
