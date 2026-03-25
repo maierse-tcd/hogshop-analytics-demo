@@ -108,6 +108,11 @@ serve(async (req) => {
       billing_address_collection: "required",
       customer: customerId,
       customer_email: customerId ? undefined : customer_email || undefined,
+      ...(mode === "payment" && {
+        payment_intent_data: {
+          setup_future_usage: "off_session",
+        },
+      }),
       ...(customer_name && {
         custom_fields: [{
           key: "customer_name",
