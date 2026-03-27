@@ -1,205 +1,98 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createLogger } from "../_shared/posthog-logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req) => {
-  const log = createLogger("ai-chat");
+// Contextual canned responses - keyword matching for realistic chat behavior
+const RESPONSES: { keywords: string[]; reply: string }[] = [
+  {
+    keywords: ["food", "feed", "eat", "diet", "nutrition"],
+    reply: "Great question! 🦔 Hedgehogs need high-protein food (30%+). Our **Premium Hedgehog Food** ($29.99/month subscription) is specially formulated with natural ingredients. You can also supplement with our **Freeze-Dried Mealworms** ($12.99) — hedgehogs love them! Avoid dairy, grapes, and sugary foods.",
+  },
+  {
+    keywords: ["cage", "habitat", "house", "housing", "home", "mansion"],
+    reply: "For housing, hedgehogs need at least 2 sq ft of floor space at 72-78°F. We have three options:\n\n- **Deluxe Hedgehog Habitat** ($129.99) — 36\"x24\", great starter cage\n- **Luxury Hedgehog Mansion** ($249.99) — 48\"x30\", multi-level\n- **Travel Carrier** ($44.99) — perfect for vet visits\n\nAll include hideaway spots which hedgehogs need to feel secure! 🦔",
+  },
+  {
+    keywords: ["wheel", "exercise", "toy", "play", "run", "active"],
+    reply: "Exercise is essential! Hedgehogs need 10+ hours of activity nightly. Our **Exercise Wheel** ($39.99) is a 12\" silent spinner — won't keep you up at night! 😄 For enrichment, the **Climbing Adventure Set** ($59.99) and **Interactive Play Set** ($34.99) encourage natural foraging behaviors. 🦔",
+  },
+  {
+    keywords: ["subscribe", "subscription", "monthly", "recurring", "mrr"],
+    reply: "Our subscription is a great deal! 🦔 The **Premium Hedgehog Food** subscription ($29.99/month) includes:\n\n- 10% savings vs one-time purchase\n- Free shipping every month\n- Never run out of food\n- Pause or cancel anytime\n\nIt's our most popular option for dedicated hedgehog parents!",
+  },
+  {
+    keywords: ["gift", "present", "birthday", "christmas"],
+    reply: "We have perfect gifts for hedgehog lovers! 🎁\n\n- **Hedgehog Plushie** ($29.99) — adorable and cuddly\n- **Hedgehog Coffee Mug** ($16.99) — start every day with cuteness\n- **Hedgehog Lover T-Shirt** ($24.99) — available in multiple sizes\n\nYou can also send a gift directly using our Gift Checkout feature!",
+  },
+  {
+    keywords: ["care", "groom", "nail", "bath", "brush", "health", "vet", "sick"],
+    reply: "For care essentials, check out our **Hedgehog Care Starter Kit** ($79.99) — it includes nail clippers, soft brush, and a care guide. Our **Premium Grooming Kit** ($29.99) has professional tools including conditioning oil. 🦔\n\nTip: Watch for weight changes, quill loss, or lethargy — these can signal health issues. Regular vet checkups are recommended!",
+  },
+  {
+    keywords: ["bed", "sleep", "fleece", "cozy", "warm", "hide", "burrow"],
+    reply: "Hedgehogs love burrowing! We have great options:\n\n- **Cozy Hedgehog Hideout** ($24.99) — soft fleece pouch, machine washable\n- **Hedgehog Sleeping Bag** ($34.99) — ultra-soft, perfect for staying warm\n- **Soft Fleece Bedding** ($22.99) — 2 yards of comfortable bedding\n\nAll are hedgehog-safe and easy to wash! 🦔",
+  },
+  {
+    keywords: ["price", "cost", "expensive", "cheap", "budget", "afford"],
+    reply: "We have options for every budget! 🦔 Starting from $12.99 for treats up to $249.99 for the luxury mansion. Our most popular items are the **Exercise Wheel** ($39.99) and **Care Starter Kit** ($79.99). The food subscription saves you 10% monthly too!",
+  },
+  {
+    keywords: ["ship", "deliver", "shipping", "delivery", "arrive"],
+    reply: "We offer standard shipping on all orders! 📦 Subscription orders always ship free. Most orders arrive within 3-5 business days. Check our Shipping page for full details. 🦔",
+  },
+  {
+    keywords: ["hello", "hi", "hey", "help", "start"],
+    reply: "Welcome to Hogster! 🦔 I'm here to help you find everything your hedgehog needs. I can help with:\n\n- 🍽️ Food & nutrition advice\n- 🏠 Housing recommendations\n- 🎡 Toys & exercise\n- 💊 Care & grooming tips\n\nWhat would you like to know about?",
+  },
+  {
+    keywords: ["thank", "thanks", "awesome", "great", "perfect"],
+    reply: "You're welcome! 🦔 Happy to help. If you have any other questions about hedgehog care or our products, just ask! Enjoy shopping at Hogster! 🛒",
+  },
+];
 
+const DEFAULT_REPLY = "That's a great question! 🦔 While I'm not sure about that specific topic, I can help you with our products, hedgehog care tips, subscriptions, and shipping. What would you like to know about? Browse our full catalog on the homepage!";
+
+function findResponse(userMessage: string): string {
+  const lower = userMessage.toLowerCase();
+  for (const entry of RESPONSES) {
+    if (entry.keywords.some(kw => lower.includes(kw))) {
+      return entry.reply;
+    }
+  }
+  return DEFAULT_REPLY;
+}
+
+serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const { messages } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    
-    if (!LOVABLE_API_KEY) {
-      log.error("LOVABLE_API_KEY is not configured");
-      await log.flush();
-      throw new Error("AI service not configured");
+    const lastUserMessage = [...messages].reverse().find((m: { role: string }) => m.role === "user");
+
+    if (!lastUserMessage) {
+      return new Response(
+        JSON.stringify({ error: "No user message found" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    log.info("Processing AI chat request", { messageCount: messages.length });
+    const reply = findResponse(lastUserMessage.content);
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { 
-            role: "system", 
-            content: `You are a helpful Hedgehog Care Assistant for Hogster, an e-commerce store selling hedgehog products and supplies.
+    // Simulate slight delay for realism
+    await new Promise(r => setTimeout(r, 300 + Math.random() * 700));
 
-## Our Complete Product Catalog (18 Products)
-
-### Food & Nutrition (3 products)
-1. **Premium Hedgehog Food** - $29.99/month (Subscription)
-   - Monthly delivery of 2kg premium hedgehog food blend
-   - Natural ingredients specially formulated for hedgehogs
-   - High protein content with balanced nutrition
-
-2. **Hedgehog Treat Pack** - $14.99
-   - Assorted mealworms and insect treats in premium jar
-   - Perfect for training and bonding
-   - Natural protein-rich snacks
-
-3. **Freeze-Dried Mealworms** - $12.99
-   - Premium freeze-dried mealworms in 100g jar
-   - High protein treats hedgehogs love
-   - Long shelf life, easy to store
-
-### Housing (3 products)
-4. **Deluxe Hedgehog Habitat** - $129.99
-   - Spacious 36" x 24" cage with natural wood elements
-   - Includes accessories and hideaway spots
-   - Easy to clean with removable bottom tray
-
-5. **Hedgehog Travel Carrier** - $44.99
-   - Compact travel cage with mesh sides
-   - Carrying handle for easy transport
-   - Perfect for vet visits
-
-6. **Luxury Hedgehog Mansion** - $249.99
-   - Multi-level luxury cage 48" x 30"
-   - Natural wood platforms and multiple hideaways
-   - Ultimate home for your hedgehog
-
-### Toys & Exercise (3 products)
-7. **Hedgehog Exercise Wheel** - $39.99
-   - 12" silent spinner wheel for nighttime activity
-   - Smooth running surface prevents foot injuries
-   - Quiet operation for peaceful nights
-
-8. **Hedgehog Climbing Adventure Set** - $59.99
-   - Natural wood climbing toys, tunnels, and ramps
-   - Enrichment and exercise for active hedgehogs
-   - Safe, non-toxic materials
-
-9. **Interactive Play Set** - $34.99
-   - Colorful toy balls, tunnels, and play items
-   - Enrichment and fun for curious hedgehogs
-   - Encourages natural behaviors
-
-### Care & Grooming (3 products)
-10. **Hedgehog Care Starter Kit** - $79.99
-    - Complete grooming tools and care essentials
-    - Includes nail clippers, soft brush, and care guide
-    - Everything new hedgehog owners need
-
-11. **Ceramic Food & Water Bowls** - $19.99
-    - Shallow ceramic bowl set in natural earth tones
-    - Dishwasher safe and tip-resistant design
-    - Perfect size for hedgehogs
-
-12. **Premium Grooming Kit** - $29.99
-    - Professional grooming tools
-    - Soft brush, nail clippers, conditioning oil
-    - Keep your hedgehog healthy and happy
-
-### Bedding & Comfort (3 products)
-13. **Cozy Hedgehog Hideout** - $24.99
-    - Soft fleece sleeping pouch with adorable pattern
-    - Machine washable and hedgehog-safe materials
-    - Perfect for burrowing and feeling secure
-
-14. **Hedgehog Sleeping Bag** - $34.99
-    - Ultra-soft fleece sleeping bag
-    - Perfect for burrowing and staying warm
-    - Easy to wash and maintain
-
-15. **Soft Fleece Bedding** - $22.99
-    - 2 yards of ultra-soft fleece bedding
-    - Natural beige color, machine washable
-    - Comfortable and safe for hedgehogs
-
-### Merchandise (3 products)
-16. **Hedgehog Plushie** - $29.99
-    - Adorable PostHog mascot plushie
-    - Soft and cuddly for hedgehog lovers
-    - Great gift for enthusiasts
-
-17. **Hedgehog Lover T-Shirt** - $24.99
-    - Comfortable cotton with cute hedgehog graphic
-    - Available in multiple sizes
-    - Perfect for hedgehog fans
-
-18. **Hedgehog Coffee Mug** - $16.99
-    - Ceramic mug with adorable hedgehog illustration
-    - 12oz capacity, microwave safe
-    - Start your day with hedgehog cuteness
-
-## Hedgehog Care Knowledge
-
-**Diet:** Hedgehogs need high-protein food (30%+), insects as treats, and fresh water daily. Avoid dairy, grapes, and sugary foods.
-
-**Habitat:** Minimum 2 sq ft floor space, 72-78°F temperature, solid flooring (no wire), and hideaway spots for security.
-
-**Exercise:** Need 10+ hours of activity nightly. Exercise wheels are essential. Provide tunnels and toys for enrichment.
-
-**Health:** Watch for weight changes, quill loss, lethargy. Regular vet checkups recommended. Common issues: mites, respiratory infections.
-
-**Behavior:** Nocturnal, solitary animals. May huff when scared. Bonding takes patience and treats.
-
-## Subscription Benefits
-- 10% savings on Premium Hedgehog Food subscription
-- Never run out of food
-- Free shipping on all subscription orders
-- Can pause or cancel anytime
-
-Be friendly, concise, and helpful. Keep responses under 100 words unless detailed info is requested. Use warm tone and occasional hedgehog emojis 🦔. Always recommend products that match customer needs based on their questions.` 
-          },
-          ...messages,
-        ],
-        stream: true,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      log.error("AI gateway error", { status: response.status, error: errorText });
-      await log.flush();
-      
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), 
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "AI service temporarily unavailable. Please try again later." }), 
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      
-      throw new Error(`AI gateway error: ${response.status}`);
-    }
-
-    log.info("Streaming AI response");
-    await log.flush();
-    
-    return new Response(response.body, {
-      headers: { 
-        ...corsHeaders, 
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
-      },
-    });
-  } catch (error) {
-    log.error("AI chat error", { message: error instanceof Error ? error.message : String(error) });
-    await log.flush();
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error occurred" }), 
+      JSON.stringify({ reply }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
