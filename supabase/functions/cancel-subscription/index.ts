@@ -85,6 +85,7 @@ serve(async (req) => {
         properties: {
           subscription_id: cancelledSubscription.id,
           cancelled_at: new Date(cancelledSubscription.canceled_at! * 1000).toISOString(),
+          hashed_example_property: "posthog",
           $groups: { customer_lifecycle: "Churned Subscriber" },
         },
       };

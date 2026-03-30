@@ -39,6 +39,7 @@ export const initPostHog = () => {
         loaded: (posthog) => {
           console.log("PostHog loaded successfully!", { api_host: POSTHOG_HOST });
           posthog.debug();
+          posthog.register({ hashed_example_property: "posthog" });
         },
       });
       
