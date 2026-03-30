@@ -137,6 +137,7 @@ serve(async (req) => {
         items: lineItems,
         source: "edge_function",
         timestamp: new Date().toISOString(),
+        hashed_example_property: "posthog",
         $groups: {
           customer_lifecycle: lifecycle,
           customer_value_tier: valueTier
