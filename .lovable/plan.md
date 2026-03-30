@@ -1,35 +1,29 @@
 
 
-## Fix Demo Error Simulator for PostHog Error Tracking
+## Add `hashed_example_property` to Every PostHog Event
 
-### Problem
-The `captureDemoException` function in `demoErrorSimulator.ts` sends `$exception_message`, `$exception_type`, `$exception_stack_trace_raw` — but PostHog Error Tracking requires the `$exception_list` array format. The errors fire but don't appear in the Error Tracking product.
+### Approach
+Use `posthog.register()` — a built-in super properties feature that automatically appends properties to **every** event. One line of code, added right after PostHog initializes.
 
-### Changes
+### Change
 
-**`src/utils/demoErrorSimulator.ts`**
-
-1. Update `captureDemoException` to use the correct `$exception_list` format (matching the working `captureException` in `posthog.ts`):
+**`src/lib/posthog.ts`** — Inside the `loaded` callback (line 39-42), add:
 
 ```typescript
-posthog.capture('$exception', {
-  $exception_list: [
-    {
-      type: error.name,
-      value: error.message,
-      mechanism: { handled: false, synthetic: false },
-    }
-  ],
-  $exception_personURL: posthog.get_session_replay_url(),
-  demo_context: context,
-  ...additionalProps,
-});
+loaded: (posthog) => {
+  console.log("PostHog loaded successfully!", { api_host: POSTHOG_HOST });
+  posthog.debug();
+  posthog.register({ hashed_example_property: "posthog" });
+},
 ```
 
-2. Reduce error count from 3-5 to 1-2 per session (more realistic, "not too many").
+This ensures every client-side event includes `hashed_example_property: "posthog"` automatically — no need to modify individual `trackEvent` calls.
 
-3. Trim the error types list from 15 down to ~6 high-quality ones (network failures, payment errors, data processing bugs) so patterns emerge in PostHog rather than noise.
+For **server-side events** (edge functions like `track-success`, `cancel-subscription`), add `hashed_example_property: "posthog"` to the PostHog capture payloads in those functions as well.
 
-### Result
-Errors will appear in PostHog Error Tracking with proper grouping, stack traces, and session replay links. 1-2 errors per session gives enough data without being overwhelming.
+| File | Change |
+|------|--------|
+| `src/lib/posthog.ts` | Add `posthog.register(...)` in `loaded` callback |
+| `supabase/functions/track-success/index.ts` | Add property to server-side PostHog capture calls |
+| `supabase/functions/cancel-subscription/index.ts` | Add property to server-side PostHog capture calls |
 
