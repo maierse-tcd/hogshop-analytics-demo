@@ -5,7 +5,7 @@ import { useCart } from "@/contexts/CartContext";
 import { trackEvent, posthog } from "@/lib/posthog";
 import { ShoppingCart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useFeatureFlagEnabled } from "posthog-js/react";
+import { useFeatureFlagEnabled, useFeatureFlagVariantKey } from "posthog-js/react";
 import { useEffect } from "react";
 import { getThemeConfig, type SeasonalTheme } from "@/utils/seasonalThemes";
 
