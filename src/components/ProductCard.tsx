@@ -302,7 +302,7 @@ export const ProductCard = ({
           size="lg"
         >
           <ShoppingCart className="h-4 w-4" />
-          {stock === 0 ? "Out of Stock" : seasonalMode && themeConfig ? `${themeConfig.emoji.primary} Add to Cart` : "Add to Cart"}
+          {stock === 0 ? "Out of Stock" : seasonalMode && themeConfig ? `${themeConfig.emoji.primary} ${ctaText}` : ctaText}
         </Button>
       </CardFooter>
     </Card>
