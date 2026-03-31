@@ -55,6 +55,9 @@ export const Header = () => {
       setIsLoggedIn(true);
       setUserName(user.name);
       
+      // Identify returning user in PostHog so events link to their profile
+      identifyUser(user.email, { name: user.name, email: user.email });
+      
       posthog.reloadFeatureFlags();
       console.log("Header: User logged in, reloading feature flags", { email: user.email });
     } else {
