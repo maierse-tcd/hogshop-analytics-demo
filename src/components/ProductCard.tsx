@@ -192,7 +192,7 @@ export const ProductCard = ({
               disabled={stock === 0}
             >
               <ShoppingCart className="h-4 w-4" />
-              {stock === 0 ? "Out of Stock" : "Add to Cart"}
+              {stock === 0 ? "Out of Stock" : ctaText}
             </Button>
           </div>
         </div>
