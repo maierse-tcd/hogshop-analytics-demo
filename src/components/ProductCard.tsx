@@ -110,7 +110,10 @@ export const ProductCard = ({
     if (halloweenMode !== undefined) {
       posthog.capture('$feature_view', { feature_flag: 'hero_banner_halloween' });
     }
-  }, [halloweenMode]);
+    if (ctaVariant !== undefined) {
+      posthog.capture('$feature_view', { feature_flag: 'add-to-cart-cta-experiment', variant: ctaVariant });
+    }
+  }, [halloweenMode, ctaVariant]);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
