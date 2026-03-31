@@ -89,6 +89,15 @@ export const ProductCard = ({
   // Experiment: Subscription highlight badge
   const subscriptionHighlight = useFeatureFlagEnabled('subscription-highlight');
   
+  // Experiment: Add to Cart CTA text
+  const ctaVariant = useFeatureFlagVariantKey('add-to-cart-cta-experiment');
+  const ctaTextMap: Record<string, string> = {
+    'control': 'Add to Cart',
+    'urgency': 'Get It Now',
+    'social_proof': 'Best Seller — Add to Cart',
+  };
+  const ctaText = ctaTextMap[ctaVariant as string] || 'Add to Cart';
+  
   // Determine active seasonal theme
   const seasonalMode = halloweenMode ? 'halloween' 
     : christmasMode ? 'christmas'
