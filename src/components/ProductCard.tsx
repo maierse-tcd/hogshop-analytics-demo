@@ -138,7 +138,8 @@ export const ProductCard = ({
       category,
       is_subscription,
       quantity: 1,
-      source: "product_card"
+      source: "product_card",
+      cta_variant: ctaVariant || "control"
     });
   };
 
