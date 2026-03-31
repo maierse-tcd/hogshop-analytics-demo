@@ -6,7 +6,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { LoginDialog } from "./LoginDialog";
 import { SubscriptionManagementDialog } from "./SubscriptionManagementDialog";
-import { posthog, trackEvent } from "@/lib/posthog";
+import { posthog, trackEvent, identifyUser } from "@/lib/posthog";
 import { useFeatureFlagEnabled, useFeatureFlagVariantKey } from "posthog-js/react";
 import { getUser, clearUser } from "@/lib/auth";
 
@@ -54,6 +54,9 @@ export const Header = () => {
     if (user) {
       setIsLoggedIn(true);
       setUserName(user.name);
+      
+      // Identify returning user in PostHog so events link to their profile
+      identifyUser(user.email, { name: user.name, email: user.email });
       
       posthog.reloadFeatureFlags();
       console.log("Header: User logged in, reloading feature flags", { email: user.email });
