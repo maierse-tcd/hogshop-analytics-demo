@@ -72,6 +72,18 @@ const Index = () => {
         subscribed_at: new Date().toISOString(),
         _demo_event: true
       });
+      // Seed add_to_cart event for experiment goal setup
+      trackEvent("add_to_cart", {
+        product_id: "seed",
+        product_name: "Demo Product",
+        price: 0,
+        category: "seeding",
+        is_subscription: false,
+        quantity: 1,
+        source: "event_seeding",
+        cta_variant: "control",
+        _demo_event: true
+      });
       localStorage.setItem("posthog_events_seeded", "true");
     }
   }, []);

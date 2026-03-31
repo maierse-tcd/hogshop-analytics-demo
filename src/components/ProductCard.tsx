@@ -5,7 +5,7 @@ import { useCart } from "@/contexts/CartContext";
 import { trackEvent, posthog } from "@/lib/posthog";
 import { ShoppingCart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useFeatureFlagEnabled } from "posthog-js/react";
+import { useFeatureFlagEnabled, useFeatureFlagVariantKey } from "posthog-js/react";
 import { useEffect } from "react";
 import { getThemeConfig, type SeasonalTheme } from "@/utils/seasonalThemes";
 
@@ -89,6 +89,15 @@ export const ProductCard = ({
   // Experiment: Subscription highlight badge
   const subscriptionHighlight = useFeatureFlagEnabled('subscription-highlight');
   
+  // Experiment: Add to Cart CTA text
+  const ctaVariant = useFeatureFlagVariantKey('add-to-cart-cta-experiment');
+  const ctaTextMap: Record<string, string> = {
+    'control': 'Add to Cart',
+    'urgency': 'Get It Now',
+    'social_proof': 'Best Seller — Add to Cart',
+  };
+  const ctaText = ctaTextMap[ctaVariant as string] || 'Add to Cart';
+  
   // Determine active seasonal theme
   const seasonalMode = halloweenMode ? 'halloween' 
     : christmasMode ? 'christmas'
@@ -101,7 +110,10 @@ export const ProductCard = ({
     if (halloweenMode !== undefined) {
       posthog.capture('$feature_view', { feature_flag: 'hero_banner_halloween' });
     }
-  }, [halloweenMode]);
+    if (ctaVariant !== undefined) {
+      posthog.capture('$feature_view', { feature_flag: 'add-to-cart-cta-experiment', variant: ctaVariant });
+    }
+  }, [halloweenMode, ctaVariant]);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -126,7 +138,8 @@ export const ProductCard = ({
       category,
       is_subscription,
       quantity: 1,
-      source: "product_card"
+      source: "product_card",
+      cta_variant: ctaVariant || "control"
     });
   };
 
@@ -179,7 +192,7 @@ export const ProductCard = ({
               disabled={stock === 0}
             >
               <ShoppingCart className="h-4 w-4" />
-              {stock === 0 ? "Out of Stock" : "Add to Cart"}
+              {stock === 0 ? "Out of Stock" : ctaText}
             </Button>
           </div>
         </div>
@@ -289,7 +302,7 @@ export const ProductCard = ({
           size="lg"
         >
           <ShoppingCart className="h-4 w-4" />
-          {stock === 0 ? "Out of Stock" : seasonalMode && themeConfig ? `${themeConfig.emoji.primary} Add to Cart` : "Add to Cart"}
+          {stock === 0 ? "Out of Stock" : seasonalMode && themeConfig ? `${themeConfig.emoji.primary} ${ctaText}` : ctaText}
         </Button>
       </CardFooter>
     </Card>
