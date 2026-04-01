@@ -1,4 +1,4 @@
-import { Moon, Sun, LogIn, LogOut, CreditCard } from "lucide-react";
+import { Moon, Sun, LogIn, LogOut, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import { CartDrawer } from "./CartDrawer";
