@@ -9,6 +9,13 @@ import { SubscriptionManagementDialog } from "./SubscriptionManagementDialog";
 import { posthog, trackEvent, identifyUser } from "@/lib/posthog";
 import { useFeatureFlagEnabled, useFeatureFlagVariantKey } from "posthog-js/react";
 import { getUser, clearUser } from "@/lib/auth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const Header = () => {
   const { theme, setTheme } = useTheme();
