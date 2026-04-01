@@ -27,17 +27,8 @@ export const Header = () => {
   const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
   const signupVariant = useFeatureFlagVariantKey('increase_sales_cta');
   const halloweenMode = useFeatureFlagEnabled('hero_banner_halloween');
-  const showSubscription = useFeatureFlagEnabled('show_subscription');
 
-  // Debug log for subscription flag
-  console.log("Header: showSubscription flag =", showSubscription, "isLoggedIn =", isLoggedIn);
 
-  // Track feature flag views (rich analytics)
-  useEffect(() => {
-    if (showSubscription !== undefined) {
-      posthog.capture('$feature_view', { feature_flag: 'show_subscription' });
-    }
-  }, [showSubscription]);
 
   useEffect(() => {
     if (halloweenMode !== undefined) {
