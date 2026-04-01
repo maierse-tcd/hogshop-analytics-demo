@@ -39,6 +39,9 @@ export const SubscriptionManagementDialog = ({
       const user = getUser();
       if (!user?.email) throw new Error("No user email found");
 
+      // Ensure user is identified before capturing any events
+      posthog.identify(user.email, { email: user.email, name: user.name });
+
       // Track cancellation attempt
       posthog.capture("subscription_cancellation_attempted", {
         timestamp: new Date().toISOString(),
