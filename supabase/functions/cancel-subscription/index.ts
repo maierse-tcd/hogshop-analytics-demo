@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { createLogger } from "../_shared/posthog-logger.ts";
 
 const corsHeaders = {
@@ -15,12 +14,6 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabaseClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-    { auth: { persistSession: false } }
-  );
-
   try {
     log.info("Function started");
 
@@ -28,20 +21,16 @@ serve(async (req) => {
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
     log.info("Stripe key verified");
 
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
-    const user = userData.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
-    log.info("User authenticated", { userId: user.id, email: user.email });
+    const { email } = await req.json();
+    if (!email || typeof email !== "string") {
+      throw new Error("Email is required in request body");
+    }
+    log.info("Email received", { email });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+    const customers = await stripe.customers.list({ email, limit: 1 });
     
-    if (customers.data.length === 0) throw new Error("No Stripe customer found for this user");
+    if (customers.data.length === 0) throw new Error("No Stripe customer found for this email");
 
     const customerId = customers.data[0].id;
     log.info("Found Stripe customer", { customerId });
@@ -63,7 +52,7 @@ serve(async (req) => {
       const groupIdentifyPayload = {
         api_key: POSTHOG_KEY,
         event: "$groupidentify",
-        distinct_id: user.email,
+        distinct_id: email,
         properties: {
           $group_type: "customer_lifecycle",
           $group_key: "Churned Subscriber",
@@ -71,7 +60,7 @@ serve(async (req) => {
         },
       };
 
-      log.info("Sending PostHog groupIdentify", { email: user.email, lifecycle: "Churned Subscriber" });
+      log.info("Sending PostHog groupIdentify", { email, lifecycle: "Churned Subscriber" });
       await fetch(`${POSTHOG_HOST}/capture/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -81,7 +70,7 @@ serve(async (req) => {
       const groupUpdatePayload = {
         api_key: POSTHOG_KEY,
         event: "subscription_cancelled",
-        distinct_id: user.email,
+        distinct_id: email,
         properties: {
           subscription_id: cancelledSubscription.id,
           cancelled_at: new Date(cancelledSubscription.canceled_at! * 1000).toISOString(),
@@ -101,7 +90,7 @@ serve(async (req) => {
       const personPropertiesPayload = {
         api_key: POSTHOG_KEY,
         event: "$set",
-        distinct_id: user.email,
+        distinct_id: email,
         properties: {
           $set: {
             subscription_active: false,

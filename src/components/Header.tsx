@@ -1,4 +1,4 @@
-import { Moon, Sun, LogIn, LogOut, CreditCard } from "lucide-react";
+import { Moon, Sun, LogIn, LogOut, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import { CartDrawer } from "./CartDrawer";
@@ -9,6 +9,13 @@ import { SubscriptionManagementDialog } from "./SubscriptionManagementDialog";
 import { posthog, trackEvent, identifyUser } from "@/lib/posthog";
 import { useFeatureFlagEnabled, useFeatureFlagVariantKey } from "posthog-js/react";
 import { getUser, clearUser } from "@/lib/auth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const Header = () => {
   const { theme, setTheme } = useTheme();
@@ -20,17 +27,8 @@ export const Header = () => {
   const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
   const signupVariant = useFeatureFlagVariantKey('increase_sales_cta');
   const halloweenMode = useFeatureFlagEnabled('hero_banner_halloween');
-  const showSubscription = useFeatureFlagEnabled('show_subscription');
 
-  // Debug log for subscription flag
-  console.log("Header: showSubscription flag =", showSubscription, "isLoggedIn =", isLoggedIn);
 
-  // Track feature flag views (rich analytics)
-  useEffect(() => {
-    if (showSubscription !== undefined) {
-      posthog.capture('$feature_view', { feature_flag: 'show_subscription' });
-    }
-  }, [showSubscription]);
 
   useEffect(() => {
     if (halloweenMode !== undefined) {
@@ -85,33 +83,8 @@ export const Header = () => {
     setUserName(name);
   };
 
-  const triggerSubscriptionSurvey = () => {
-    try {
-      // Always track the click
-      posthog.capture("click_subscription", {
-        source: "header",
-        timestamp: new Date().toISOString(),
-      });
 
-      posthog.getActiveMatchingSurveys((surveys) => {
-        // Prefer a survey with "subscription" in name, else take the first
-        const survey = surveys.find((s: any) => (s.name || "").toLowerCase().includes("subscription")) || surveys[0];
-        if (survey) {
-          const render = (posthog as any).renderSurvey as ((id: string, selector?: string) => void) | undefined;
-          if (typeof render === "function") {
-            render(survey.id);
-            console.log("PostHog: Rendered survey from header click", { id: survey.id, name: survey.name });
-          } else {
-            console.warn("PostHog: renderSurvey not available in this SDK version");
-          }
-        } else {
-          console.log("PostHog: No active surveys available on header click");
-        }
-      }, true);
-    } catch (e) {
-      console.error("PostHog: Survey trigger error", e);
-    }
-  };
+
 
   return (
     <header className={`sticky top-0 z-50 w-full border-b backdrop-blur supports-[backdrop-filter]:bg-background/60 ${
@@ -159,47 +132,34 @@ export const Header = () => {
                 )}
               </Link>
             ))}
-            {isLoggedIn && showSubscription && (
-              <button
-                onClick={() => {
-                  // Track feature interaction with person property
-                  posthog.capture('$feature_interaction', {
-                    feature_flag: 'show_subscription',
-                    $set: { [`$feature_interaction/show_subscription`]: true }
-                  });
-                  triggerSubscriptionSurvey();
-                  setTimeout(() => setShowSubscriptionDialog(true), 600);
-                }}
-                className={`text-sm font-medium transition-colors ${
-                  halloweenMode 
-                    ? 'text-[hsl(var(--halloween-orange))]/80 hover:text-[hsl(var(--halloween-orange))]' 
-                    : 'text-muted-foreground hover:text-foreground'
-                } flex items-center gap-1`}
-              >
-                <CreditCard className="h-3.5 w-3.5" />
-                Subscription
-              </button>
-            )}
           </nav>
         </div>
         
         <div className="flex items-center gap-2">
           {isLoggedIn ? (
             <div className="flex items-center gap-2">
-              <span className={`text-sm hidden md:inline ${
-                halloweenMode ? 'text-[hsl(var(--halloween-orange))]' : 'text-muted-foreground'
-              }`}>
-                {userName}
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="gap-2"
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="hidden md:inline">Logout</span>
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-1">
+                    <span className={`text-sm hidden md:inline ${
+                      halloweenMode ? 'text-[hsl(var(--halloween-orange))]' : 'text-muted-foreground'
+                    }`}>
+                      {userName}
+                    </span>
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setShowSubscriptionDialog(true)}>
+                    Cancel Subscription
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           ) : (
             <>

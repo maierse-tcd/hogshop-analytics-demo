@@ -10,9 +10,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { posthog, updateSubscriptionStatus } from "@/lib/posthog";
+import { getUser } from "@/lib/auth";
 
 interface SubscriptionManagementDialogProps {
   open: boolean;
@@ -29,7 +29,6 @@ export const SubscriptionManagementDialog = ({
   const { toast } = useToast();
 
   const handleCancel = async () => {
-    // No survey on cancel; proceed immediately
     await proceedWithCancellation();
   };
 
@@ -37,10 +36,27 @@ export const SubscriptionManagementDialog = ({
     setIsCancelling(true);
     
     try {
+      const user = getUser();
+      if (!user?.email) throw new Error("No user email found");
+
       // Track cancellation attempt
       posthog.capture("subscription_cancellation_attempted", {
         timestamp: new Date().toISOString(),
       });
+
+      // Call edge function with email (no auth token needed)
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const response = await fetch(`${supabaseUrl}/functions/v1/cancel-subscription`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Cancellation failed");
+      }
 
       // Update PostHog to mark as churned subscriber
       updateSubscriptionStatus({
@@ -48,7 +64,6 @@ export const SubscriptionManagementDialog = ({
         cancelled: true,
       });
       
-      // Update to Churned Subscriber lifecycle (keep value tier unchanged)
       posthog.group("customer_lifecycle", "Churned Subscriber");
       posthog.setPersonProperties({ 
         subscription_active: false,
@@ -57,13 +72,14 @@ export const SubscriptionManagementDialog = ({
 
       toast({
         title: "Subscription Cancelled",
-        description: "We’ll stop shipping your monthly Hedgehog Food boxes.",
+        description: "We'll stop shipping your monthly Hedgehog Food boxes.",
       });
 
       // Track successful cancellation
       posthog.capture("subscription_cancelled", {
         timestamp: new Date().toISOString(),
-        cancellation_date: new Date().toISOString(),
+        cancellation_date: result.cancelled_at,
+        subscription_id: result.subscription_id,
       });
 
       onCancelled?.();
@@ -71,7 +87,6 @@ export const SubscriptionManagementDialog = ({
     } catch (error) {
       console.error("Cancellation error:", error);
       
-      // Track cancellation failure
       posthog.capture("subscription_cancellation_failed", {
         error: error instanceof Error ? error.message : "Unknown error",
         timestamp: new Date().toISOString(),
@@ -80,7 +95,7 @@ export const SubscriptionManagementDialog = ({
       toast({
         variant: "destructive",
         title: "Cancellation Failed",
-        description: "Failed to cancel subscription. Please try again or contact support.",
+        description: error instanceof Error ? error.message : "Failed to cancel subscription. Please try again.",
       });
     } finally {
       setIsCancelling(false);
@@ -93,17 +108,16 @@ export const SubscriptionManagementDialog = ({
         <DialogHeader>
           <DialogTitle>Cancel Subscription</DialogTitle>
           <DialogDescription>
-            Cancelling will stop monthly deliveries of your Hedgehog Food subscription. This is a product subscription (not a service), so we’ll simply stop shipping future boxes.
+            Cancelling will stop monthly deliveries of your Hedgehog Food subscription. This is a product subscription (not a service), so we'll simply stop shipping future boxes.
           </DialogDescription>
         </DialogHeader>
 
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            We’ll stop shipping your monthly Hedgehog Food box right away. This isn’t a service subscription—no further shipments will be sent.
+            We'll stop shipping your monthly Hedgehog Food box right away. This isn't a service subscription—no further shipments will be sent.
           </AlertDescription>
         </Alert>
-
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button
