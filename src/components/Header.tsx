@@ -166,47 +166,34 @@ export const Header = () => {
                 )}
               </Link>
             ))}
-            {isLoggedIn && showSubscription && (
-              <button
-                onClick={() => {
-                  // Track feature interaction with person property
-                  posthog.capture('$feature_interaction', {
-                    feature_flag: 'show_subscription',
-                    $set: { [`$feature_interaction/show_subscription`]: true }
-                  });
-                  triggerSubscriptionSurvey();
-                  setTimeout(() => setShowSubscriptionDialog(true), 600);
-                }}
-                className={`text-sm font-medium transition-colors ${
-                  halloweenMode 
-                    ? 'text-[hsl(var(--halloween-orange))]/80 hover:text-[hsl(var(--halloween-orange))]' 
-                    : 'text-muted-foreground hover:text-foreground'
-                } flex items-center gap-1`}
-              >
-                <CreditCard className="h-3.5 w-3.5" />
-                Subscription
-              </button>
-            )}
           </nav>
         </div>
         
         <div className="flex items-center gap-2">
           {isLoggedIn ? (
             <div className="flex items-center gap-2">
-              <span className={`text-sm hidden md:inline ${
-                halloweenMode ? 'text-[hsl(var(--halloween-orange))]' : 'text-muted-foreground'
-              }`}>
-                {userName}
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="gap-2"
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="hidden md:inline">Logout</span>
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-1">
+                    <span className={`text-sm hidden md:inline ${
+                      halloweenMode ? 'text-[hsl(var(--halloween-orange))]' : 'text-muted-foreground'
+                    }`}>
+                      {userName}
+                    </span>
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setShowSubscriptionDialog(true)}>
+                    Cancel Subscription
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           ) : (
             <>
