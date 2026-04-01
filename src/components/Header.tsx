@@ -83,33 +83,8 @@ export const Header = () => {
     setUserName(name);
   };
 
-  const triggerSubscriptionSurvey = () => {
-    try {
-      // Always track the click
-      posthog.capture("click_subscription", {
-        source: "header",
-        timestamp: new Date().toISOString(),
-      });
 
-      posthog.getActiveMatchingSurveys((surveys) => {
-        // Prefer a survey with "subscription" in name, else take the first
-        const survey = surveys.find((s: any) => (s.name || "").toLowerCase().includes("subscription")) || surveys[0];
-        if (survey) {
-          const render = (posthog as any).renderSurvey as ((id: string, selector?: string) => void) | undefined;
-          if (typeof render === "function") {
-            render(survey.id);
-            console.log("PostHog: Rendered survey from header click", { id: survey.id, name: survey.name });
-          } else {
-            console.warn("PostHog: renderSurvey not available in this SDK version");
-          }
-        } else {
-          console.log("PostHog: No active surveys available on header click");
-        }
-      }, true);
-    } catch (e) {
-      console.error("PostHog: Survey trigger error", e);
-    }
-  };
+
 
   return (
     <header className={`sticky top-0 z-50 w-full border-b backdrop-blur supports-[backdrop-filter]:bg-background/60 ${
