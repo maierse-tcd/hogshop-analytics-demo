@@ -1,34 +1,58 @@
 
 
-## Fix: Delay `purchase_completed` Event Until Identification Propagates
+## Fix: Expose PostHog Instance Globally on `window`
 
-### Root Cause
-Checkout opens Stripe in a **new tab**. When Stripe redirects back to `/success`, PostHog initializes with a fresh anonymous UUID. The code calls `posthog.identify(email)` (line 143) but then immediately fires `trackEvent("purchase_completed")` (line 244) — no delay. The event captures with the anonymous ID before identification propagates.
-
-The server-side path (`trackedParam === "1"`) doesn't fire `purchase_completed` client-side at all, so it's fine — but when the client-side fallback runs, it races.
+### Problem
+The `posthog` instance from `posthog-js` is initialized inside `initPostHog()` but never assigned to `window.posthog`. Playwright bot scripts that call `window.posthog.identify()` or `window.posthog.capture()` get `undefined`. This also affects any browser-console debugging.
 
 ### Fix
-In `src/pages/Success.tsx`, wrap the `purchase_completed` event capture in a delay after identification, matching the pattern already used elsewhere (e.g., `ensureIdentified` uses 100ms).
+One line added to `initPostHog()` in `src/lib/posthog.ts`, inside the `loaded` callback (after line ~40):
 
-**Before** (line ~233-252):
 ```typescript
-// Track purchase completion with whatever data we have
-console.log("🟡 SUCCESS: Firing CLIENT-SIDE purchase_completed...");
-trackEvent("purchase_completed", { ... });
+loaded: (posthog) => {
+  console.log("PostHog loaded successfully!", { api_host: POSTHOG_HOST });
+  posthog.debug();
+  posthog.register({ hashed_example_property: "posthog" });
+  // Expose globally for bot scripts and debugging
+  (window as any).posthog = posthog;
+},
 ```
 
-**After**:
+### Also add `$email` and `$name` to all identify calls
+
+While we're here, update the `identifyUser` helper (line ~76) to always set the reserved display properties:
+
 ```typescript
-// Wait for identify to propagate before firing purchase event
-await new Promise(resolve => setTimeout(resolve, 300));
-console.log("🟡 SUCCESS: Firing CLIENT-SIDE purchase_completed...");
-trackEvent("purchase_completed", { ... });
+export const identifyUser = (userId: string, properties?: Record<string, any>) => {
+  if (typeof window !== "undefined") {
+    try {
+      posthog.identify(userId, {
+        $email: userId,
+        $name: properties?.name || userId,
+        ...properties,
+      });
+    } catch (error) {
+      console.error("PostHog identify error:", error);
+    }
+  }
+};
 ```
 
-This adds a 300ms delay between the `posthog.identify()` call and the event capture, ensuring the identified `distinct_id` is active when the event fires.
+And same for `ensureIdentified` (~line 153):
+
+```typescript
+posthog.identify(email, {
+  $email: email,
+  $name: properties?.name || email,
+  ...properties,
+});
+```
 
 ### Files Modified
 | File | Change |
 |------|--------|
-| `src/pages/Success.tsx` | Add 300ms await before `purchase_completed` event (1 line added) |
+| `src/lib/posthog.ts` | Add `window.posthog = posthog` in `loaded` callback; add `$email`/`$name` to `identifyUser` and `ensureIdentified` |
+
+### What to tell Claude Code / Playwright
+After this change, `window.posthog` will be available globally. Bot scripts can safely call `window.posthog.identify(email)` and `window.posthog.capture(...)` after waiting for PostHog readiness.
 
