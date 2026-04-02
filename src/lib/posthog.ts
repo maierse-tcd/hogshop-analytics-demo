@@ -39,7 +39,9 @@ export const initPostHog = () => {
         loaded: (posthog) => {
           console.log("PostHog loaded successfully!", { api_host: POSTHOG_HOST });
           posthog.debug();
-          posthog.register({ hashed_example_property: "posthog" });
+      posthog.register({ hashed_example_property: "posthog" });
+          // Expose globally for bot scripts and debugging
+          (window as any).posthog = posthog;
         },
       });
       
@@ -75,7 +77,11 @@ export const trackEvent = (eventName: string, properties?: Record<string, any>) 
 export const identifyUser = (userId: string, properties?: Record<string, any>) => {
   if (typeof window !== "undefined") {
     try {
-      posthog.identify(userId, properties);
+      posthog.identify(userId, {
+        $email: userId,
+        $name: properties?.name || userId,
+        ...properties,
+      });
       console.log("PostHog user identified:", userId, properties);
     } catch (error) {
       console.error("PostHog identify error:", error);
@@ -180,7 +186,11 @@ export const ensureIdentified = async (email: string, properties?: Record<string
   if (typeof window !== "undefined") {
     return new Promise<void>((resolve) => {
       // Always identify the user with their email - this will merge anonymous events
-      posthog.identify(email, properties);
+      posthog.identify(email, {
+        $email: email,
+        $name: properties?.name || email,
+        ...properties,
+      });
       
       // Wait for identification to propagate
       setTimeout(() => {
