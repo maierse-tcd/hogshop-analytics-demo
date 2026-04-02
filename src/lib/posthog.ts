@@ -77,7 +77,11 @@ export const trackEvent = (eventName: string, properties?: Record<string, any>) 
 export const identifyUser = (userId: string, properties?: Record<string, any>) => {
   if (typeof window !== "undefined") {
     try {
-      posthog.identify(userId, properties);
+      posthog.identify(userId, {
+        $email: userId,
+        $name: properties?.name || userId,
+        ...properties,
+      });
       console.log("PostHog user identified:", userId, properties);
     } catch (error) {
       console.error("PostHog identify error:", error);
