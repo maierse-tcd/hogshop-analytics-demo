@@ -230,6 +230,9 @@ const Success = () => {
         console.log("PostHog: Using cart total as fallback:", basketValue);
       }
 
+      // Wait for identify to propagate before firing purchase event
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
       // Track purchase completion with whatever data we have
       console.log("🟡 SUCCESS: Firing CLIENT-SIDE purchase_completed event with data:", {
         session_id: sessionId,
