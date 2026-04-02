@@ -1,24 +1,34 @@
 
 
-## Fix: Ensure PostHog Identification Before Cancellation Events
+## Fix: Delay `purchase_completed` Event Until Identification Propagates
 
-### Problem
-`SubscriptionManagementDialog` captures cancellation events without calling `posthog.identify()` first. If the Header's page-load identification hasn't completed (or was skipped), these events fire under an anonymous ID.
+### Root Cause
+Checkout opens Stripe in a **new tab**. When Stripe redirects back to `/success`, PostHog initializes with a fresh anonymous UUID. The code calls `posthog.identify(email)` (line 143) but then immediately fires `trackEvent("purchase_completed")` (line 244) — no delay. The event captures with the anonymous ID before identification propagates.
+
+The server-side path (`trackedParam === "1"`) doesn't fire `purchase_completed` client-side at all, so it's fine — but when the client-side fallback runs, it races.
 
 ### Fix
-In `proceedWithCancellation`, right after `getUser()` succeeds and before any `posthog.capture()` call, add `posthog.identify(user.email, { email: user.email, name: user.name })`.
+In `src/pages/Success.tsx`, wrap the `purchase_completed` event capture in a delay after identification, matching the pattern already used elsewhere (e.g., `ensureIdentified` uses 100ms).
 
-### Change
-
-**`src/components/SubscriptionManagementDialog.tsx`** — inside `proceedWithCancellation`, after the `getUser()` check (line 39-40), add:
-
+**Before** (line ~233-252):
 ```typescript
-const user = getUser();
-if (!user?.email) throw new Error("No user email found");
-
-// Ensure user is identified before capturing any events
-posthog.identify(user.email, { email: user.email, name: user.name });
+// Track purchase completion with whatever data we have
+console.log("🟡 SUCCESS: Firing CLIENT-SIDE purchase_completed...");
+trackEvent("purchase_completed", { ... });
 ```
 
-This is a single line addition. The existing `posthog` import already exists in the file. No other files need changes — the server-side edge function already uses `email` as `distinct_id`, which will match.
+**After**:
+```typescript
+// Wait for identify to propagate before firing purchase event
+await new Promise(resolve => setTimeout(resolve, 300));
+console.log("🟡 SUCCESS: Firing CLIENT-SIDE purchase_completed...");
+trackEvent("purchase_completed", { ... });
+```
+
+This adds a 300ms delay between the `posthog.identify()` call and the event capture, ensuring the identified `distinct_id` is active when the event fires.
+
+### Files Modified
+| File | Change |
+|------|--------|
+| `src/pages/Success.tsx` | Add 300ms await before `purchase_completed` event (1 line added) |
 
