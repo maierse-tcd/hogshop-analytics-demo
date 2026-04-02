@@ -186,7 +186,11 @@ export const ensureIdentified = async (email: string, properties?: Record<string
   if (typeof window !== "undefined") {
     return new Promise<void>((resolve) => {
       // Always identify the user with their email - this will merge anonymous events
-      posthog.identify(email, properties);
+      posthog.identify(email, {
+        $email: email,
+        $name: properties?.name || email,
+        ...properties,
+      });
       
       // Wait for identification to propagate
       setTimeout(() => {
