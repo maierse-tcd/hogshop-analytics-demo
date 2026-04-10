@@ -6,15 +6,7 @@ const captureDemoException = (
   additionalProps?: Record<string, any>
 ) => {
   try {
-    posthog.capture('$exception', {
-      $exception_list: [
-        {
-          type: error.name,
-          value: error.message,
-          mechanism: { handled: false, synthetic: false },
-        }
-      ],
-      $exception_personURL: posthog.get_session_replay_url(),
+    posthog.captureException(error, {
       demo_context: context,
       demo_error: true,
       timestamp: new Date().toISOString(),
