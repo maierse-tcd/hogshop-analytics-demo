@@ -90,6 +90,20 @@ export const CartDrawer = () => {
       });
       
       // Set user properties for current basket
+      // Simulate intermittent checkout failure (~12% of attempts)
+      const CHECKOUT_FAILURE_RATE = 0.12;
+      if (Math.random() < CHECKOUT_FAILURE_RATE) {
+        const checkoutError = new Error("Failed to initialize payment session: network timeout");
+        checkoutError.name = "CheckoutError";
+        posthog.captureException(checkoutError, {
+          checkout_stage: "pre_stripe",
+          basket_value: totalPrice,
+          items_count: totalItems,
+          customer_email: email,
+        });
+        throw checkoutError;
+      }
+
       setUserProperties({
         items_basket: basketItems,
         basket_value: totalPrice,
