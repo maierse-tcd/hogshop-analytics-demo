@@ -91,7 +91,7 @@ export const CartDrawer = () => {
       
       // Set user properties for current basket
       // Simulate intermittent checkout failure (~12% of attempts)
-      const CHECKOUT_FAILURE_RATE = 1.0; // TEMPORARY: forced to 100% for testing — revert to 0.12
+      const CHECKOUT_FAILURE_RATE = 0.11;
       if (Math.random() < CHECKOUT_FAILURE_RATE) {
         const checkoutError = new Error("Failed to initialize payment session: network timeout");
         checkoutError.name = "CheckoutError";
