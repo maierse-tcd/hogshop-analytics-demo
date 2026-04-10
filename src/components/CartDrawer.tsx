@@ -87,6 +87,7 @@ export const CartDrawer = () => {
         revenue: totalPrice,
         currency: "USD",
         items: basketItems,
+        hashed_example_property: "posthog",
       });
       
       // Set user properties for current basket
