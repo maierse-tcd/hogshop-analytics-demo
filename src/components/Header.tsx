@@ -30,11 +30,7 @@ export const Header = () => {
 
 
 
-  useEffect(() => {
-    if (halloweenMode !== undefined) {
-      posthog.capture('$feature_view', { feature_flag: 'hero_banner_halloween' });
-    }
-  }, [halloweenMode]);
+  // Feature flag tracking is handled automatically by the PostHog SDK
 
   // Check auth state on mount and when location changes
   // Set UX Choice group based on current theme
