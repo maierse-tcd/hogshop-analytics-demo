@@ -105,15 +105,7 @@ export const ProductCard = ({
     : summerMode ? 'summer'
     : null;
 
-  // Track feature flag views (rich analytics)
-  useEffect(() => {
-    if (halloweenMode !== undefined) {
-      posthog.capture('$feature_view', { feature_flag: 'hero_banner_halloween' });
-    }
-    if (ctaVariant !== undefined) {
-      posthog.capture('$feature_view', { feature_flag: 'add-to-cart-cta-experiment', variant: ctaVariant });
-    }
-  }, [halloweenMode, ctaVariant]);
+  // Feature flag tracking is handled automatically by the PostHog SDK
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();

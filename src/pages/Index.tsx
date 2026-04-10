@@ -5,7 +5,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { trackEvent, posthog } from "@/lib/posthog";
 import { useFeatureFlagEnabled, useFeatureFlagVariantKey } from "posthog-js/react";
 import { ArrowRight, X, Gift } from "lucide-react";
@@ -32,6 +32,7 @@ interface Product {
 const Index = () => {
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const productsViewedRef = useRef(false);
 
   const { data: products, isLoading } = useQuery({
     queryKey: ["products"],
@@ -47,24 +48,26 @@ const Index = () => {
   });
 
   useEffect(() => {
-    trackEvent("products_viewed", {
-      product_count: products?.length || 0
-    });
+    if (products && !productsViewedRef.current) {
+      productsViewedRef.current = true;
+      trackEvent("products_viewed", {
+        product_count: products.length
+      });
+    }
 
     // Simulate demo errors in background (safe, non-blocking)
-    // This runs once after initial render
     const errorTimer = setTimeout(() => {
       simulateDemoErrors();
-    }, 2000); // Delay to ensure page is fully loaded
+    }, 2000);
 
     return () => clearTimeout(errorTimer);
   }, [products]);
 
-  // One-time event seeding for PostHog experiment setup
+  // Event seeding is only needed in development
   useEffect(() => {
+    if (!import.meta.env.DEV) return;
     const eventSeeded = localStorage.getItem("posthog_events_seeded");
     if (!eventSeeded) {
-      // Send sample event to register it in PostHog
       trackEvent("newsletter_subscribed", {
         email: "demo@example.com",
         source: "event_seeding",
@@ -72,7 +75,6 @@ const Index = () => {
         subscribed_at: new Date().toISOString(),
         _demo_event: true
       });
-      // Seed add_to_cart event for experiment goal setup
       trackEvent("add_to_cart", {
         product_id: "seed",
         product_name: "Demo Product",
@@ -115,42 +117,7 @@ const Index = () => {
   const [hasSubscribed, setHasSubscribed] = useState(false);
   const [showNewsletterModal, setShowNewsletterModal] = useState(false);
 
-  // Track feature flag views (rich analytics)
-  useEffect(() => {
-    if (showNewsletterFlag !== undefined) {
-      posthog.capture('$feature_view', { feature_flag: 'show_newsletter' });
-    }
-  }, [showNewsletterFlag]);
-
-  useEffect(() => {
-    if (halloweenHeroFlag !== undefined) {
-      posthog.capture('$feature_view', { feature_flag: 'hero_banner_halloween' });
-    }
-  }, [halloweenHeroFlag]);
-
-  useEffect(() => {
-    if (christmasHeroFlag !== undefined) {
-      posthog.capture('$feature_view', { feature_flag: 'hero_banner_christmas' });
-    }
-  }, [christmasHeroFlag]);
-
-  useEffect(() => {
-    if (easterHeroFlag !== undefined) {
-      posthog.capture('$feature_view', { feature_flag: 'hero_banner_easter' });
-    }
-  }, [easterHeroFlag]);
-
-  useEffect(() => {
-    if (summerHeroFlag !== undefined) {
-      posthog.capture('$feature_view', { feature_flag: 'hero_banner_summer' });
-    }
-  }, [summerHeroFlag]);
-
-  useEffect(() => {
-    if (newsletterSubVariant !== undefined) {
-      posthog.capture('$feature_view', { feature_flag: 'newsletter_sub' });
-    }
-  }, [newsletterSubVariant]);
+  // Feature flag tracking is handled automatically by the PostHog SDK
 
   useEffect(() => {
     // Check localStorage for subscription status
