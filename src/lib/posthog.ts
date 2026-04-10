@@ -2,16 +2,12 @@ import posthog from "posthog-js";
 
 export const initPostHog = () => {
   if (typeof window !== "undefined") {
-    // Read from environment variables with fallbacks
     const POSTHOG_KEY = 
       import.meta.env.VITE_POSTHOG_KEY || 
-      import.meta.env.NEXT_PUBLIC_POSTHOG_KEY || 
       "phc_mCl11WvLPwmqyjG7FlivcsSbTfSEY1J3TWcEnnR0CJa";
     
-    // Use custom domain for first-party data collection via reverse proxy
     const POSTHOG_HOST = 
       import.meta.env.VITE_POSTHOG_HOST || 
-      import.meta.env.NEXT_PUBLIC_POSTHOG_HOST || 
       "https://ph.hogflix.dev";
     
     if (!POSTHOG_KEY) {
@@ -130,14 +126,11 @@ export const setUserPropertiesOnce = (properties: Record<string, any>) => {
 export const updateCLTV = (purchaseAmount: number) => {
   if (typeof window !== "undefined") {
     try {
-      // Get current CLTV from localStorage (our source of truth)
       const currentCLTV = parseFloat(localStorage.getItem('user_cltv') || '0');
       const newCLTV = currentCLTV + purchaseAmount;
       
-      // Store updated CLTV in localStorage
       localStorage.setItem('user_cltv', newCLTV.toString());
       
-      // Set as person property in PostHog (this is persistent on PostHog's servers)
       posthog.setPersonProperties({
         customer_lifetime_value: newCLTV,
         last_purchase_amount: purchaseAmount,
@@ -147,7 +140,6 @@ export const updateCLTV = (purchaseAmount: number) => {
       if (import.meta.env.DEV) console.log("PostHog CLTV updated:", { previous: currentCLTV, added: purchaseAmount, new: newCLTV });
     } catch (error) {
       console.error("PostHog CLTV update error:", error);
-      // Fallback: just set the purchase amount as CLTV
       localStorage.setItem('user_cltv', purchaseAmount.toString());
       posthog.setPersonProperties({
         customer_lifetime_value: purchaseAmount,
@@ -160,20 +152,16 @@ export const updateCLTV = (purchaseAmount: number) => {
 
 /**
  * Initialize CLTV for a new user or sync existing CLTV to PostHog
- * ALWAYS syncs the current localStorage value to PostHog person properties
  */
 const initializeCLTV = () => {
   if (typeof window !== "undefined") {
-    // Get CLTV from localStorage (our source of truth)
     let currentCLTV = parseFloat(localStorage.getItem('user_cltv') || '0');
     
-    // If it doesn't exist, initialize to 0
     if (!localStorage.getItem('user_cltv')) {
       localStorage.setItem('user_cltv', '0');
       currentCLTV = 0;
     }
     
-    // ALWAYS sync the current CLTV to PostHog person properties
     posthog.setPersonProperties({
       customer_lifetime_value: currentCLTV,
     });
@@ -184,19 +172,16 @@ const initializeCLTV = () => {
 
 /**
  * Ensures user is identified before setting properties
- * Waits for PostHog to be ready and user to be identified
  */
 export const ensureIdentified = async (email: string, properties?: Record<string, any>) => {
   if (typeof window !== "undefined") {
     return new Promise<void>((resolve) => {
-      // Always identify the user with their email - this will merge anonymous events
       posthog.identify(email, {
         $email: email,
         $name: properties?.name || email,
         ...properties,
       });
       
-      // Wait for identification to propagate
       setTimeout(() => {
         if (import.meta.env.DEV) console.log("PostHog: User identified with email", email);
         resolve();
@@ -208,7 +193,6 @@ export const ensureIdentified = async (email: string, properties?: Record<string
 
 /**
  * Captures an exception to PostHog with rich metadata
- * Use this for consistent error formatting across the app
  */
 export const captureException = (
   error: Error, 
@@ -239,7 +223,6 @@ export const captureException = (
 
 /**
  * Update subscription status in PostHog
- * Tracks subscription state, dates, and recurring value
  */
 export const updateSubscriptionStatus = (subscriptionData: {
   active: boolean;
@@ -278,7 +261,6 @@ const getValueTier = (cltv: number): string => {
 
 /**
  * Set customer lifecycle and value tier groups
- * Dual-group system for maximum analytics power
  */
 export const setCustomerGroups = (
   lifecycle: "One-Time Buyer" | "Active Subscriber" | "Churned Subscriber" | "Reactivated Subscriber", 
@@ -286,10 +268,8 @@ export const setCustomerGroups = (
 ) => {
   if (typeof window !== "undefined") {
     try {
-      // Set lifecycle group
       posthog.group("customer_lifecycle", lifecycle);
       
-      // Set value tier group if CLTV provided
       if (cltv !== undefined) {
         const tier = getValueTier(cltv);
         posthog.group("customer_value_tier", tier);
@@ -317,19 +297,7 @@ export const setCustomerGroups = (
 };
 
 /**
- * Legacy function for backwards compatibility
- * @deprecated Use setCustomerGroups instead
- */
-export const setCustomerTypeGroup = (customerType: "subscription" | "one-off") => {
-  const lifecycle = customerType === "subscription" ? "Active Subscriber" : "One-Time Buyer";
-  const cltv = parseFloat(localStorage.getItem("user_cltv") || "0");
-  
-  setCustomerGroups(lifecycle, cltv);
-};
-
-/**
  * Force reload feature flags from PostHog
- * Useful after server-side changes to user properties
  */
 export const reloadFeatureFlags = () => {
   if (typeof window !== "undefined") {
@@ -406,67 +374,6 @@ export const trackAIError = (data: {
     error_message: data.errorMessage,
     error_type: data.errorType,
     ...data.additionalProps,
-  });
-};
-
-/**
- * Set customer segment group based on CLTV
- */
-export const setCustomerSegment = (cltv: number) => {
-  const segment = cltv > 500 ? "high_value" : cltv > 100 ? "medium_value" : "low_value";
-  
-  if (posthog) {
-    posthog.group("customer_segment", segment, {
-      cltv,
-      segment,
-    });
-  }
-};
-
-/**
- * Set engagement level based on session count
- */
-export const setEngagementLevel = (sessionCount: number) => {
-  const level = sessionCount > 10 ? "power_user" : sessionCount > 5 ? "active" : "casual";
-  
-  if (posthog) {
-    posthog.group("engagement_level", level, {
-      session_count: sessionCount,
-      level,
-    });
-  }
-};
-
-/**
- * Set subscription tier group
- */
-export const setSubscriptionTier = (tier: "free" | "basic" | "pro" | "premium") => {
-  if (posthog) {
-    posthog.group("subscription_tier", tier, {
-      tier,
-    });
-  }
-};
-
-/**
- * Track experiment view
- */
-export const trackExperimentView = (experimentName: string, variant: string) => {
-  trackEvent("experiment_viewed", {
-    experiment_name: experimentName,
-    variant,
-  });
-};
-
-/**
- * Track experiment goal conversion
- */
-export const trackExperimentGoal = (experimentName: string, variant: string, goalName: string, goalValue?: number) => {
-  trackEvent("experiment_goal_achieved", {
-    experiment_name: experimentName,
-    variant,
-    goal_name: goalName,
-    goal_value: goalValue,
   });
 };
 
