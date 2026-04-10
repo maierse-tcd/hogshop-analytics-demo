@@ -53,7 +53,7 @@ export const Header = () => {
       identifyUser(user.email, { name: user.name, email: user.email });
       
       posthog.reloadFeatureFlags();
-      console.log("Header: User logged in, reloading feature flags", { email: user.email });
+      if (import.meta.env.DEV) console.log("Header: User logged in, reloading feature flags", { email: user.email });
     } else {
       setIsLoggedIn(false);
       setUserName("");
@@ -61,7 +61,7 @@ export const Header = () => {
   }, [location, isLoggedIn]);
 
   const handleLogout = () => {
-    console.log("Header: handleLogout called");
+    if (import.meta.env.DEV) console.log("Header: handleLogout called");
     trackEvent("user_logged_out", {
       timestamp: new Date().toISOString(),
     });
@@ -70,7 +70,7 @@ export const Header = () => {
     posthog.reloadFeatureFlags();
     setIsLoggedIn(false);
     setUserName("");
-    console.log("Header: User logged out, flags reloaded");
+    if (import.meta.env.DEV) console.log("Header: User logged out, flags reloaded");
     navigate("/");
   };
 

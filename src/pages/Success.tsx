@@ -9,6 +9,8 @@ import { posthog } from "@/lib/posthog";
 import { supabase } from "@/integrations/supabase/client";
 import { saveUser } from "@/lib/auth";
 
+const isDev = import.meta.env.DEV;
+
 const Success = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -20,47 +22,34 @@ const Success = () => {
 
   useEffect(() => {
     const identifyUser = async () => {
-      console.log("🟡 SUCCESS: Page loaded", { 
-        sessionId, 
-        trackedParam, 
-        hasTrackedParam: trackedParam === "1" 
-      });
-      
-      // Set up a 10-second safety net timer for dual-track approach
-      let safetyNetTimer: ReturnType<typeof setTimeout> | null = null;
+      if (isDev) console.log("SUCCESS: Page loaded", { sessionId, trackedParam, hasTrackedParam: trackedParam === "1" });
       
       // Short-circuit if server-side tracking indicated via URL
       if (trackedParam === "1") {
-        console.log("🟡 SUCCESS: Server-side tracking confirmed via URL");
+        if (isDev) console.log("SUCCESS: Server-side tracking confirmed via URL");
         
-        // CRITICAL: Restore user session from checkout_user before clearing
+        // Restore user session from checkout_user before clearing
         const storedUserData = localStorage.getItem("checkout_user");
         if (storedUserData) {
           try {
             const userData = JSON.parse(storedUserData);
             if (userData.email && userData.name && (!userData.expiresAt || Date.now() < userData.expiresAt)) {
-              // Re-save to permanent auth storage
               saveUser(userData.email, userData.name);
-              console.log("Success: User session restored", { email: userData.email });
+              if (isDev) console.log("Success: User session restored", { email: userData.email });
               
-              // CRITICAL: Identify user in PostHog FIRST
               posthog.identify(userData.email, {
                 email: userData.email,
                 name: userData.name,
               });
               
-              // Wait for identification to propagate
               setTimeout(() => {
-                // Set groups after identification
                 const cltv = parseFloat(localStorage.getItem("user_cltv") || "0");
                 setCustomerGroups("Active Subscriber", cltv);
+                if (isDev) console.log("Success: User identified and groups set", { email: userData.email, cltv });
                 
-                console.log("Success: User identified and groups set", { email: userData.email, cltv });
-                
-                // Single strategic reload after server-side tracking confirmation
                 setTimeout(() => {
                   posthog.reloadFeatureFlags();
-                  console.log("Success: Feature flags reloaded (server tracking confirmed)");
+                  if (isDev) console.log("Success: Feature flags reloaded (server tracking confirmed)");
                 }, 2000);
               }, 500);
             }
@@ -68,23 +57,20 @@ const Success = () => {
             console.error("Success: Failed to restore user session", error);
           }
         } else {
-          // No stored user data, still reload flags after delay
           setTimeout(() => {
             posthog.reloadFeatureFlags();
-            console.log("🟡 SUCCESS: Feature flags reloaded (no user data)");
+            if (isDev) console.log("SUCCESS: Feature flags reloaded (no user data)");
           }, 2000);
         }
         
         setTrackingComplete(true);
         setTrackingVerified(true);
         
-        // Set up 3-second verification check as safety net
         setTimeout(() => {
           if (!trackingVerified) {
-            console.warn("⚠️ SUCCESS: Server tracking not verified after 3s, will fire client-side backup");
-            // Fall through to client-side tracking below
+            if (isDev) console.warn("SUCCESS: Server tracking not verified after 3s");
           } else {
-            console.log("✅ SUCCESS: Server-side tracking verified successfully");
+            if (isDev) console.log("SUCCESS: Server-side tracking verified successfully");
           }
         }, 3000);
         
@@ -102,16 +88,16 @@ const Success = () => {
       } catch (_) {}
 
       if ((!sessionId && !hasPending) || trackingComplete) {
-        console.log("🟡 SUCCESS: Skipping tracking", { sessionId, hasPending, trackingComplete });
+        if (isDev) console.log("SUCCESS: Skipping tracking", { sessionId, hasPending, trackingComplete });
         return;
       }
 
-      console.log("🟡 SUCCESS: Starting CLIENT-SIDE purchase tracking for session:", sessionId || "no-session");
+      if (isDev) console.log("SUCCESS: Starting CLIENT-SIDE purchase tracking for session:", sessionId || "no-session");
 
       // Check if this session was already tracked
       const trackedSessions = JSON.parse(localStorage.getItem("tracked_sessions") || "{}");
       if (sessionId && trackedSessions[sessionId]) {
-        console.log("🟡 SUCCESS: Session already tracked, skipping", sessionId);
+        if (isDev) console.log("SUCCESS: Session already tracked, skipping", sessionId);
         setTrackingComplete(true);
         setTrackingVerified(true);
         return;
@@ -119,43 +105,36 @@ const Success = () => {
 
       // Capture totalPrice before clearing cart
       const cartTotal = totalPrice;
-      let stripeItems: any[] = [];
-      let stripeTotal = 0;
-      
-      // Try to get user info from localStorage first (persists across tabs), then sessionStorage
-      const storedUserData = localStorage.getItem("checkout_user") || sessionStorage.getItem("checkout_user");
       let userEmail = "";
       let userName = "";
+
+      // Try to get user info from localStorage first, then sessionStorage
+      const storedUserData = localStorage.getItem("checkout_user") || sessionStorage.getItem("checkout_user");
 
       if (storedUserData) {
         try {
           const userData = JSON.parse(storedUserData);
           
-          // Check if data has expired
           if (userData.expiresAt && Date.now() > userData.expiresAt) {
-            console.log("PostHog: Stored user data expired");
+            if (isDev) console.log("PostHog: Stored user data expired");
             localStorage.removeItem("checkout_user");
           } else {
             userEmail = userData.email;
             userName = userData.name;
             
-            // Identify immediately with stored data
             posthog.identify(userEmail, {
               email: userEmail,
               name: userName,
               purchase_session_id: sessionId,
             });
             
-            // Re-save to permanent auth storage
             saveUser(userEmail, userName);
+            if (isDev) console.log("PostHog: User identified from storage", userEmail);
             
-            console.log("PostHog: User identified from storage", userEmail);
-            
-            // Set initial groups if we have CLTV
             const currentCLTV = parseFloat(localStorage.getItem("user_cltv") || "0");
             if (currentCLTV > 0) {
               setCustomerGroups("One-Time Buyer", currentCLTV);
-              console.log("PostHog: Initial groups set from storage", { cltv: currentCLTV });
+              if (isDev) console.log("PostHog: Initial groups set from storage", { cltv: currentCLTV });
             }
           }
         } catch (error) {
@@ -180,16 +159,13 @@ const Success = () => {
               purchase_session_id: sessionId,
             });
             
-            // Save to permanent auth storage
             saveUser(userEmail, userName);
+            if (isDev) console.log("PostHog: User identified from Stripe", userEmail);
             
-            console.log("PostHog: User identified from Stripe", userEmail);
-            
-            // Set initial groups
             const currentCLTV = parseFloat(localStorage.getItem("user_cltv") || "0");
             if (currentCLTV > 0) {
               setCustomerGroups("One-Time Buyer", currentCLTV);
-              console.log("PostHog: Initial groups set from Stripe", { cltv: currentCLTV });
+              if (isDev) console.log("PostHog: Initial groups set from Stripe", { cltv: currentCLTV });
             }
           }
         } catch (error) {
@@ -197,23 +173,22 @@ const Success = () => {
         }
       }
 
-      // Get basket data from localStorage first (persists across tabs), then sessionStorage
+      // Get basket data from localStorage first, then sessionStorage
       const storedBasketData = localStorage.getItem("checkout_basket") || sessionStorage.getItem("checkout_basket");
-      let basketItems = [];
+      let basketItems: any[] = [];
       let basketValue = 0;
       
       if (storedBasketData) {
         try {
           const basketData = JSON.parse(storedBasketData);
           
-          // Check if data has expired
           if (basketData.expiresAt && Date.now() > basketData.expiresAt) {
-            console.log("PostHog: Stored basket data expired");
+            if (isDev) console.log("PostHog: Stored basket data expired");
             localStorage.removeItem("checkout_basket");
           } else {
             basketItems = basketData.items || [];
             basketValue = basketData.total || 0;
-            console.log("PostHog: Basket data retrieved from storage:", {
+            if (isDev) console.log("PostHog: Basket data retrieved from storage:", {
               items: basketItems,
               total: basketValue,
               itemCount: basketItems.length
@@ -224,21 +199,18 @@ const Success = () => {
         }
       }
       
-      // Use fallback values if storage is empty
       if (!basketValue && cartTotal) {
         basketValue = cartTotal;
-        console.log("PostHog: Using cart total as fallback:", basketValue);
+        if (isDev) console.log("PostHog: Using cart total as fallback:", basketValue);
       }
 
       // Wait for identify to propagate before firing purchase event
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Track purchase completion with whatever data we have
-      console.log("🟡 SUCCESS: Firing CLIENT-SIDE purchase_completed event with data:", {
+      if (isDev) console.log("SUCCESS: Firing CLIENT-SIDE purchase_completed event", {
         session_id: sessionId,
         total_amount: basketValue,
         customer_email: userEmail,
-        items: basketItems,
         itemCount: basketItems.length
       });
 
@@ -264,45 +236,36 @@ const Success = () => {
             basket_value: basketValue,
           });
           
-          // Update overall customer lifetime value
           updateCLTV(basketValue);
-          
-          console.log("PostHog: User properties set and CLTV updated by", basketValue);
+          if (isDev) console.log("PostHog: User properties set and CLTV updated by", basketValue);
         }
       }, 300);
       
-      // Check if this was a subscription purchase and update subscription status
+      // Check if this was a subscription purchase
       const hasSubscription = basketItems.some((item: any) => item.is_subscription);
-      console.log("PostHog: Subscription check:", {
-        hasSubscription,
-        basketItems,
-        subscriptionItems: basketItems.filter((item: any) => item.is_subscription)
-      });
       
       if (hasSubscription) {
         const subscriptionItem = basketItems.find((item: any) => item.is_subscription);
         setTimeout(() => {
-          console.log("PostHog: Setting subscription_active to true and customer groups");
+          if (isDev) console.log("PostHog: Setting subscription_active to true and customer groups");
           updateSubscriptionStatus({
             active: true,
             start_date: new Date().toISOString(),
             monthly_value: subscriptionItem?.price || basketValue,
           });
           
-          // Set both lifecycle and value tier groups
           const currentCLTV = parseFloat(localStorage.getItem("user_cltv") || "0");
           setCustomerGroups("Active Subscriber", currentCLTV);
         }, 500);
       } else {
-        // One-off purchase - set lifecycle to One-Time Buyer with value tier
         setTimeout(() => {
-          console.log("PostHog: Setting customer groups for one-time buyer");
+          if (isDev) console.log("PostHog: Setting customer groups for one-time buyer");
           const currentCLTV = parseFloat(localStorage.getItem("user_cltv") || "0");
           setCustomerGroups("One-Time Buyer", currentCLTV);
         }, 500);
       }
       
-      // Mark this session as tracked to prevent duplicates
+      // Mark this session as tracked
       if (sessionId) {
         trackedSessions[sessionId] = {
           timestamp: Date.now(),
@@ -310,7 +273,7 @@ const Success = () => {
           method: "client-side"
         };
         localStorage.setItem("tracked_sessions", JSON.stringify(trackedSessions));
-        console.log("🟡 SUCCESS: Session marked as tracked (client-side)", sessionId);
+        if (isDev) console.log("SUCCESS: Session marked as tracked (client-side)", sessionId);
       }
       
       // Clean up old tracked sessions (older than 7 days)
@@ -322,9 +285,8 @@ const Success = () => {
       });
       localStorage.setItem("tracked_sessions", JSON.stringify(trackedSessions));
 
-      // Now safe to clear cart and temporary checkout storage
+      // Clear cart and temporary checkout storage
       clearCart();
-      // Clear temporary checkout data but NOT permanent auth (user_email/user_name)
       localStorage.removeItem("checkout_user");
       localStorage.removeItem("checkout_basket");
       sessionStorage.removeItem("checkout_user");
@@ -332,7 +294,7 @@ const Success = () => {
       
       setTrackingComplete(true);
       setTrackingVerified(true);
-      console.log("✅ SUCCESS: CLIENT-SIDE purchase tracking complete");
+      if (isDev) console.log("SUCCESS: CLIENT-SIDE purchase tracking complete");
     };
 
     identifyUser();

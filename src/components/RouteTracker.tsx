@@ -18,14 +18,9 @@ export const RouteTracker = () => {
         title: document.title,
       });
 
-      // Also track custom page_view event for backwards compatibility
-      posthog.capture("page_view", {
-        page: location.pathname,
-        search: location.search,
-        url: window.location.href,
-      });
-
-      console.log("PostHog: Route tracked", location.pathname);
+      if (import.meta.env.DEV) {
+        console.log("PostHog: Route tracked", location.pathname);
+      }
     }
   }, [location]);
 
