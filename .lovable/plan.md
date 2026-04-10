@@ -1,58 +1,54 @@
 
 
-## Fix: Expose PostHog Instance Globally on `window`
+## Simulate Checkout Error Leading to Cart Abandonment
 
-### Problem
-The `posthog` instance from `posthog-js` is initialized inside `initPostHog()` but never assigned to `window.posthog`. Playwright bot scripts that call `window.posthog.identify()` or `window.posthog.capture()` get `undefined`. This also affects any browser-console debugging.
+### Idea
 
-### Fix
-One line added to `initPostHog()` in `src/lib/posthog.ts`, inside the `loaded` callback (after line ~40):
+Inject a **probabilistic checkout failure** directly in `proceedToCheckout` inside `CartDrawer.tsx`. When triggered, it throws a real error *before* the Stripe edge function is called, shows a toast to the user, and captures a real exception in PostHog via `posthog.captureException()`. The user then naturally closes the cart drawer — which already tracks `checkout_abandoned`.
 
-```typescript
-loaded: (posthog) => {
-  console.log("PostHog loaded successfully!", { api_host: POSTHOG_HOST });
-  posthog.debug();
-  posthog.register({ hashed_example_property: "posthog" });
-  // Expose globally for bot scripts and debugging
-  (window as any).posthog = posthog;
-},
-```
+This gives you:
+- A real exception visible in **Error Tracking**
+- The full interaction visible in **Session Replays** (user clicks checkout → error toast → abandons)
+- Correct funnel drop-off: `checkout_started` fires, but `purchase_completed` never does
 
-### Also add `$email` and `$name` to all identify calls
+### Trigger rate
 
-While we're here, update the `identifyUser` helper (line ~76) to always set the reserved display properties:
+~10-15% of checkout attempts. Configurable via a constant. Low enough to not dominate, high enough to generate meaningful data.
 
-```typescript
-export const identifyUser = (userId: string, properties?: Record<string, any>) => {
-  if (typeof window !== "undefined") {
-    try {
-      posthog.identify(userId, {
-        $email: userId,
-        $name: properties?.name || userId,
-        ...properties,
-      });
-    } catch (error) {
-      console.error("PostHog identify error:", error);
-    }
-  }
-};
-```
+### Implementation
 
-And same for `ensureIdentified` (~line 153):
+**File: `src/components/CartDrawer.tsx`**
+
+In `proceedToCheckout`, right after the `checkout_started` event is tracked (line ~90) and before the `supabase.functions.invoke` call (line ~99), add:
 
 ```typescript
-posthog.identify(email, {
-  $email: email,
-  $name: properties?.name || email,
-  ...properties,
-});
+// Simulate intermittent checkout failure (~12% of attempts)
+if (Math.random() < 0.12) {
+  const checkoutError = new Error("Failed to initialize payment session: network timeout");
+  checkoutError.name = "CheckoutError";
+  
+  // Capture as a real exception in PostHog error tracking
+  posthog.captureException(checkoutError, {
+    checkout_stage: "pre_stripe",
+    basket_value: totalPrice,
+    items_count: totalItems,
+    customer_email: email,
+  });
+  
+  throw checkoutError; // caught by existing try/catch → shows toast
+}
 ```
+
+The existing `catch` block already shows a "Checkout failed" toast and sets `isCheckingOut = false`. When the user closes the drawer, the existing `onOpenChange` handler fires `checkout_abandoned`. So the full abandonment flow is already wired — we just need to trigger it.
+
+**Also:** Update `demoErrorSimulator.ts` to use `posthog.captureException()` instead of `posthog.capture('$exception')` to fix the deprecation warning visible in console logs. This is a quick find-and-replace.
 
 ### Files Modified
 | File | Change |
 |------|--------|
-| `src/lib/posthog.ts` | Add `window.posthog = posthog` in `loaded` callback; add `$email`/`$name` to `identifyUser` and `ensureIdentified` |
+| `src/components/CartDrawer.tsx` | Add probabilistic checkout error before Stripe call (~8 lines) |
+| `src/utils/demoErrorSimulator.ts` | Switch from `posthog.capture('$exception')` to `posthog.captureException()` |
 
-### What to tell Claude Code / Playwright
-After this change, `window.posthog` will be available globally. Bot scripts can safely call `window.posthog.identify(email)` and `window.posthog.capture(...)` after waiting for PostHog readiness.
+### What Playwright / Claude Code needs to know
+No bot changes needed. Bots that attempt checkout will naturally hit this ~12% of the time. The app handles everything — error capture, toast, and abandonment tracking.
 
