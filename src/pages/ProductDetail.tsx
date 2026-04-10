@@ -113,16 +113,7 @@ const ProductDetail = () => {
       quantity: 1,
       is_subscription: product.is_subscription,
       subscription_interval: product.subscription_interval,
-    });
-
-    trackEvent("add_to_cart", {
-      product_id: product.id,
-      product_name: product.title,
-      price: product.price,
-      category: product.category,
-      quantity: 1,
-      source: "product_detail_page"
-    });
+    }, "product_detail_page");
   };
 
   if (isLoading) {

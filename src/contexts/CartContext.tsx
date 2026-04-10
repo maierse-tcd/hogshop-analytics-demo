@@ -20,7 +20,7 @@ interface CartItem extends Product {
 
 interface CartContextType {
   items: CartItem[];
-  addToCart: (product: Product) => void;
+  addToCart: (product: Product, source?: string) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -33,7 +33,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: Product, source?: string) => {
     setItems((prev) => {
       const existing = prev.find((item) => item.id === product.id);
       const newItems = existing 
@@ -59,6 +59,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         cart_total_items: totalItems,
         cart_total_value: totalValue,
         product_category: product.category,
+        source: source || "unknown",
         hashed_example_property: "posthog",
       });
       

@@ -129,18 +129,7 @@ export const ProductCard = ({
       quantity: 1,
       is_subscription, 
       subscription_interval 
-    });
-    
-    trackEvent("add_to_cart", {
-      product_id: id,
-      product_name: title,
-      price,
-      category,
-      is_subscription,
-      quantity: 1,
-      source: "product_card",
-      cta_variant: ctaVariant || "control"
-    });
+    }, "product_card");
   };
 
   const handleCardClick = () => {
