@@ -24,7 +24,7 @@ export const initPostHog = () => {
         api_host: POSTHOG_HOST,
         ui_host: "https://eu.posthog.com",
         person_profiles: 'always',
-        capture_pageview: true,
+        capture_pageview: false,
         capture_pageleave: true,
         capture_performance: true,
         enable_heatmaps: true,
@@ -37,22 +37,26 @@ export const initPostHog = () => {
           recordCrossOriginIframes: false,
         },
         loaded: (posthog) => {
-          console.log("PostHog loaded successfully!", { api_host: POSTHOG_HOST });
-          posthog.debug();
+          if (import.meta.env.DEV) {
+            console.log("PostHog loaded successfully!", { api_host: POSTHOG_HOST });
+            posthog.debug();
+          }
       
           // Expose globally for bot scripts and debugging
           (window as any).posthog = posthog;
         },
       });
       
-      console.log("PostHog initialized", { 
-        host: POSTHOG_HOST, 
-        key: POSTHOG_KEY.substring(0, 10) + "..." 
-      });
+      if (import.meta.env.DEV) {
+        console.log("PostHog initialized", { 
+          host: POSTHOG_HOST, 
+          key: POSTHOG_KEY.substring(0, 10) + "..." 
+        });
+      }
 
       // Set up feature flags loaded callback
       posthog.onFeatureFlags(() => {
-        console.log("PostHog: Feature flags loaded");
+        if (import.meta.env.DEV) console.log("PostHog: Feature flags loaded");
       });
 
       // Force reload feature flags to ensure they're loaded
@@ -67,7 +71,7 @@ export const trackEvent = (eventName: string, properties?: Record<string, any>) 
   if (typeof window !== "undefined") {
     try {
       posthog.capture(eventName, properties);
-      console.log("PostHog event tracked:", eventName, properties);
+      if (import.meta.env.DEV) console.log("PostHog event tracked:", eventName, properties);
     } catch (error) {
       console.error("PostHog tracking error:", error);
     }
@@ -82,7 +86,7 @@ export const identifyUser = (userId: string, properties?: Record<string, any>) =
         $name: properties?.name || userId,
         ...properties,
       });
-      console.log("PostHog user identified:", userId, properties);
+      if (import.meta.env.DEV) console.log("PostHog user identified:", userId, properties);
     } catch (error) {
       console.error("PostHog identify error:", error);
     }
@@ -97,7 +101,7 @@ export const setUserProperties = (properties: Record<string, any>) => {
   if (typeof window !== "undefined") {
     try {
       posthog.setPersonProperties(properties);
-      console.log("PostHog user properties set:", properties);
+      if (import.meta.env.DEV) console.log("PostHog user properties set:", properties);
     } catch (error) {
       console.error("PostHog set properties error:", error);
     }
@@ -111,8 +115,8 @@ export const setUserProperties = (properties: Record<string, any>) => {
 export const setUserPropertiesOnce = (properties: Record<string, any>) => {
   if (typeof window !== "undefined") {
     try {
-      posthog.setPersonPropertiesForFlags(properties);
-      console.log("PostHog user properties set once:", properties);
+      posthog.capture('$set', { $set_once: properties });
+      if (import.meta.env.DEV) console.log("PostHog user properties set once:", properties);
     } catch (error) {
       console.error("PostHog set once error:", error);
     }
@@ -140,7 +144,7 @@ export const updateCLTV = (purchaseAmount: number) => {
         last_purchase_date: new Date().toISOString(),
       });
       
-      console.log("PostHog CLTV updated:", { previous: currentCLTV, added: purchaseAmount, new: newCLTV });
+      if (import.meta.env.DEV) console.log("PostHog CLTV updated:", { previous: currentCLTV, added: purchaseAmount, new: newCLTV });
     } catch (error) {
       console.error("PostHog CLTV update error:", error);
       // Fallback: just set the purchase amount as CLTV
@@ -174,7 +178,7 @@ const initializeCLTV = () => {
       customer_lifetime_value: currentCLTV,
     });
     
-    console.log("PostHog CLTV synced:", currentCLTV);
+    if (import.meta.env.DEV) console.log("PostHog CLTV synced:", currentCLTV);
   }
 };
 
@@ -194,7 +198,7 @@ export const ensureIdentified = async (email: string, properties?: Record<string
       
       // Wait for identification to propagate
       setTimeout(() => {
-        console.log("PostHog: User identified with email", email);
+        if (import.meta.env.DEV) console.log("PostHog: User identified with email", email);
         resolve();
       }, 100);
     });
@@ -226,7 +230,7 @@ export const captureException = (
         timestamp: new Date().toISOString(),
         ...additionalProperties,
       });
-      console.log("PostHog exception captured:", error.message, context);
+      if (import.meta.env.DEV) console.log("PostHog exception captured:", error.message, context);
     } catch (captureError) {
       console.error("PostHog exception capture failed:", captureError);
     }
@@ -255,11 +259,7 @@ export const updateSubscriptionStatus = (subscriptionData: {
         subscription_updated_at: new Date().toISOString(),
       });
       
-      console.log("PostHog subscription status updated:", {
-        ...subscriptionData,
-        distinctId: posthog.get_distinct_id(),
-        timestamp: new Date().toISOString()
-      });
+      if (import.meta.env.DEV) console.log("PostHog subscription status updated:", subscriptionData);
     } catch (error) {
       console.error("PostHog subscription update error:", error);
     }
@@ -301,14 +301,14 @@ export const setCustomerGroups = (
           customer_groups_updated_at: new Date().toISOString(),
         });
         
-        console.log("PostHog: Customer groups set", { lifecycle, tier, cltv });
+        if (import.meta.env.DEV) console.log("PostHog: Customer groups set", { lifecycle, tier, cltv });
       } else {
         posthog.setPersonProperties({
           customer_lifecycle: lifecycle,
           customer_groups_updated_at: new Date().toISOString(),
         });
         
-        console.log("PostHog: Customer lifecycle set", lifecycle);
+        if (import.meta.env.DEV) console.log("PostHog: Customer lifecycle set", lifecycle);
       }
     } catch (error) {
       console.error("PostHog customer groups error:", error);
@@ -335,7 +335,7 @@ export const reloadFeatureFlags = () => {
   if (typeof window !== "undefined") {
     try {
       posthog.reloadFeatureFlags();
-      console.log("PostHog: Feature flags reloaded");
+      if (import.meta.env.DEV) console.log("PostHog: Feature flags reloaded");
     } catch (error) {
       console.error("PostHog: Failed to reload feature flags", error);
     }
