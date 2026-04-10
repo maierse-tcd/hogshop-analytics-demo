@@ -59,6 +59,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         cart_total_items: totalItems,
         cart_total_value: totalValue,
         product_category: product.category,
+        hashed_example_property: "posthog",
       });
       
       // Track cart_updated event
@@ -67,6 +68,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         cart_total_value: totalValue,
         action: "add",
         product_id: product.id,
+        hashed_example_property: "posthog",
       });
       
       return newItems;
@@ -83,6 +85,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           price: item.price,
           quantity: item.quantity,
           cart_value_removed: item.price * item.quantity,
+          hashed_example_property: "posthog",
         });
       }
       return prev.filter((item) => item.id !== productId);
@@ -103,6 +106,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           old_quantity: item.quantity,
           new_quantity: quantity,
           price: item.price,
+          hashed_example_property: "posthog",
         });
       }
       return prev.map((item) =>
@@ -118,6 +122,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       items_count: totalCount,
       cart_value: totalValue,
       items: items.map(item => ({ id: item.id, title: item.title, quantity: item.quantity })),
+      hashed_example_property: "posthog",
     });
     setItems([]);
   };
