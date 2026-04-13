@@ -208,6 +208,34 @@ serve(async (req) => {
     const text = await phRes.text();
     log.info("PostHog purchase_completed response", { status: phRes.status, ok, body: text.substring(0, 200) });
 
+    // Fire subscription_created event (no revenue properties to avoid double-counting)
+    if (hasSubscription) {
+      const subscriptionItems = lineItems.filter((item: any) => item.is_subscription);
+      const subscriptionPayload = {
+        api_key: POSTHOG_KEY,
+        event: "subscription_created",
+        distinct_id: customerEmail || sessionId,
+        properties: {
+          subscription_id: subscriptionId,
+          plan_name: subscriptionItems.map((item: any) => item.name).join(", "),
+          monthly_value: subscriptionValue,
+          customer_email: customerEmail,
+          session_id: sessionId,
+          source: "edge_function",
+          timestamp: new Date().toISOString(),
+          hashed_example_property: "posthog",
+        },
+      };
+
+      log.info("Sending PostHog subscription_created", { subscription_id: subscriptionId });
+      const subRes = await fetch(`${POSTHOG_HOST}/capture/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(subscriptionPayload),
+      });
+      log.info("PostHog subscription_created response", { status: subRes.status, ok: subRes.ok });
+    }
+
     // Set person properties
     if (customerEmail) {
       const personPropertiesPayload = {
