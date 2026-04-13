@@ -225,6 +225,20 @@ const Success = () => {
         customer_email: userEmail,
         items: basketItems,
       });
+
+      // Fire subscription_created without revenue to avoid double-counting
+      if (hasSubscriptionItem) {
+        const subscriptionItem = basketItems.find((item: any) => item.is_subscription);
+        trackEvent("subscription_created", {
+          subscription_id: sessionId,
+          plan_name: subscriptionItem?.title || subscriptionItem?.name || "Subscription",
+          monthly_value: subscriptionItem?.price || basketValue,
+          customer_email: userEmail,
+          session_id: sessionId,
+          source: "client_fallback",
+        });
+        if (isDev) console.log("PostHog: subscription_created event fired (client fallback)");
+      }
       
       // Wait for identify to propagate before setting properties
       setTimeout(() => {
