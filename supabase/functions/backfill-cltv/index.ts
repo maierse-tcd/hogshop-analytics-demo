@@ -52,6 +52,7 @@ serve(async (req) => {
         AND properties.customer_email IS NOT NULL
         AND properties.customer_email != ''
       GROUP BY email
+      LIMIT 100000
     `;
 
     log.info("Running HogQL aggregation", { project_id: PROJECT_ID });
