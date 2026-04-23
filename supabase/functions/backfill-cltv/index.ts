@@ -31,10 +31,10 @@ serve(async (req) => {
     const POSTHOG_API_HOST = Deno.env.get("POSTHOG_API_HOST") || "https://eu.posthog.com";
     const PROJECT_ID = Deno.env.get("POSTHOG_PROJECT_ID");
     const PERSONAL_KEY = Deno.env.get("POSTHOG_PERSONAL_API_KEY");
-    const PROJECT_KEY =
-      Deno.env.get("POSTHOG_PROJECT_API_KEY") ||
-      Deno.env.get("POSTHOG_KEY") ||
-      "phc_mCl11WvLPwmqyjG7FlivcsSbTfSEY1J3TWcEnnR0CJa";
+    // Use the public project key directly (matches the one in src/lib/posthog.ts).
+    // The secret POSTHOG_PROJECT_API_KEY currently holds a personal key (phx_*),
+    // which the /capture/ endpoint rejects, so we ignore it here.
+    const PROJECT_KEY = "phc_mCl11WvLPwmqyjG7FlivcsSbTfSEY1J3TWcEnnR0CJa";
 
     if (!PROJECT_ID || !PERSONAL_KEY) {
       throw new Error("Missing POSTHOG_PROJECT_ID or POSTHOG_PERSONAL_API_KEY");
