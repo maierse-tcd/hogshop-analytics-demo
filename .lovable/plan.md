@@ -1,35 +1,68 @@
 
 
-## Fix inflated `revenue` property in `purchase_completed`
+## Fix stale `customer_lifetime_value` person property
 
-The `track-success` edge function sends `revenue` in cents (`totalAmount * 100`) while `total_amount` is in dollars. PostHog's revenue analytics treat the `revenue` property as the currency unit, so every dashboard using it is 100x inflated.
+### Root cause
 
-### Change
-
-**File:** `supabase/functions/track-success/index.ts` (line ~99)
-
-Replace:
+`supabase/functions/track-success/index.ts` (line 252) sets:
 ```ts
-revenue: Math.round(totalAmount * 100),
+customer_lifetime_value: totalAmount,
 ```
-With:
+This **overwrites** the property with just the most recent order amount — not a running total. Worse, this server-side `$set` runs after every purchase and clobbers whatever the client had accumulated in `localStorage` via `updateCLTV`.
+
+Result: `customer_lifetime_value` is always the value of the latest single purchase (or 0 if the server's `$set` raced and the property was reset).
+
+### Fix
+
+PostHog supports atomic increment via the `$add` operation in a `$set_once`/`$add` payload. We'll switch the server-side person-properties write to use `$add` for `customer_lifetime_value` so each purchase increments the running total, plus keep `$set` for the non-cumulative fields.
+
+**File:** `supabase/functions/track-success/index.ts`
+
+Replace the `personPropertiesPayload` (around lines 241–257) with:
+
 ```ts
-revenue: totalAmount,
+const personPropertiesPayload = {
+  api_key: POSTHOG_KEY,
+  event: "$set",
+  distinct_id: customerEmail,
+  properties: {
+    $set: {
+      subscription_active: hasSubscription,
+      subscription_start_date: hasSubscription ? new Date().toISOString() : null,
+      subscription_monthly_value: subscriptionValue || null,
+      customer_lifecycle: lifecycle,
+      customer_value_tier: valueTier,
+      last_purchase_date: new Date().toISOString(),
+      last_purchase_amount: totalAmount,
+    },
+    $add: {
+      customer_lifetime_value: totalAmount,
+      total_purchases: 1,
+    },
+  },
+};
 ```
 
-That's the entire code change. `totalAmount` is already `session.amount_total / 100`, i.e. dollars — which is what PostHog's revenue analytics expect.
+Notes:
+- `$add` atomically increments on PostHog's side — no read-modify-write race.
+- Bonus: `total_purchases` counter comes for free.
+- `customer_value_tier` is computed from a single purchase amount in this function and will be wrong for repeat buyers, but that's a separate (smaller) issue — flagging only.
 
-### Notes
+### Client-side cleanup
 
-- No client-side changes needed — this property is only set server-side in this one function.
-- No other event sends a `revenue` property (verified: `purchase_completed` is the only place).
-- Currency stays `USD` (already correct).
+`src/lib/posthog.ts` `updateCLTV` is no longer the source of truth. Two options:
 
-### Historical data
+1. **Recommended:** Remove the `posthog.setPersonProperties({ customer_lifetime_value: newCLTV })` call from `updateCLTV` so the client never overwrites the server's incremented value. Keep the `localStorage` mirror for any UI that reads it locally.
+2. Leave it alone — the server's `$set` ran *after* it anyway, so the bug pre-existed. But best to remove the conflicting writer.
 
-Past events in PostHog will remain 100x inflated. Two options (your call, not part of this change):
-1. Leave history as-is and note the cutover date in the PostHog project description.
-2. Create a PostHog insight that divides `revenue` by 100 for events before the fix timestamp, and uses raw `revenue` after.
+Plan goes with option 1: strip the `setPersonProperties` call from `updateCLTV` and `initializeCLTV`. Keep `last_purchase_amount` / `last_purchase_date` writes since those aren't cumulative.
 
-Most teams just accept the discontinuity and move on — historical revenue is rarely re-queried at exact precision.
+### Backfill (optional, not in this change)
+
+Existing person profiles will keep their stale value until their next purchase increments it. If you want a one-shot backfill, that'd be a separate PostHog query → CSV → `$set` import. Skip unless you want it.
+
+### Files changed
+
+- `supabase/functions/track-success/index.ts` — switch to `$add` for CLTV
+- `src/lib/posthog.ts` — remove conflicting `customer_lifetime_value` writes from `updateCLTV` and `initializeCLTV`
 
