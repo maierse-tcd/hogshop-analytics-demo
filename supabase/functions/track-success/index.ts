@@ -242,18 +242,21 @@ serve(async (req) => {
         api_key: POSTHOG_KEY,
         event: "$set",
         distinct_id: customerEmail,
-        properties: {
-          $set: {
-            subscription_active: hasSubscription,
-            subscription_start_date: hasSubscription ? new Date().toISOString() : null,
-            subscription_monthly_value: subscriptionValue || null,
-            customer_lifecycle: lifecycle,
-            customer_value_tier: valueTier,
-            customer_lifetime_value: totalAmount,
-            last_purchase_date: new Date().toISOString(),
-            last_purchase_amount: totalAmount,
-          },
+      properties: {
+        $set: {
+          subscription_active: hasSubscription,
+          subscription_start_date: hasSubscription ? new Date().toISOString() : null,
+          subscription_monthly_value: subscriptionValue || null,
+          customer_lifecycle: lifecycle,
+          customer_value_tier: valueTier,
+          last_purchase_date: new Date().toISOString(),
+          last_purchase_amount: totalAmount,
         },
+        $add: {
+          customer_lifetime_value: totalAmount,
+          total_purchases: 1,
+        },
+      },
       };
 
       log.info("Sending PostHog person properties", { email: customerEmail, subscription_active: hasSubscription });
