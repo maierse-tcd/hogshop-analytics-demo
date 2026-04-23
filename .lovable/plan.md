@@ -1,53 +1,35 @@
 
 
-## Demoing PostHog MCP to a Customer
+## Fix inflated `revenue` property in `purchase_completed`
 
-Short answer: **no, you don't need to download this project.** This Hogshop repo doesn't contain an MCP server — it's a demo storefront that *emits* PostHog data. The "PostHog MCP" is a separate hosted service from PostHog that exposes your analytics/flags/experiments to an MCP-compatible client.
+The `track-success` edge function sends `revenue` in cents (`totalAmount * 100`) while `total_amount` is in dollars. PostHog's revenue analytics treat the `revenue` property as the currency unit, so every dashboard using it is 100x inflated.
 
-For a clean customer demo, run the PostHog MCP in an MCP-capable client pointed at a PostHog project that already has rich data (this Hogshop project is a great data source because the bots generate continuous events, funnels, experiments, and session replays).
+### Change
 
-### Recommended demo setup
+**File:** `supabase/functions/track-success/index.ts` (line ~99)
 
-**Best option — Claude Desktop or Cursor on your laptop**
+Replace:
+```ts
+revenue: Math.round(totalAmount * 100),
+```
+With:
+```ts
+revenue: totalAmount,
+```
 
-1. Install the PostHog MCP locally with the official wizard:
-   ```
-   npx @posthog/wizard mcp add
-   ```
-   It auto-configures Claude Desktop, Cursor, VS Code, or Windsurf and walks through PostHog auth.
-2. Point it at the PostHog project that backs Hogshop (so the customer sees real funnels, flags like `add-to-cart-cta-experiment` and `newsletter_sub`, session replays, errors from the error simulator, etc.).
-3. Demo prompts to run live:
-   - "Show me the top events in the last 24 hours"
-   - "What's the conversion rate of the add-to-cart experiment variants?"
-   - "Find session replays where users hit a checkout error"
-   - "Which feature flags are currently active and what's their rollout?"
-   - "Summarize the funnel from homepage → product view → add to cart → checkout"
+That's the entire code change. `totalAmount` is already `session.amount_total / 100`, i.e. dollars — which is what PostHog's revenue analytics expect.
 
-**Alternative — Claude Code in this repo**
+### Notes
 
-You *can* clone this repo and use Claude Code, but cloning Hogshop adds nothing to the MCP demo itself. Claude Code would still need the PostHog MCP configured separately in its MCP settings. Only do this if you also want to show "AI editing the storefront code while reading live analytics" as a combined story.
+- No client-side changes needed — this property is only set server-side in this one function.
+- No other event sends a `revenue` property (verified: `purchase_completed` is the only place).
+- Currency stays `USD` (already correct).
 
-**Alternative — Lovable itself**
+### Historical data
 
-The PostHog MCP is also available as a Lovable connector (Connectors → PostHog). Once connected, I can answer PostHog questions directly in chat. Good for showing the Lovable + PostHog story, less good as a standalone "MCP" demo since it's wrapped in Lovable's UI.
+Past events in PostHog will remain 100x inflated. Two options (your call, not part of this change):
+1. Leave history as-is and note the cutover date in the PostHog project description.
+2. Create a PostHog insight that divides `revenue` by 100 for events before the fix timestamp, and uses raw `revenue` after.
 
-### Why this repo is still valuable for the demo
-
-Even though you don't run the repo *for* the MCP, keep it running in the background because it produces:
-
-- Live event stream (bots fire continuously)
-- Multiple active experiments and feature flags
-- Error tracking data (intentional error simulator)
-- Session replays with console logs
-- Group analytics (UX Choice / theme)
-- Subscription lifecycle events
-- A verified-identity Support widget setup (just shipped)
-
-That gives the MCP something interesting to query during the demo instead of an empty project.
-
-### Recommendation
-
-Use **Claude Desktop + `npx @posthog/wizard mcp add`** pointed at the Hogshop PostHog project. Fastest setup, cleanest "look what an AI can do with your analytics" story, no repo clone needed.
-
-Want me to draft a 5-minute demo script with specific prompts and expected outputs tailored to this customer?
+Most teams just accept the discontinuity and move on — historical revenue is rarely re-queried at exact precision.
 
