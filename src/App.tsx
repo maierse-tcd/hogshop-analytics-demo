@@ -6,7 +6,8 @@ import { CartProvider } from "@/contexts/CartContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
-import { initPostHog, posthog } from "@/lib/posthog";
+import { initPostHog, posthog, applyPostHogIdentityHash } from "@/lib/posthog";
+import { getUser } from "@/lib/auth";
 import { PostHogProvider, useFeatureFlagEnabled } from "posthog-js/react";
 import { RouteTracker } from "@/components/RouteTracker";
 import { AIChatWidget } from "@/components/AIChatWidget";
@@ -56,6 +57,11 @@ const AppContent = () => {
 const App = () => {
   useEffect(() => {
     initPostHog();
+    // If a user is already logged in (returning visitor), apply identity hash
+    const existing = getUser();
+    if (existing?.email) {
+      void applyPostHogIdentityHash(existing.email);
+    }
   }, []);
 
   return (
