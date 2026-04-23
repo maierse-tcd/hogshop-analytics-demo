@@ -113,6 +113,8 @@ export const identifyUser = (userId: string, properties?: Record<string, any>) =
         ...properties,
       });
       if (import.meta.env.DEV) console.log("PostHog user identified:", userId, properties);
+      // Apply verified identity hash for PostHog Support product
+      void applyPostHogIdentityHash(userId);
     } catch (error) {
       console.error("PostHog identify error:", error);
     }
@@ -211,7 +213,8 @@ export const ensureIdentified = async (email: string, properties?: Record<string
         $name: properties?.name || email,
         ...properties,
       });
-      
+      void applyPostHogIdentityHash(email);
+
       setTimeout(() => {
         if (import.meta.env.DEV) console.log("PostHog: User identified with email", email);
         resolve();
