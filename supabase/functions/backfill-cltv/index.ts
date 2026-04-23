@@ -100,36 +100,48 @@ serve(async (req) => {
     // Batched to avoid blowing up on huge result sets.
     let written = 0;
     let failed = 0;
+    const failureSamples: string[] = [];
     const BATCH = 25;
 
     for (let i = 0; i < aggregates.length; i += BATCH) {
       const slice = aggregates.slice(i, i + BATCH);
       const results = await Promise.all(
-        slice.map((row) =>
-          fetch(`${POSTHOG_HOST}/capture/`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              api_key: PROJECT_KEY,
-              event: "$set",
-              distinct_id: row.email,
-              properties: {
-                $set: {
-                  customer_lifetime_value: row.lifetime_value,
-                  total_purchases: row.total_purchases,
-                  cltv_backfilled_at: new Date().toISOString(),
+        slice.map(async (row) => {
+          try {
+            const r = await fetch(`${POSTHOG_HOST}/capture/`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                api_key: PROJECT_KEY,
+                event: "$set",
+                distinct_id: row.email,
+                properties: {
+                  $set: {
+                    customer_lifetime_value: row.lifetime_value,
+                    total_purchases: row.total_purchases,
+                    cltv_backfilled_at: new Date().toISOString(),
+                  },
                 },
-              },
-            }),
-          })
-            .then((r) => (r.ok ? "ok" : `bad:${r.status}`))
-            .catch((e) => `err:${String(e)}`),
-        ),
+              }),
+            });
+            if (r.ok) return "ok";
+            const text = await r.text();
+            return `bad:${r.status}:${text.substring(0, 80)}`;
+          } catch (e) {
+            return `err:${String(e).substring(0, 80)}`;
+          }
+        }),
       );
-      results.forEach((r) => (r === "ok" ? written++ : failed++));
+      results.forEach((r) => {
+        if (r === "ok") written++;
+        else {
+          failed++;
+          if (failureSamples.length < 3) failureSamples.push(r);
+        }
+      });
     }
 
-    log.info("Backfill complete", { written, failed, total: aggregates.length });
+    log.info("Backfill complete", { written, failed, total: aggregates.length, failureSamples });
     await log.flush();
 
     return new Response(
