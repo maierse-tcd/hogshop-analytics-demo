@@ -162,19 +162,20 @@ export const updateCLTV = (purchaseAmount: number) => {
       const newCLTV = currentCLTV + purchaseAmount;
       
       localStorage.setItem('user_cltv', newCLTV.toString());
-      
+
+      // Note: customer_lifetime_value is now incremented server-side via $add
+      // in the track-success edge function. Client only mirrors to localStorage
+      // for any local UI usage and writes non-cumulative last_purchase_* fields.
       posthog.setPersonProperties({
-        customer_lifetime_value: newCLTV,
         last_purchase_amount: purchaseAmount,
         last_purchase_date: new Date().toISOString(),
       });
-      
-      if (import.meta.env.DEV) console.log("PostHog CLTV updated:", { previous: currentCLTV, added: purchaseAmount, new: newCLTV });
+
+      if (import.meta.env.DEV) console.log("PostHog CLTV updated (local mirror):", { previous: currentCLTV, added: purchaseAmount, new: newCLTV });
     } catch (error) {
       console.error("PostHog CLTV update error:", error);
       localStorage.setItem('user_cltv', purchaseAmount.toString());
       posthog.setPersonProperties({
-        customer_lifetime_value: purchaseAmount,
         last_purchase_amount: purchaseAmount,
         last_purchase_date: new Date().toISOString(),
       });
@@ -193,12 +194,10 @@ const initializeCLTV = () => {
       localStorage.setItem('user_cltv', '0');
       currentCLTV = 0;
     }
-    
-    posthog.setPersonProperties({
-      customer_lifetime_value: currentCLTV,
-    });
-    
-    if (import.meta.env.DEV) console.log("PostHog CLTV synced:", currentCLTV);
+
+    // Do not write customer_lifetime_value here — it is owned server-side
+    // (incremented atomically via $add in the track-success edge function).
+    if (import.meta.env.DEV) console.log("PostHog CLTV local mirror:", currentCLTV);
   }
 };
 
@@ -307,10 +306,10 @@ export const setCustomerGroups = (
         const tier = getValueTier(cltv);
         posthog.group("customer_value_tier", tier);
         
+        // customer_lifetime_value omitted — owned server-side via $add.
         posthog.setPersonProperties({
           customer_lifecycle: lifecycle,
           customer_value_tier: tier,
-          customer_lifetime_value: cltv,
           customer_groups_updated_at: new Date().toISOString(),
         });
         
