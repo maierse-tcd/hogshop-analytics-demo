@@ -1,4 +1,34 @@
 import posthog from "posthog-js";
+import { supabase } from "@/integrations/supabase/client";
+
+/**
+ * Fetches an HMAC-SHA256 of the distinct_id from the edge function
+ * and registers it as PostHog super properties so the Support product
+ * can verify the user's identity.
+ * Docs: https://posthog.com/docs/support
+ */
+export const applyPostHogIdentityHash = async (distinctId: string) => {
+  if (typeof window === "undefined" || !distinctId) return;
+  try {
+    const { data, error } = await supabase.functions.invoke(
+      "posthog-identity-hash",
+      { body: { distinct_id: distinctId } },
+    );
+    if (error || !data?.identity_hash) {
+      console.warn("PostHog: identity hash unavailable", error);
+      return;
+    }
+    posthog.register({
+      identity_distinct_id: distinctId,
+      identity_hash: data.identity_hash,
+    });
+    if (import.meta.env.DEV) {
+      console.log("PostHog: identity hash applied for", distinctId);
+    }
+  } catch (e) {
+    console.error("PostHog: failed to apply identity hash", e);
+  }
+};
 
 export const initPostHog = () => {
   if (typeof window !== "undefined") {
