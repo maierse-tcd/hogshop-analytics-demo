@@ -126,7 +126,7 @@ serve(async (req) => {
       properties: {
         session_id: sessionId,
         total_amount: totalAmount,
-        revenue: Math.round(totalAmount * 100),
+        revenue: totalAmount,
         currency: currency,
         subscription_id: subscriptionId,
         item_count: itemCount,
