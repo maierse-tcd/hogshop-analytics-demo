@@ -1,36 +1,53 @@
 
 
-## PostHog MCP Connection Issue
+## Demoing PostHog MCP to a Customer
 
-The PostHog MCP connector is available in Lovable's catalog but isn't currently linked to this project. Let's get it connected so I can access your PostHog analytics, feature flags, and experiments directly while building.
+Short answer: **no, you don't need to download this project.** This Hogshop repo doesn't contain an MCP server — it's a demo storefront that *emits* PostHog data. The "PostHog MCP" is a separate hosted service from PostHog that exposes your analytics/flags/experiments to an MCP-compatible client.
 
-### Action
+For a clean customer demo, run the PostHog MCP in an MCP-capable client pointed at a PostHog project that already has rich data (this Hogshop project is a great data source because the bots generate continuous events, funnels, experiments, and session replays).
 
-Click the button below to launch the PostHog MCP connection flow. You'll be prompted to authorize Lovable to access your PostHog workspace.
+### Recommended demo setup
 
-### If the connect button still doesn't work
+**Best option — Claude Desktop or Cursor on your laptop**
 
-A few common causes and fixes:
+1. Install the PostHog MCP locally with the official wizard:
+   ```
+   npx @posthog/wizard mcp add
+   ```
+   It auto-configures Claude Desktop, Cursor, VS Code, or Windsurf and walks through PostHog auth.
+2. Point it at the PostHog project that backs Hogshop (so the customer sees real funnels, flags like `add-to-cart-cta-experiment` and `newsletter_sub`, session replays, errors from the error simulator, etc.).
+3. Demo prompts to run live:
+   - "Show me the top events in the last 24 hours"
+   - "What's the conversion rate of the add-to-cart experiment variants?"
+   - "Find session replays where users hit a checkout error"
+   - "Which feature flags are currently active and what's their rollout?"
+   - "Summarize the funnel from homepage → product view → add to cart → checkout"
 
-1. **Popup blocker** — The OAuth flow opens in a popup. Check your browser's address bar for a blocked-popup icon and allow popups for `lovable.dev`.
-2. **Third-party cookies blocked** — Safari and some Chrome configurations block third-party cookies by default, which breaks OAuth handshakes. Enable third-party cookies for `lovable.dev` and `posthog.com`.
-3. **Logged into wrong PostHog account** — If you're already logged into a different PostHog account in the same browser, log out first or use an incognito window.
-4. **Workspace permissions** — MCP connectors are scoped to the workspace. Make sure you're the workspace owner or have permission to add connectors. Check **Connectors** (root level in the sidebar) to see what's enabled at the workspace level.
-5. **Browser extension interference** — Ad blockers and privacy extensions sometimes block OAuth redirects. Try in incognito mode with extensions disabled.
+**Alternative — Claude Code in this repo**
 
-### Alternative if it still won't connect
+You *can* clone this repo and use Claude Code, but cloning Hogshop adds nothing to the MCP demo itself. Claude Code would still need the PostHog MCP configured separately in its MCP settings. Only do this if you also want to show "AI editing the storefront code while reading live analytics" as a combined story.
 
-Go to **Connectors** (root level in the sidebar) → find PostHog → connect from there directly. That UI gives clearer error messages than the in-chat button if something is failing.
+**Alternative — Lovable itself**
 
-### What you'll get once connected
+The PostHog MCP is also available as a Lovable connector (Connectors → PostHog). Once connected, I can answer PostHog questions directly in chat. Good for showing the Lovable + PostHog story, less good as a standalone "MCP" demo since it's wrapped in Lovable's UI.
 
-- I can read your feature flags, experiments, and event taxonomy directly
-- I can validate that events I add to the code actually show up in your PostHog project
-- I can help debug why a flag isn't returning the expected variant
-- I can suggest funnels/insights based on actual events in your project
+### Why this repo is still valuable for the demo
 
-<lov-actions>
-<lov-mcp-connect connectorId="posthog" displayName="PostHog">Connect PostHog MCP</lov-mcp-connect>
-<lov-suggestion message="Still won't connect — what error message am I seeing? Let me share a screenshot.">Share error screenshot</lov-suggestion>
-<lov-suggestion message="Skip the MCP — let's just continue building without it for now">Skip MCP for now</lov-suggestion>
-</lov-actions>
+Even though you don't run the repo *for* the MCP, keep it running in the background because it produces:
+
+- Live event stream (bots fire continuously)
+- Multiple active experiments and feature flags
+- Error tracking data (intentional error simulator)
+- Session replays with console logs
+- Group analytics (UX Choice / theme)
+- Subscription lifecycle events
+- A verified-identity Support widget setup (just shipped)
+
+That gives the MCP something interesting to query during the demo instead of an empty project.
+
+### Recommendation
+
+Use **Claude Desktop + `npx @posthog/wizard mcp add`** pointed at the Hogshop PostHog project. Fastest setup, cleanest "look what an AI can do with your analytics" story, no repo clone needed.
+
+Want me to draft a 5-minute demo script with specific prompts and expected outputs tailored to this customer?
+
