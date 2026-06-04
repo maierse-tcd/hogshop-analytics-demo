@@ -64,22 +64,21 @@ export const CartDrawer = () => {
             {showFreeShipping && items.length > 0 && (
               <div
                 data-attr="free-shipping-progress"
-                className="mb-4 rounded-lg border p-3"
-                style={{ borderColor: "#10b981" }}
+                className="mb-4 rounded-lg border border-primary/40 bg-primary/5 p-3"
               >
                 <div className="flex items-center justify-between text-sm font-medium mb-2">
                   {remaining > 0 ? (
                     <span>
-                      Add <span style={{ color: "#10b981" }}>${remaining.toFixed(2)}</span> more for FREE shipping 🚚
+                      Add <span className="text-primary font-bold">${remaining.toFixed(2)}</span> more for FREE shipping 🚚
                     </span>
                   ) : (
-                    <span style={{ color: "#10b981" }}>You've unlocked FREE shipping! 🎉</span>
+                    <span className="text-primary font-bold">You've unlocked FREE shipping! 🎉</span>
                   )}
                 </div>
                 <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
                   <div
-                    className="h-full transition-all"
-                    style={{ width: `${progressPct}%`, backgroundColor: "#10b981" }}
+                    className="h-full bg-primary transition-all"
+                    style={{ width: `${progressPct}%` }}
                   />
                 </div>
               </div>
