@@ -37,20 +37,23 @@ const AppContent = () => {
       {showChatbot && <AIChatWidget />}
       <BrowserRouter>
         <RouteTracker />
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/product/:id" element={<ProductDetail />} />
-          <Route path="/success" element={<Success />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/faq" element={<FAQ />} />
-          <Route path="/shipping" element={<Shipping />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/readme" element={<Readme />} />
-          <Route path="/gift" element={<GiftLanding />} />
-          <Route path="/checkout/gift" element={<GiftCheckoutNotFound />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <CheckoutProvider>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/product/:id" element={<ProductDetail />} />
+            <Route path="/success" element={<Success />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/shipping" element={<Shipping />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/readme" element={<Readme />} />
+            <Route path="/gift" element={<GiftLanding />} />
+            <Route path="/checkout/gift" element={<GiftCheckoutNotFound />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <StickyCheckoutBar />
+        </CheckoutProvider>
       </BrowserRouter>
     </>
   );
