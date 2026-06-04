@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCart } from "@/contexts/CartContext";
 import { ShoppingCart, ArrowLeft } from "lucide-react";
+import { RelatedProductsCarousel } from "@/components/RelatedProductsCarousel";
 import { trackEvent } from "@/lib/posthog";
 
 // Import all product images
