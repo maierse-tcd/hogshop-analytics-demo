@@ -8,6 +8,7 @@ import { trackEvent, setUserProperties, updateCLTV, updateSubscriptionStatus, se
 import { posthog } from "@/lib/posthog";
 import { supabase } from "@/integrations/supabase/client";
 import { saveUser } from "@/lib/auth";
+import { LoyaltyPrompt } from "@/components/LoyaltyPrompt";
 
 const isDev = import.meta.env.DEV;
 
@@ -318,6 +319,7 @@ const Success = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <div className="container py-16">
+        <LoyaltyPrompt />
         <div className="max-w-md mx-auto text-center space-y-6">
           <CheckCircle2 className="w-20 h-20 mx-auto text-primary" />
           <h1 className="text-4xl font-bold">Order Successful!</h1>

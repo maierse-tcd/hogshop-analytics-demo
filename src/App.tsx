@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { CartProvider } from "@/contexts/CartContext";
+import { CheckoutProvider } from "@/contexts/CheckoutContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
@@ -11,6 +12,7 @@ import { getUser } from "@/lib/auth";
 import { PostHogProvider, useFeatureFlagEnabled } from "posthog-js/react";
 import { RouteTracker } from "@/components/RouteTracker";
 import { AIChatWidget } from "@/components/AIChatWidget";
+import { StickyCheckoutBar } from "@/components/StickyCheckoutBar";
 import Index from "./pages/Index";
 import Success from "./pages/Success";
 import ProductDetail from "./pages/ProductDetail";
@@ -35,20 +37,23 @@ const AppContent = () => {
       {showChatbot && <AIChatWidget />}
       <BrowserRouter>
         <RouteTracker />
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/product/:id" element={<ProductDetail />} />
-          <Route path="/success" element={<Success />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/faq" element={<FAQ />} />
-          <Route path="/shipping" element={<Shipping />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/readme" element={<Readme />} />
-          <Route path="/gift" element={<GiftLanding />} />
-          <Route path="/checkout/gift" element={<GiftCheckoutNotFound />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <CheckoutProvider>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/product/:id" element={<ProductDetail />} />
+            <Route path="/success" element={<Success />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/shipping" element={<Shipping />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/readme" element={<Readme />} />
+            <Route path="/gift" element={<GiftLanding />} />
+            <Route path="/checkout/gift" element={<GiftCheckoutNotFound />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <StickyCheckoutBar />
+        </CheckoutProvider>
       </BrowserRouter>
     </>
   );
