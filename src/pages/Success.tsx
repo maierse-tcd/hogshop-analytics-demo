@@ -8,6 +8,7 @@ import { trackEvent, setUserProperties, updateCLTV, updateSubscriptionStatus, se
 import { posthog } from "@/lib/posthog";
 import { supabase } from "@/integrations/supabase/client";
 import { saveUser } from "@/lib/auth";
+import { LoyaltyPrompt } from "@/components/LoyaltyPrompt";
 
 const isDev = import.meta.env.DEV;
 
