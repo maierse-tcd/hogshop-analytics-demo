@@ -16,8 +16,7 @@ export const StickyCheckoutBar = () => {
   return (
     <div
       data-attr="sticky-checkout-bar"
-      className="fixed bottom-0 left-0 right-0 z-40 shadow-lg"
-      style={{ backgroundColor: "#14b8a6", color: "#ffffff" }}
+      className="fixed bottom-0 left-0 right-0 z-40 shadow-lg bg-primary text-primary-foreground"
     >
       <div className="container flex items-center justify-between gap-4 py-3">
         <div className="flex items-center gap-4 text-sm sm:text-base font-medium">
@@ -30,8 +29,7 @@ export const StickyCheckoutBar = () => {
         <button
           onClick={startCheckout}
           disabled={isCheckingOut}
-          className="rounded-md px-4 sm:px-6 py-2 font-semibold transition active:scale-[0.98] hover:-translate-y-0.5 disabled:opacity-60"
-          style={{ backgroundColor: "#ffffff", color: "#0f766e" }}
+          className="rounded-md px-4 sm:px-6 py-2 font-semibold bg-background text-primary transition active:scale-[0.98] hover:-translate-y-0.5 disabled:opacity-60"
         >
           {isCheckingOut ? "Processing..." : "Checkout now →"}
         </button>
