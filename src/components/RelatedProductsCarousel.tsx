@@ -10,8 +10,6 @@ interface RelatedProductsCarouselProps {
   currentProductId: string;
 }
 
-const INDIGO = "#6366f1";
-
 export const RelatedProductsCarousel = ({ currentProductId }: RelatedProductsCarouselProps) => {
   const variant = useFeatureFlagVariantKey("exp-related-carousel");
   const { addToCart } = useCart();
@@ -36,20 +34,12 @@ export const RelatedProductsCarousel = ({ currentProductId }: RelatedProductsCar
   if (!products || products.length === 0) return null;
 
   return (
-    <section
-      data-attr="related-products-carousel"
-      className="border-t pt-12 mt-12"
-    >
+    <section data-attr="related-products-carousel" className="border-t pt-12 mt-12">
       <div className="flex items-center gap-3 mb-6">
-        <span
-          className="inline-block rounded-md px-2.5 py-1 text-xs font-semibold uppercase tracking-wide"
-          style={{ backgroundColor: `${INDIGO}1a`, color: INDIGO }}
-        >
+        <span className="inline-block rounded-md px-2.5 py-1 text-xs font-semibold uppercase tracking-wide bg-primary/10 text-primary">
           Recommended
         </span>
-        <h2 className="text-2xl font-bold" style={{ color: INDIGO }}>
-          You may also like
-        </h2>
+        <h2 className="text-2xl font-bold text-foreground">You may also like</h2>
       </div>
 
       <div className="flex gap-4 overflow-x-auto pb-4 -mx-2 px-2 snap-x snap-mandatory">
@@ -65,13 +55,10 @@ export const RelatedProductsCarousel = ({ currentProductId }: RelatedProductsCar
               </div>
               <div className="p-3 flex flex-col gap-2 flex-1">
                 <h3 className="font-semibold text-sm line-clamp-2">{p.title}</h3>
-                <p className="font-bold" style={{ color: INDIGO }}>
-                  ${Number(p.price).toFixed(2)}
-                </p>
+                <p className="font-bold text-primary">${Number(p.price).toFixed(2)}</p>
                 <Button
                   size="sm"
-                  className="mt-auto gap-2"
-                  style={{ backgroundColor: INDIGO, color: "#ffffff" }}
+                  className="mt-auto gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
                   onClick={() =>
                     addToCart(
                       {
