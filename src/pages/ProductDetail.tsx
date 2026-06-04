@@ -274,10 +274,12 @@ const ProductDetail = () => {
               <p className="text-sm text-muted-foreground">
                 Get it delivered to your door quickly
               </p>
-            </div>
           </div>
         </div>
+
+        <RelatedProductsCarousel currentProductId={id!} />
       </div>
+    </div>
     </div>
   );
 };
