@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCart } from "@/contexts/CartContext";
-import { ShoppingCart, ArrowLeft } from "lucide-react";
+import { ShoppingCart, ArrowLeft, Zap } from "lucide-react";
 import { RelatedProductsCarousel } from "@/components/RelatedProductsCarousel";
 import { trackEvent } from "@/lib/posthog";
+import { useFlashSale } from "@/hooks/useFlashSale";
 
 // Import all product images
 import hedgehogFood from "@/assets/hedgehog-food.jpg";
@@ -56,6 +57,7 @@ const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const { flashSaleActive, discountPct, getDiscountedPrice } = useFlashSale();
   const enterTimeRef = useRef(Date.now());
 
   // Track time spent on product detail page
