@@ -98,6 +98,9 @@ export const ProductCard = ({
     'social_proof': 'Best Seller — Add to Cart',
   };
   const ctaText = ctaTextMap[ctaVariant as string] || 'Add to Cart';
+
+  const { flashSaleActive, discountPct, getDiscountedPrice } = useFlashSale();
+  const displayPrice = getDiscountedPrice(price);
   
   // Determine active seasonal theme
   const seasonalMode = halloweenMode ? 'halloween' 
