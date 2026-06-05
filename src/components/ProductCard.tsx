@@ -7,6 +7,7 @@ import { ShoppingCart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useFeatureFlagEnabled, useFeatureFlagVariantKey } from "posthog-js/react";
 import { useEffect } from "react";
+import { useFlashSale } from "@/hooks/useFlashSale";
 import { getThemeConfig, type SeasonalTheme } from "@/utils/seasonalThemes";
 
 // Import all product images
