@@ -6,10 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { trackEvent } from "@/lib/posthog";
 import { useCheckout } from "@/contexts/CheckoutContext";
 import { useFeatureFlagVariantKey } from "posthog-js/react";
+import { useFlashSale } from "@/hooks/useFlashSale";
 
 export const CartDrawer = () => {
   const { items, removeFromCart, updateQuantity, totalItems, totalPrice } = useCart();
   const { startCheckout, isCheckingOut } = useCheckout();
+  const { flashSaleActive, discountPct, getDiscountedPrice } = useFlashSale();
+  const discountAmount = flashSaleActive ? +(totalPrice * (discountPct / 100)).toFixed(2) : 0;
+  const discountedTotal = +(totalPrice - discountAmount).toFixed(2);
 
   const freeShippingVariant = useFeatureFlagVariantKey("exp-free-shipping-nudge");
   const showFreeShipping = freeShippingVariant === "test";
