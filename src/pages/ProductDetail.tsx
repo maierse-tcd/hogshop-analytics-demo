@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCart } from "@/contexts/CartContext";
-import { ShoppingCart, ArrowLeft } from "lucide-react";
+import { ShoppingCart, ArrowLeft, Zap } from "lucide-react";
 import { RelatedProductsCarousel } from "@/components/RelatedProductsCarousel";
 import { trackEvent } from "@/lib/posthog";
+import { useFlashSale } from "@/hooks/useFlashSale";
 
 // Import all product images
 import hedgehogFood from "@/assets/hedgehog-food.jpg";
@@ -56,6 +57,7 @@ const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const { flashSaleActive, discountPct, getDiscountedPrice } = useFlashSale();
   const enterTimeRef = useRef(Date.now());
 
   // Track time spent on product detail page
@@ -179,6 +181,11 @@ const ProductDetail = () => {
                 Subscription
               </Badge>
             )}
+            {flashSaleActive && (
+              <Badge className="absolute top-4 right-4 bg-primary text-primary-foreground text-base px-4 py-2 rounded-full shadow-[0_0_20px_hsl(var(--primary)/0.7)] font-bold gap-1">
+                <Zap className="h-4 w-4 fill-current" /> −{discountPct}% FLASH SALE
+              </Badge>
+            )}
           </div>
 
           {/* Product Info */}
@@ -190,10 +197,22 @@ const ProductDetail = () => {
               <h1 className="text-4xl md:text-5xl font-bold mb-4">
                 {product.title}
               </h1>
-              <div className="flex items-baseline gap-2 mb-6">
-                <p className="text-4xl font-bold text-primary">
-                  ${product.price.toFixed(2)}
-                </p>
+              <div className="flex items-baseline gap-3 mb-6 flex-wrap">
+                {flashSaleActive ? (
+                  <>
+                    <p className="text-4xl font-bold text-primary">
+                      ${getDiscountedPrice(product.price).toFixed(2)}
+                    </p>
+                    <p className="text-2xl text-muted-foreground line-through">
+                      ${product.price.toFixed(2)}
+                    </p>
+                    <Badge className="bg-primary text-primary-foreground font-bold">Save {discountPct}%</Badge>
+                  </>
+                ) : (
+                  <p className="text-4xl font-bold text-primary">
+                    ${product.price.toFixed(2)}
+                  </p>
+                )}
                 {product.is_subscription && (
                   <span className="text-xl text-muted-foreground">
                     /{product.subscription_interval}

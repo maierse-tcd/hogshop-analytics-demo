@@ -7,6 +7,7 @@ import { ShoppingCart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useFeatureFlagEnabled, useFeatureFlagVariantKey } from "posthog-js/react";
 import { useEffect } from "react";
+import { useFlashSale } from "@/hooks/useFlashSale";
 import { getThemeConfig, type SeasonalTheme } from "@/utils/seasonalThemes";
 
 // Import all product images
@@ -97,6 +98,9 @@ export const ProductCard = ({
     'social_proof': 'Best Seller — Add to Cart',
   };
   const ctaText = ctaTextMap[ctaVariant as string] || 'Add to Cart';
+
+  const { flashSaleActive, discountPct, getDiscountedPrice } = useFlashSale();
+  const displayPrice = getDiscountedPrice(price);
   
   // Determine active seasonal theme
   const seasonalMode = halloweenMode ? 'halloween' 
@@ -150,6 +154,11 @@ export const ProductCard = ({
               alt={title}
               className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
             />
+            {flashSaleActive && (
+              <Badge className="absolute bottom-3 left-3 bg-primary text-primary-foreground font-bold shadow-[0_0_12px_hsl(var(--primary)/0.7)] rounded-full px-2.5 py-0.5">
+                ⚡ −{discountPct}% SALE
+              </Badge>
+            )}
             {stock < 10 && stock > 0 && (
               <Badge className="absolute top-3 right-3">Only {stock} left</Badge>
             )}
@@ -163,8 +172,16 @@ export const ProductCard = ({
             <Badge variant="secondary" className="text-xs font-medium w-fit mb-2">{category}</Badge>
             <h3 className="font-bold text-lg mb-2">{title}</h3>
             <p className="text-sm line-clamp-2 mb-3 text-muted-foreground">{description}</p>
-            <div className="flex items-baseline gap-2 mt-auto mb-3">
-              <p className="text-2xl font-bold">${price.toFixed(2)}</p>
+            <div className="flex items-baseline gap-2 mt-auto mb-3 flex-wrap">
+              {flashSaleActive ? (
+                <>
+                  <p className="text-2xl font-bold text-primary">${displayPrice.toFixed(2)}</p>
+                  <p className="text-sm text-muted-foreground line-through">${price.toFixed(2)}</p>
+                  <Badge className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0">−{discountPct}%</Badge>
+                </>
+              ) : (
+                <p className="text-2xl font-bold">${price.toFixed(2)}</p>
+              )}
               {is_subscription && <span className="text-sm text-muted-foreground">/{subscription_interval}</span>}
             </div>
             <Button
@@ -214,6 +231,11 @@ export const ProductCard = ({
             <div className="absolute bottom-2 right-2 text-2xl animate-bounce opacity-60" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }}>{themeConfig.emoji.decorative[1]}</div>
           </>
         )}
+        {flashSaleActive && (
+          <Badge className="absolute bottom-3 left-3 bg-primary text-primary-foreground font-bold shadow-[0_0_12px_hsl(var(--primary)/0.7)] rounded-full px-3 py-1">
+            ⚡ −{discountPct}% SALE
+          </Badge>
+        )}
         {stock < 10 && stock > 0 && (
           <Badge className="absolute top-3 right-3 text-white"
                  style={seasonalMode && themeConfig ? { backgroundColor: themeConfig.colors.primary } : {}}>
@@ -255,14 +277,24 @@ export const ProductCard = ({
            style={seasonalMode && themeConfig ? { color: themeConfig.colors.secondary + 'cc' } : {}}>
           {description}
         </p>
-        <div className="flex items-baseline gap-2">
-          <p className="text-2xl font-bold bg-primary/10 px-2 py-0.5 rounded-md w-fit"
-             style={seasonalMode && themeConfig ? {
-               color: themeConfig.colors.primary,
-               textShadow: `0 0 10px ${themeConfig.colors.primary}`
-             } : {}}>
-            ${price.toFixed(2)}
-          </p>
+        <div className="flex items-baseline gap-2 flex-wrap">
+          {flashSaleActive ? (
+            <>
+              <p className="text-2xl font-bold bg-primary/10 px-2 py-0.5 rounded-md w-fit text-primary"
+                 style={seasonalMode && themeConfig ? { color: themeConfig.colors.primary, textShadow: `0 0 10px ${themeConfig.colors.primary}` } : {}}>
+                ${displayPrice.toFixed(2)}
+              </p>
+              <p className="text-base text-muted-foreground line-through">${price.toFixed(2)}</p>
+            </>
+          ) : (
+            <p className="text-2xl font-bold bg-primary/10 px-2 py-0.5 rounded-md w-fit"
+               style={seasonalMode && themeConfig ? {
+                 color: themeConfig.colors.primary,
+                 textShadow: `0 0 10px ${themeConfig.colors.primary}`
+               } : {}}>
+              ${price.toFixed(2)}
+            </p>
+          )}
           {is_subscription && (
             <span className="text-sm text-muted-foreground"
                   style={seasonalMode && themeConfig ? { color: themeConfig.colors.secondary } : {}}>

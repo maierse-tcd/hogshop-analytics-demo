@@ -13,6 +13,7 @@ import { PostHogProvider, useFeatureFlagEnabled } from "posthog-js/react";
 import { RouteTracker } from "@/components/RouteTracker";
 import { AIChatWidget } from "@/components/AIChatWidget";
 import { StickyCheckoutBar } from "@/components/StickyCheckoutBar";
+import { FlashSaleBanner } from "@/components/FlashSaleBanner";
 import Index from "./pages/Index";
 import Success from "./pages/Success";
 import ProductDetail from "./pages/ProductDetail";
@@ -37,6 +38,7 @@ const AppContent = () => {
       {showChatbot && <AIChatWidget />}
       <BrowserRouter>
         <RouteTracker />
+        <FlashSaleBanner />
         <CheckoutProvider>
           <Routes>
             <Route path="/" element={<Index />} />
