@@ -167,8 +167,16 @@ export const ProductCard = ({
             <Badge variant="secondary" className="text-xs font-medium w-fit mb-2">{category}</Badge>
             <h3 className="font-bold text-lg mb-2">{title}</h3>
             <p className="text-sm line-clamp-2 mb-3 text-muted-foreground">{description}</p>
-            <div className="flex items-baseline gap-2 mt-auto mb-3">
-              <p className="text-2xl font-bold">${price.toFixed(2)}</p>
+            <div className="flex items-baseline gap-2 mt-auto mb-3 flex-wrap">
+              {flashSaleActive ? (
+                <>
+                  <p className="text-2xl font-bold text-primary">${displayPrice.toFixed(2)}</p>
+                  <p className="text-sm text-muted-foreground line-through">${price.toFixed(2)}</p>
+                  <Badge className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0">−{discountPct}%</Badge>
+                </>
+              ) : (
+                <p className="text-2xl font-bold">${price.toFixed(2)}</p>
+              )}
               {is_subscription && <span className="text-sm text-muted-foreground">/{subscription_interval}</span>}
             </div>
             <Button
@@ -259,14 +267,24 @@ export const ProductCard = ({
            style={seasonalMode && themeConfig ? { color: themeConfig.colors.secondary + 'cc' } : {}}>
           {description}
         </p>
-        <div className="flex items-baseline gap-2">
-          <p className="text-2xl font-bold bg-primary/10 px-2 py-0.5 rounded-md w-fit"
-             style={seasonalMode && themeConfig ? {
-               color: themeConfig.colors.primary,
-               textShadow: `0 0 10px ${themeConfig.colors.primary}`
-             } : {}}>
-            ${price.toFixed(2)}
-          </p>
+        <div className="flex items-baseline gap-2 flex-wrap">
+          {flashSaleActive ? (
+            <>
+              <p className="text-2xl font-bold bg-primary/10 px-2 py-0.5 rounded-md w-fit text-primary"
+                 style={seasonalMode && themeConfig ? { color: themeConfig.colors.primary, textShadow: `0 0 10px ${themeConfig.colors.primary}` } : {}}>
+                ${displayPrice.toFixed(2)}
+              </p>
+              <p className="text-base text-muted-foreground line-through">${price.toFixed(2)}</p>
+            </>
+          ) : (
+            <p className="text-2xl font-bold bg-primary/10 px-2 py-0.5 rounded-md w-fit"
+               style={seasonalMode && themeConfig ? {
+                 color: themeConfig.colors.primary,
+                 textShadow: `0 0 10px ${themeConfig.colors.primary}`
+               } : {}}>
+              ${price.toFixed(2)}
+            </p>
+          )}
           {is_subscription && (
             <span className="text-sm text-muted-foreground"
                   style={seasonalMode && themeConfig ? { color: themeConfig.colors.secondary } : {}}>
