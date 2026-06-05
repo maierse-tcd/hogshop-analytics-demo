@@ -79,7 +79,7 @@ export const FlashSaleBanner = () => {
 
   return (
     <div
-      className="sticky top-16 z-40 w-full text-primary-foreground shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.6)]"
+      className="relative z-[60] w-full text-primary-foreground shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.6)]"
       style={{
         background:
           "linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(17 100% 55%) 50%, hsl(var(--primary)) 100%)",
