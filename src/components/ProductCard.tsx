@@ -154,6 +154,11 @@ export const ProductCard = ({
               alt={title}
               className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
             />
+            {flashSaleActive && (
+              <Badge className="absolute bottom-3 left-3 bg-primary text-primary-foreground font-bold shadow-[0_0_12px_hsl(var(--primary)/0.7)] rounded-full px-2.5 py-0.5">
+                ⚡ −{discountPct}% SALE
+              </Badge>
+            )}
             {stock < 10 && stock > 0 && (
               <Badge className="absolute top-3 right-3">Only {stock} left</Badge>
             )}
@@ -225,6 +230,11 @@ export const ProductCard = ({
             <div className="absolute top-2 left-2 text-2xl animate-bounce opacity-60" style={{ animationDuration: '2s' }}>{themeConfig.emoji.decorative[0]}</div>
             <div className="absolute bottom-2 right-2 text-2xl animate-bounce opacity-60" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }}>{themeConfig.emoji.decorative[1]}</div>
           </>
+        )}
+        {flashSaleActive && (
+          <Badge className="absolute bottom-3 left-3 bg-primary text-primary-foreground font-bold shadow-[0_0_12px_hsl(var(--primary)/0.7)] rounded-full px-3 py-1">
+            ⚡ −{discountPct}% SALE
+          </Badge>
         )}
         {stock < 10 && stock > 0 && (
           <Badge className="absolute top-3 right-3 text-white"
