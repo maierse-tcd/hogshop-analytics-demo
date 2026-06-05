@@ -128,7 +128,14 @@ export const CartDrawer = () => {
                             </Button>
                           </div>
                         )}
-                        <p className="font-bold ml-auto">${item.price.toFixed(2)}</p>
+                        {flashSaleActive ? (
+                          <div className="ml-auto text-right">
+                            <p className="font-bold text-primary leading-tight">${getDiscountedPrice(item.price).toFixed(2)}</p>
+                            <p className="text-xs text-muted-foreground line-through leading-tight">${item.price.toFixed(2)}</p>
+                          </div>
+                        ) : (
+                          <p className="font-bold ml-auto">${item.price.toFixed(2)}</p>
+                        )}
                       </div>
                     </div>
                     <Button
@@ -155,9 +162,21 @@ export const CartDrawer = () => {
 
           {items.length > 0 && (
             <div className="border-t pt-4 space-y-4 shrink-0">
+              {flashSaleActive && (
+                <>
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Subtotal</span>
+                    <span>${totalPrice.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-semibold text-primary">
+                    <span>⚡ Flash Sale −{discountPct}%</span>
+                    <span>−${discountAmount.toFixed(2)}</span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between text-lg font-bold">
                 <span>Total</span>
-                <span>${totalPrice.toFixed(2)}</span>
+                <span>${(flashSaleActive ? discountedTotal : totalPrice).toFixed(2)}</span>
               </div>
               <Button className="w-full" size="lg" onClick={startCheckout} disabled={isCheckingOut}>
                 {isCheckingOut ? "Processing..." : "Proceed to Checkout"}
