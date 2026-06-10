@@ -33,6 +33,9 @@ const Index = () => {
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const productsViewedRef = useRef(false);
+  const loadStartRef = useRef(typeof performance !== "undefined" ? performance.now() : 0);
+  const cacheHitRef = useRef<boolean | null>(null);
+  const productListLoadedRef = useRef(false);
 
   const { data: products, isLoading } = useQuery({
     queryKey: ["products"],
@@ -47,11 +50,30 @@ const Index = () => {
     }
   });
 
+  if (cacheHitRef.current === null) {
+    cacheHitRef.current = products !== undefined;
+  }
+
   useEffect(() => {
     if (products && !productsViewedRef.current) {
       productsViewedRef.current = true;
       trackEvent("products_viewed", {
         product_count: products.length
+      });
+    }
+
+    if (products && !productListLoadedRef.current) {
+      productListLoadedRef.current = true;
+      let nowMs = 0;
+      try {
+        nowMs = performance.now();
+      } catch {
+        nowMs = loadStartRef.current;
+      }
+      trackEvent("product list loaded", {
+        load_duration_ms: Math.round(nowMs - loadStartRef.current),
+        product_count: products.length,
+        is_cached: cacheHitRef.current === true,
       });
     }
 
@@ -62,6 +84,7 @@ const Index = () => {
 
     return () => clearTimeout(errorTimer);
   }, [products]);
+
 
   // Event seeding is only needed in development
   useEffect(() => {
