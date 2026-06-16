@@ -97,7 +97,7 @@ export const Header = () => {
       )}
       <div className="container flex h-16 items-center justify-between relative">
         <div className="flex items-center gap-8">
-          <Link to="/" className="flex items-center space-x-2">
+          <Link to="/" data-attr="brand-logo" className="flex items-center space-x-2">
             <span className={`text-2xl font-bold ${
               halloweenMode 
                 ? 'bg-gradient-to-r from-[hsl(var(--halloween-orange))] to-[hsl(var(--halloween-purple))] bg-clip-text text-transparent drop-shadow-[0_0_10px_hsl(var(--halloween-orange))]' 

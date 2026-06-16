@@ -14,6 +14,9 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { simulateDemoErrors } from "@/utils/demoErrorSimulator";
 import { getThemeConfig, type SeasonalTheme } from "@/utils/seasonalThemes";
 import { useNavigate } from "react-router-dom";
+import { useTour } from "@/hooks/useTour";
+import { TourTooltip } from "@/components/TourTooltip";
+import { shopGettingStartedSteps } from "@/lib/tours";
 
 
 interface Product {
@@ -139,6 +142,12 @@ const Index = () => {
   null;
   const [hasSubscribed, setHasSubscribed] = useState(false);
   const [showNewsletterModal, setShowNewsletterModal] = useState(false);
+
+  // Product tour: home-page getting-started walkthrough (gated on its flag)
+  const tour = useTour({
+    flagKey: "tour-shop-getting-started",
+    steps: shopGettingStartedSteps,
+  });
 
   // Feature flag tracking is handled automatically by the PostHog SDK
 
@@ -465,7 +474,7 @@ const Index = () => {
               {seasonalTheme ? getThemeConfig(seasonalTheme)?.shopDescription : 'Find everything your hedgehog needs'}
             </p>
           </div>
-          <div className="flex gap-2 flex-wrap justify-center mb-8">
+          <div data-attr="category-filter" className="flex gap-2 flex-wrap justify-center mb-8">
             {categories.map((category) =>
               <Button
                 key={category}
@@ -594,6 +603,15 @@ const Index = () => {
           </div>
         </div>
       </footer>
+
+      {tour.active && tour.step &&
+        <TourTooltip
+          step={tour.step}
+          stepIndex={tour.stepIndex}
+          totalSteps={tour.totalSteps}
+          onNext={tour.advance}
+          onDismiss={tour.dismiss} />
+      }
       </div>
     </ErrorBoundary>);
 
