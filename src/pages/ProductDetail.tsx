@@ -11,6 +11,9 @@ import { ShoppingCart, ArrowLeft, Zap } from "lucide-react";
 import { RelatedProductsCarousel } from "@/components/RelatedProductsCarousel";
 import { trackEvent } from "@/lib/posthog";
 import { useFlashSale } from "@/hooks/useFlashSale";
+import { useTour } from "@/hooks/useTour";
+import { TourTooltip } from "@/components/TourTooltip";
+import { productDetailBuyingSteps } from "@/lib/tours";
 
 // Import all product images
 import hedgehogFood from "@/assets/hedgehog-food.jpg";
@@ -59,6 +62,12 @@ const ProductDetail = () => {
   const { addToCart } = useCart();
   const { flashSaleActive, discountPct, getDiscountedPrice } = useFlashSale();
   const enterTimeRef = useRef(Date.now());
+
+  // Product tour: product-detail buying walkthrough (gated on its flag)
+  const tour = useTour({
+    flagKey: "tour-product-detail-buying",
+    steps: productDetailBuyingSteps,
+  });
 
   // Track time spent on product detail page
   useEffect(() => {
@@ -197,7 +206,7 @@ const ProductDetail = () => {
               <h1 className="text-4xl md:text-5xl font-bold mb-4">
                 {product.title}
               </h1>
-              <div className="flex items-baseline gap-3 mb-6 flex-wrap">
+              <div data-attr="product-price" className="flex items-baseline gap-3 mb-6 flex-wrap">
                 {flashSaleActive ? (
                   <>
                     <p className="text-4xl font-bold text-primary">
@@ -247,6 +256,7 @@ const ProductDetail = () => {
             {/* Add to Cart Button */}
             <Button
               size="lg"
+              data-attr="product-add-to-cart"
               className="w-full md:w-auto gap-2 h-14 px-8 text-lg font-semibold"
               onClick={handleAddToCart}
               disabled={product.stock === 0}
@@ -271,7 +281,7 @@ const ProductDetail = () => {
         </div>
 
         {/* Product Features */}
-        <div className="border-t pt-12">
+        <div data-attr="why-choose" className="border-t pt-12">
           <h2 className="text-2xl font-bold mb-6">Why Choose This Product?</h2>
           <div className="grid md:grid-cols-3 gap-6">
             <div className="space-y-2">
@@ -300,6 +310,16 @@ const ProductDetail = () => {
         <RelatedProductsCarousel currentProductId={id!} />
       </div>
     </div>
+
+      {tour.active && tour.step && (
+        <TourTooltip
+          step={tour.step}
+          stepIndex={tour.stepIndex}
+          totalSteps={tour.totalSteps}
+          onNext={tour.advance}
+          onDismiss={tour.dismiss}
+        />
+      )}
     </div>
   );
 };

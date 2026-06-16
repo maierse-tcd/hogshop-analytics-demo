@@ -188,4 +188,11 @@ All colors MUST be HSL.
   .animate-fade-in {
     animation: fadeIn 0.4s ease-out;
   }
+
+  /* Highlight ring on the element a product tour is pointing at */
+  [data-tour-active="true"] {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
 }

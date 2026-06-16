@@ -186,6 +186,7 @@ export const ProductCard = ({
             </div>
             <Button
               className="w-full gap-2 font-semibold"
+              data-attr="add-to-cart"
               onClick={handleAddToCart}
               disabled={stock === 0}
             >
@@ -306,6 +307,7 @@ export const ProductCard = ({
       <CardFooter className="p-5 pt-0">
         <Button
           className="w-full gap-2 font-semibold"
+          data-attr="add-to-cart"
           style={seasonalMode && themeConfig ? {
             background: `linear-gradient(to right, ${themeConfig.colors.primary}, ${themeConfig.colors.secondary})`,
             boxShadow: `hover: 0 0 20px ${themeConfig.colors.primary}`
