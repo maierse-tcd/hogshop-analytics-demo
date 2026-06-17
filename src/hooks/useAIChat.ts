@@ -123,9 +123,17 @@ export const useAIChat = () => {
         response_length: assistantContent.length,
       });
 
+      chatSpan.setAttributes({
+        "chat.input_tokens": inputTokens,
+        "chat.output_tokens": outputTokens,
+        "chat.latency_ms": latencyMs,
+        "http.status_code": response.status,
+      });
+      chatSpan.end({ code: SpanStatus.OK });
+
     } catch (error) {
       console.error("Chat error:", error);
-      
+
       trackEvent("$ai_generation", {
         $ai_trace_id: traceIdRef.current,
         $ai_span_id: spanId,
@@ -145,6 +153,9 @@ export const useAIChat = () => {
         error_message: error instanceof Error ? error.message : "Unknown error",
         error_type: "chat_generation_failed",
       });
+
+      chatSpan.recordException(error);
+      chatSpan.end();
 
       setMessages(prev => [...prev, {
         role: "assistant",
