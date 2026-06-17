@@ -220,12 +220,6 @@ export function createTracer(
   };
 }
 
-// Internal helper — kept here to avoid polluting Span surface.
-function status_unset_then_ok(_span: Span): boolean {
-  // We can't peek into closures from outside; this is intentionally a no-op flag.
-  // The withSpan wrapper always ends successful spans with OK; errors handled separately.
-  return true;
-}
 
 export const SpanKind = SPAN_KIND;
 export const SpanStatus = STATUS;
