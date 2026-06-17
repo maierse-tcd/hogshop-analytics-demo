@@ -180,6 +180,13 @@ export function startSpan(name: string, opts: StartSpanOptions = {}): Span {
         attributes: toAttrs(attrs),
         status,
       });
+      // Emit a browser event so demo overlays (e.g. TracingDemoBadge) can
+      // surface the current trace ID without holding a direct reference.
+      if (typeof window !== "undefined" && !parentSpanId) {
+        window.dispatchEvent(
+          new CustomEvent("hogshop:trace", { detail: { traceId, spanId, name } }),
+        );
+      }
       scheduleFlush();
     },
   };
