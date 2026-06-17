@@ -38,6 +38,7 @@ const AppContent = () => {
       <Toaster />
       <Sonner />
       {showChatbot && <AIChatWidget />}
+      <TracingDemoBadge />
       <BrowserRouter>
         <RouteTracker />
         <FlashSaleBanner />
