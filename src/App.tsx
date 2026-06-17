@@ -8,6 +8,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
 import { initPostHog, posthog, applyPostHogIdentityHash } from "@/lib/posthog";
+import { initOtel } from "@/lib/otel";
 import { getUser } from "@/lib/auth";
 import { PostHogProvider, useFeatureFlagEnabled } from "posthog-js/react";
 import { RouteTracker } from "@/components/RouteTracker";
@@ -64,6 +65,7 @@ const AppContent = () => {
 const App = () => {
   useEffect(() => {
     initPostHog();
+    initOtel();
     // If a user is already logged in (returning visitor), apply identity hash
     const existing = getUser();
     if (existing?.email) {

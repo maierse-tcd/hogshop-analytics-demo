@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { trackEvent, posthog } from "@/lib/posthog";
+import { startSpan, traceparent, SpanKind, SpanStatus } from "@/lib/otel";
 
 type Message = { 
   role: "user" | "assistant"; 
@@ -54,6 +55,17 @@ export const useAIChat = () => {
 
     const generationStartTime = Date.now();
 
+    // Start a browser-side root span for this chat round-trip. The traceparent
+    // header propagates to the ai-chat edge function so PostHog stitches
+    // browser → edge → "Gemini" spans into one distributed trace.
+    const chatSpan = startSpan("chat.send_message", {
+      kind: SpanKind.CLIENT,
+      attributes: {
+        "chat.message_length": userMessage.length,
+        "chat.message_number": Math.floor(messages.length / 2) + 1,
+      },
+    });
+
     try {
       const allMessages = [...messages, userMsg];
       const response = await fetch(
@@ -63,6 +75,7 @@ export const useAIChat = () => {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            traceparent: traceparent(chatSpan),
           },
           body: JSON.stringify({ messages: allMessages }),
         }
@@ -110,9 +123,17 @@ export const useAIChat = () => {
         response_length: assistantContent.length,
       });
 
+      chatSpan.setAttributes({
+        "chat.input_tokens": inputTokens,
+        "chat.output_tokens": outputTokens,
+        "chat.latency_ms": latencyMs,
+        "http.status_code": response.status,
+      });
+      chatSpan.end({ code: SpanStatus.OK });
+
     } catch (error) {
       console.error("Chat error:", error);
-      
+
       trackEvent("$ai_generation", {
         $ai_trace_id: traceIdRef.current,
         $ai_span_id: spanId,
@@ -132,6 +153,9 @@ export const useAIChat = () => {
         error_message: error instanceof Error ? error.message : "Unknown error",
         error_type: "chat_generation_failed",
       });
+
+      chatSpan.recordException(error);
+      chatSpan.end();
 
       setMessages(prev => [...prev, {
         role: "assistant",
