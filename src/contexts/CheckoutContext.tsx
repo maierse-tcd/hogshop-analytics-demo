@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { RegistrationDialog } from "@/components/RegistrationDialog";
 import { posthog, trackEvent, setUserProperties, initializeCLTV, ensureIdentified } from "@/lib/posthog";
 import { getUser, saveUser } from "@/lib/auth";
+import { startSpan, traceparent, SpanKind, SpanStatus } from "@/lib/otel";
 
 interface CheckoutContextType {
   startCheckout: () => void;
@@ -55,6 +56,19 @@ export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
 
   const proceedToCheckout = async (email: string, name: string) => {
     setIsCheckingOut(true);
+
+    // Browser-side root span for the whole checkout round-trip. The traceparent
+    // header propagates into the create-checkout edge function so PostHog
+    // stitches browser → edge → Stripe spans into one distributed trace.
+    const checkoutSpan = startSpan("checkout.proceed", {
+      kind: SpanKind.CLIENT,
+      attributes: {
+        "cart.item_count": totalItems,
+        "cart.value_usd": totalPrice,
+        "customer.email": email,
+      },
+    });
+
     try {
       await ensureIdentified(email, { email, name });
       initializeCLTV();
@@ -97,6 +111,7 @@ export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
 
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: { items, customer_email: email, customer_name: name },
+        headers: { traceparent: traceparent(checkoutSpan) },
       });
       if (error) throw error;
 
@@ -113,10 +128,19 @@ export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
             needs_tracking: true,
           })
         );
+        checkoutSpan.setAttributes({
+          "checkout.session.url_received": true,
+        });
+        checkoutSpan.end({ code: SpanStatus.OK });
         window.open(data.url, "_blank");
+      } else {
+        checkoutSpan.setAttribute("checkout.session.url_received", false);
+        checkoutSpan.end({ code: SpanStatus.OK });
       }
     } catch (error) {
       console.error("Checkout error:", error);
+      checkoutSpan.recordException(error);
+      checkoutSpan.end();
       toast({
         variant: "destructive",
         title: "Checkout failed",

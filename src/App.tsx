@@ -15,6 +15,7 @@ import { RouteTracker } from "@/components/RouteTracker";
 import { AIChatWidget } from "@/components/AIChatWidget";
 import { StickyCheckoutBar } from "@/components/StickyCheckoutBar";
 import { FlashSaleBanner } from "@/components/FlashSaleBanner";
+import { TracingDemoBadge } from "@/components/TracingDemoBadge";
 import Index from "./pages/Index";
 import Success from "./pages/Success";
 import ProductDetail from "./pages/ProductDetail";
@@ -37,6 +38,7 @@ const AppContent = () => {
       <Toaster />
       <Sonner />
       {showChatbot && <AIChatWidget />}
+      <TracingDemoBadge />
       <BrowserRouter>
         <RouteTracker />
         <FlashSaleBanner />

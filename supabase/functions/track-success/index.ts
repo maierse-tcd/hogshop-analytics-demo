@@ -1,302 +1,300 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createLogger } from "../_shared/posthog-logger.ts";
+import { createTracer, parseTraceparent, SpanKind, type Span } from "../_shared/otel.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, traceparent",
 };
 
+const POSTHOG_HOST = Deno.env.get("POSTHOG_HOST") || "https://ph.hogflix.dev";
+const POSTHOG_KEY = Deno.env.get("POSTHOG_KEY") || "phc_mCl11WvLPwmqyjG7FlivcsSbTfSEY1J3TWcEnnR0CJa";
+
 serve(async (req) => {
-  const log = createLogger("track-success");
-  log.info("Function invoked", { method: req.method, url: req.url });
-  
   if (req.method === "OPTIONS") {
-    log.info("Handling OPTIONS request");
-    await log.flush();
     return new Response(null, { headers: corsHeaders });
   }
 
+  const incoming = parseTraceparent(req.headers.get("traceparent"));
+  const tracer = createTracer("hogshop-edge", incoming);
+
   try {
-    const url = new URL(req.url);
-    let sessionId = url.searchParams.get("session_id");
-    const redirect = url.searchParams.get("redirect");
-    
-    log.info("URL params", { sessionId, redirect });
+    return await tracer.withSpan(
+      "track-success.handle_request",
+      async (rootSpan) => {
+        rootSpan.setAttributes({
+          "http.method": req.method,
+          "http.route": "/functions/v1/track-success",
+          "trace.distributed": incoming !== null,
+        });
 
-    if (!sessionId) {
-      log.info("No session_id in URL, checking body");
-      try {
-        const body = await req.json();
-        sessionId = body?.session_id;
-        log.info("Session ID from body", { sessionId });
-      } catch (err) {
-        log.warn("Failed to parse body", { error: String(err) });
-      }
-    }
+        const log = createLogger("track-success", {
+          traceId: rootSpan.traceId,
+          spanId: rootSpan.spanId,
+        });
+        log.info("Function invoked", { method: req.method, url: req.url });
 
-    if (!sessionId) {
-      log.error("No session_id provided in URL or body");
-      await log.flush();
-      throw new Error("No session_id provided");
-    }
-    
-    log.info("Processing session", { sessionId });
+        const url = new URL(req.url);
+        let sessionId = url.searchParams.get("session_id");
+        const redirect = url.searchParams.get("redirect");
+        log.info("URL params", { sessionId, redirect });
 
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY") || "";
-    if (!stripeKey) {
-      log.error("Missing STRIPE_SECRET_KEY");
-      await log.flush();
-      throw new Error("Missing STRIPE_SECRET_KEY");
-    }
-    log.info("Stripe key verified");
+        if (!sessionId) {
+          try {
+            const body = await req.json();
+            sessionId = body?.session_id;
+          } catch (err) {
+            log.warn("Failed to parse body", { error: String(err) });
+          }
+        }
 
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    log.info("Retrieving Stripe session", { sessionId });
+        if (!sessionId) {
+          log.error("No session_id provided");
+          rootSpan.setAttribute("error.kind", "missing_session_id");
+          await log.flush();
+          throw new Error("No session_id provided");
+        }
 
-    const session = await stripe.checkout.sessions.retrieve(sessionId, {
-      expand: ["line_items.data.price.product"],
-    });
-    
-    log.info("Stripe session retrieved", {
-      sessionId: session.id,
-      paymentStatus: session.payment_status,
-      customerEmail: session.customer_details?.email,
-      amountTotal: session.amount_total,
-    });
+        rootSpan.setAttribute("stripe.session.id", sessionId);
 
-    const lineItems = session.line_items?.data.map((item: any) => ({
-      name: item.description,
-      price: (item.amount_total || 0) / 100,
-      quantity: item.quantity,
-      is_subscription: item.price?.type === "recurring",
-    })) || [];
+        const stripeKey = Deno.env.get("STRIPE_SECRET_KEY") || "";
+        if (!stripeKey) {
+          await log.flush();
+          throw new Error("Missing STRIPE_SECRET_KEY");
+        }
+        const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    const customerEmail = session.customer_details?.email || (session as any).customer_email || "";
-    const customerName = session.customer_details?.name || "";
-    const totalAmount = session.amount_total ? session.amount_total / 100 : 0;
-    const currency = session.currency?.toUpperCase() || "USD";
-    const itemCount = lineItems.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
-    const hasSubscription = lineItems.some((item: any) => item.is_subscription);
-    const subscriptionValue = hasSubscription 
-      ? lineItems.filter((item: any) => item.is_subscription).reduce((sum: number, item: any) => sum + item.price * item.quantity, 0)
-      : 0;
+        // ---------- Retrieve Stripe session ----------
+        const session = await tracer.withSpan(
+          "stripe.checkout.session.retrieve",
+          async (span) => {
+            span.setAttributes({
+              "stripe.api": "checkout.sessions.retrieve",
+              "stripe.session.id": sessionId!,
+            });
+            const s = await stripe.checkout.sessions.retrieve(sessionId!, {
+              expand: ["line_items.data.price.product"],
+            });
+            span.setAttributes({
+              "stripe.session.payment_status": s.payment_status ?? "",
+              "stripe.session.amount_total": s.amount_total ?? 0,
+            });
+            return s;
+          },
+          { kind: SpanKind.CLIENT },
+        );
 
-    // PostHog capture (server-side) using public token via reverse proxy
-    const POSTHOG_HOST = Deno.env.get("POSTHOG_HOST") || "https://ph.hogflix.dev";
-    const POSTHOG_KEY = Deno.env.get("POSTHOG_KEY") || "phc_mCl11WvLPwmqyjG7FlivcsSbTfSEY1J3TWcEnnR0CJa";
+        log.info("Stripe session retrieved", {
+          sessionId: session.id,
+          paymentStatus: session.payment_status,
+          customerEmail: session.customer_details?.email,
+          amountTotal: session.amount_total,
+        });
 
-    // Determine customer lifecycle and value tier
-    const lifecycle = hasSubscription ? "Active Subscriber" : "One-Time Buyer";
-    const getValueTier = (amount: number): string => {
-      if (amount >= 1000) return "Platinum";
-      if (amount >= 500) return "Gold";
-      if (amount >= 100) return "Silver";
-      return "Bronze";
-    };
-    const valueTier = getValueTier(totalAmount);
+        const lineItems = session.line_items?.data.map((item: any) => ({
+          name: item.description,
+          price: (item.amount_total || 0) / 100,
+          quantity: item.quantity,
+          is_subscription: item.price?.type === "recurring",
+        })) || [];
 
-    // Send $identify FIRST to create person profile
-    const identifyPayload = {
-      api_key: POSTHOG_KEY,
-      event: "$identify",
-      distinct_id: customerEmail || sessionId,
-      properties: {
-        $set: {
-          email: customerEmail,
-          name: customerName,
-        },
+        const customerEmail = session.customer_details?.email || (session as any).customer_email || "";
+        const customerName = session.customer_details?.name || "";
+        const totalAmount = session.amount_total ? session.amount_total / 100 : 0;
+        const currency = session.currency?.toUpperCase() || "USD";
+        const itemCount = lineItems.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
+        const hasSubscription = lineItems.some((item: any) => item.is_subscription);
+        const subscriptionValue = hasSubscription
+          ? lineItems.filter((item: any) => item.is_subscription).reduce((sum: number, item: any) => sum + item.price * item.quantity, 0)
+          : 0;
+
+        rootSpan.setAttributes({
+          "purchase.total_amount": totalAmount,
+          "purchase.currency": currency,
+          "purchase.item_count": itemCount,
+          "purchase.has_subscription": hasSubscription,
+          "customer.email": customerEmail,
+        });
+
+        const lifecycle = hasSubscription ? "Active Subscriber" : "One-Time Buyer";
+        const getValueTier = (amount: number): string => {
+          if (amount >= 1000) return "Platinum";
+          if (amount >= 500) return "Gold";
+          if (amount >= 100) return "Silver";
+          return "Bronze";
+        };
+        const valueTier = getValueTier(totalAmount);
+
+        const postJson = async (span: Span, event: string, payload: unknown) => {
+          span.setAttribute("posthog.event", event);
+          const res = await fetch(`${POSTHOG_HOST}/capture/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          span.setAttributes({
+            "http.status_code": res.status,
+            "http.response.ok": res.ok,
+          });
+          return res;
+        };
+
+        // ---------- $identify ----------
+        await tracer.withSpan(
+          "posthog.identify",
+          (span) => postJson(span, "$identify", {
+            api_key: POSTHOG_KEY,
+            event: "$identify",
+            distinct_id: customerEmail || sessionId,
+            properties: { $set: { email: customerEmail, name: customerName } },
+          }),
+          { kind: SpanKind.CLIENT },
+        );
+
+        const subscriptionId = (session as any).subscription || null;
+
+        const capturePayload = {
+          api_key: POSTHOG_KEY,
+          event: "purchase_completed",
+          distinct_id: customerEmail || sessionId,
+          properties: {
+            session_id: sessionId,
+            total_amount: totalAmount,
+            revenue: totalAmount,
+            currency,
+            subscription_id: subscriptionId,
+            item_count: itemCount,
+            has_subscription: hasSubscription,
+            subscription_value: subscriptionValue,
+            customer_email: customerEmail,
+            customer_name: customerName,
+            items: lineItems,
+            source: "edge_function",
+            timestamp: new Date().toISOString(),
+            hashed_example_property: "posthog",
+            $groups: { customer_lifecycle: lifecycle, customer_value_tier: valueTier },
+          },
+        };
+
+        // ---------- group identifies (parallel) ----------
+        await tracer.withSpan(
+          "posthog.group_identify",
+          async (span) => {
+            span.setAttributes({ "groups.lifecycle": lifecycle, "groups.value_tier": valueTier });
+            await Promise.all([
+              postJson(span, "$groupidentify:lifecycle", {
+                api_key: POSTHOG_KEY,
+                event: "$groupidentify",
+                distinct_id: customerEmail || sessionId,
+                properties: {
+                  $group_type: "customer_lifecycle",
+                  $group_key: lifecycle,
+                  $group_set: { name: lifecycle, is_subscriber: hasSubscription },
+                },
+              }),
+              postJson(span, "$groupidentify:value_tier", {
+                api_key: POSTHOG_KEY,
+                event: "$groupidentify",
+                distinct_id: customerEmail || sessionId,
+                properties: {
+                  $group_type: "customer_value_tier",
+                  $group_key: valueTier,
+                  $group_set: {
+                    name: valueTier,
+                    min_value: valueTier === "Platinum" ? 1000 : valueTier === "Gold" ? 500 : valueTier === "Silver" ? 100 : 0,
+                  },
+                },
+              }),
+            ]);
+          },
+          { kind: SpanKind.CLIENT },
+        );
+
+        // ---------- purchase_completed ----------
+        const phRes = await tracer.withSpan(
+          "posthog.capture.purchase_completed",
+          (span) => postJson(span, "purchase_completed", capturePayload),
+          { kind: SpanKind.CLIENT },
+        );
+        const ok = phRes.ok;
+
+        // ---------- subscription_created ----------
+        if (hasSubscription) {
+          const subscriptionItems = lineItems.filter((item: any) => item.is_subscription);
+          await tracer.withSpan(
+            "posthog.capture.subscription_created",
+            (span) => postJson(span, "subscription_created", {
+              api_key: POSTHOG_KEY,
+              event: "subscription_created",
+              distinct_id: customerEmail || sessionId,
+              properties: {
+                subscription_id: subscriptionId,
+                plan_name: subscriptionItems.map((item: any) => item.name).join(", "),
+                monthly_value: subscriptionValue,
+                customer_email: customerEmail,
+                session_id: sessionId,
+                source: "edge_function",
+                timestamp: new Date().toISOString(),
+                hashed_example_property: "posthog",
+              },
+            }),
+            { kind: SpanKind.CLIENT },
+          );
+        }
+
+        // ---------- person properties ----------
+        if (customerEmail) {
+          await tracer.withSpan(
+            "posthog.person.set",
+            (span) => postJson(span, "$set", {
+              api_key: POSTHOG_KEY,
+              event: "$set",
+              distinct_id: customerEmail,
+              properties: {
+                $set: {
+                  subscription_active: hasSubscription,
+                  subscription_start_date: hasSubscription ? new Date().toISOString() : null,
+                  subscription_monthly_value: subscriptionValue || null,
+                  customer_lifecycle: lifecycle,
+                  customer_value_tier: valueTier,
+                  last_purchase_date: new Date().toISOString(),
+                  last_purchase_amount: totalAmount,
+                },
+                $add: { customer_lifetime_value: totalAmount, total_purchases: 1 },
+              },
+            }),
+            { kind: SpanKind.CLIENT },
+          );
+        }
+
+        await log.flush();
+
+        if (redirect) {
+          const redirectUrl = new URL(redirect);
+          redirectUrl.searchParams.set("session_id", sessionId);
+          redirectUrl.searchParams.set("tracked", "1");
+          return new Response(null, {
+            status: 302,
+            headers: { ...corsHeaders, Location: redirectUrl.toString() },
+          });
+        }
+
+        return new Response(
+          JSON.stringify({ tracked: ok, session_id: sessionId, total_amount: totalAmount }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+        );
       },
-    };
-
-    log.info("Sending PostHog $identify", { distinct_id: customerEmail || sessionId });
-    const identifyRes = await fetch(`${POSTHOG_HOST}/capture/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(identifyPayload),
-    });
-    log.info("PostHog $identify response", { status: identifyRes.status, ok: identifyRes.ok });
-    
-    const subscriptionId = (session as any).subscription || null;
-
-    const capturePayload = {
-      api_key: POSTHOG_KEY,
-      event: "purchase_completed",
-      distinct_id: customerEmail || sessionId,
-      properties: {
-        session_id: sessionId,
-        total_amount: totalAmount,
-        revenue: totalAmount,
-        currency: currency,
-        subscription_id: subscriptionId,
-        item_count: itemCount,
-        has_subscription: hasSubscription,
-        subscription_value: subscriptionValue,
-        customer_email: customerEmail,
-        customer_name: customerName,
-        items: lineItems,
-        source: "edge_function",
-        timestamp: new Date().toISOString(),
-        hashed_example_property: "posthog",
-        $groups: {
-          customer_lifecycle: lifecycle,
-          customer_value_tier: valueTier
-        },
-      },
-    };
-
-    log.info("Prepared purchase event payload", {
-      event: capturePayload.event,
-      distinct_id: capturePayload.distinct_id,
-      total_amount: totalAmount,
-      item_count: itemCount,
-      has_subscription: hasSubscription,
-    });
-    
-    log.info("Sending PostHog capture", { host: POSTHOG_HOST, distinct_id: capturePayload.distinct_id });
-
-    // Send $groupidentify events
-    const lifecycleGroupPayload = {
-      api_key: POSTHOG_KEY,
-      event: "$groupidentify",
-      distinct_id: customerEmail || sessionId,
-      properties: {
-        $group_type: "customer_lifecycle",
-        $group_key: lifecycle,
-        $group_set: { name: lifecycle, is_subscriber: hasSubscription },
-      },
-    };
-
-    const valueTierGroupPayload = {
-      api_key: POSTHOG_KEY,
-      event: "$groupidentify",
-      distinct_id: customerEmail || sessionId,
-      properties: {
-        $group_type: "customer_value_tier",
-        $group_key: valueTier,
-        $group_set: {
-          name: valueTier,
-          min_value: valueTier === "Platinum" ? 1000 : valueTier === "Gold" ? 500 : valueTier === "Silver" ? 100 : 0,
-        },
-      },
-    };
-
-    log.info("Sending PostHog groupIdentify", { lifecycle, valueTier });
-    const groupPromises = await Promise.all([
-      fetch(`${POSTHOG_HOST}/capture/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(lifecycleGroupPayload),
-      }),
-      fetch(`${POSTHOG_HOST}/capture/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(valueTierGroupPayload),
-      })
-    ]);
-    
-    log.info("GroupIdentify responses", { lifecycle: groupPromises[0].status, valueTier: groupPromises[1].status });
-
-    // Send purchase_completed event
-    const phRes = await fetch(`${POSTHOG_HOST}/capture/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(capturePayload),
-    });
-
-    const ok = phRes.ok;
-    const text = await phRes.text();
-    log.info("PostHog purchase_completed response", { status: phRes.status, ok, body: text.substring(0, 200) });
-
-    // Fire subscription_created event (no revenue properties to avoid double-counting)
-    if (hasSubscription) {
-      const subscriptionItems = lineItems.filter((item: any) => item.is_subscription);
-      const subscriptionPayload = {
-        api_key: POSTHOG_KEY,
-        event: "subscription_created",
-        distinct_id: customerEmail || sessionId,
-        properties: {
-          subscription_id: subscriptionId,
-          plan_name: subscriptionItems.map((item: any) => item.name).join(", "),
-          monthly_value: subscriptionValue,
-          customer_email: customerEmail,
-          session_id: sessionId,
-          source: "edge_function",
-          timestamp: new Date().toISOString(),
-          hashed_example_property: "posthog",
-        },
-      };
-
-      log.info("Sending PostHog subscription_created", { subscription_id: subscriptionId });
-      const subRes = await fetch(`${POSTHOG_HOST}/capture/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(subscriptionPayload),
-      });
-      log.info("PostHog subscription_created response", { status: subRes.status, ok: subRes.ok });
-    }
-
-    // Set person properties
-    if (customerEmail) {
-      const personPropertiesPayload = {
-        api_key: POSTHOG_KEY,
-        event: "$set",
-        distinct_id: customerEmail,
-      properties: {
-        $set: {
-          subscription_active: hasSubscription,
-          subscription_start_date: hasSubscription ? new Date().toISOString() : null,
-          subscription_monthly_value: subscriptionValue || null,
-          customer_lifecycle: lifecycle,
-          customer_value_tier: valueTier,
-          last_purchase_date: new Date().toISOString(),
-          last_purchase_amount: totalAmount,
-        },
-        $add: {
-          customer_lifetime_value: totalAmount,
-          total_purchases: 1,
-        },
-      },
-      };
-
-      log.info("Sending PostHog person properties", { email: customerEmail, subscription_active: hasSubscription });
-      const propsRes = await fetch(`${POSTHOG_HOST}/capture/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(personPropertiesPayload),
-      });
-      log.info("PostHog person properties response", { status: propsRes.status, ok: propsRes.ok });
-    }
-
-    // Flush all logs to PostHog Logs
-    await log.flush();
-
-    // Redirect if specified
-    if (redirect) {
-      const redirectUrl = new URL(redirect);
-      redirectUrl.searchParams.set("session_id", sessionId);
-      redirectUrl.searchParams.set("tracked", "1");
-      
-      const finalUrl = redirectUrl.toString();
-      log.info("Redirecting user to success page", { finalUrl });
-      
-      return new Response(null, {
-        status: 302,
-        headers: { ...corsHeaders, Location: finalUrl },
-      });
-    }
-
-    return new Response(
-      JSON.stringify({ tracked: ok, session_id: sessionId, total_amount: totalAmount }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      { kind: SpanKind.SERVER },
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    log.error("Function error", { message });
-    await log.flush();
+    console.error("[track-success] error:", message);
     return new Response(JSON.stringify({ error: message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
+  } finally {
+    await tracer.flush();
   }
 });
