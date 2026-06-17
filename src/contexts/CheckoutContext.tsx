@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { RegistrationDialog } from "@/components/RegistrationDialog";
 import { posthog, trackEvent, setUserProperties, initializeCLTV, ensureIdentified } from "@/lib/posthog";
 import { getUser, saveUser } from "@/lib/auth";
+import { startSpan, traceparent, SpanKind, SpanStatus } from "@/lib/otel";
 
 interface CheckoutContextType {
   startCheckout: () => void;
