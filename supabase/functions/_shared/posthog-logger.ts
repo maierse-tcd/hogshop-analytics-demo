@@ -76,9 +76,18 @@ async function flushBuffer(logBuffer: LogEntry[]) {
 /**
  * Create a logger scoped to a specific edge function.
  * Each logger instance has its own isolated buffer to prevent cross-request leaks.
+ *
+ * Pass `traceContext` (typically derived from an OpenTelemetry span via
+ * `_shared/otel.ts`) so every log entry is stamped with `trace_id` / `span_id`
+ * — PostHog uses those to correlate Logs with Distributed Traces.
  */
-export function createLogger(functionName: string) {
-  const baseAttrs = { "function.name": functionName };
+export function createLogger(
+  functionName: string,
+  traceContext?: { traceId?: string; spanId?: string },
+) {
+  const baseAttrs: Record<string, unknown> = { "function.name": functionName };
+  if (traceContext?.traceId) baseAttrs["trace_id"] = traceContext.traceId;
+  if (traceContext?.spanId) baseAttrs["span_id"] = traceContext.spanId;
   const logBuffer: LogEntry[] = [];
 
   function addLog(level: LogLevel, message: string, attrs: Record<string, unknown> = {}) {
