@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { trackEvent, posthog } from "@/lib/posthog";
+import { startSpan, traceparent, SpanKind, SpanStatus } from "@/lib/otel";
 
 type Message = { 
   role: "user" | "assistant"; 
