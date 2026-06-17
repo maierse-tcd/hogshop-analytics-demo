@@ -173,8 +173,7 @@ export function createTracer(
       const span = makeSpan(name, opts);
       try {
         const result = await fn(span);
-        if (status_unset_then_ok(span)) span.end({ code: STATUS.OK });
-        else span.end();
+        span.end({ code: STATUS.OK });
         return result;
       } catch (err) {
         span.recordException(err);
