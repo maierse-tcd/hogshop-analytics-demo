@@ -55,6 +55,17 @@ export const useAIChat = () => {
 
     const generationStartTime = Date.now();
 
+    // Start a browser-side root span for this chat round-trip. The traceparent
+    // header propagates to the ai-chat edge function so PostHog stitches
+    // browser → edge → "Gemini" spans into one distributed trace.
+    const chatSpan = startSpan("chat.send_message", {
+      kind: SpanKind.CLIENT,
+      attributes: {
+        "chat.message_length": userMessage.length,
+        "chat.message_number": Math.floor(messages.length / 2) + 1,
+      },
+    });
+
     try {
       const allMessages = [...messages, userMsg];
       const response = await fetch(
@@ -64,6 +75,7 @@ export const useAIChat = () => {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            traceparent: traceparent(chatSpan),
           },
           body: JSON.stringify({ messages: allMessages }),
         }
