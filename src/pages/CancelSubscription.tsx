@@ -96,7 +96,7 @@ export default function CancelSubscription() {
             <div className="flex items-start gap-3">
               <AlertTriangle className="h-6 w-6 text-yellow-500 flex-shrink-0 mt-1" />
               <div>
-                <h1 className="text-2xl font-bold mb-2">Cancel your hedgehog supply subscription?</h1>
+                <h1 className="text-2xl font-bold text-foreground mb-2">Cancel your hedgehog supply subscription?</h1>
                 <p className="text-muted-foreground">
                   We're sorry to see you go. If you cancel today, your subscription will end at the next billing cycle.
                 </p>
@@ -115,7 +115,7 @@ export default function CancelSubscription() {
 
         {step === "reason" && (
           <Card data-attr="cancel-step-reason" className="p-8 space-y-6">
-            <h1 className="text-2xl font-bold">What's the main reason?</h1>
+            <h1 className="text-2xl font-bold text-foreground">What's the main reason?</h1>
             <div className="space-y-2">
               {REASONS.map((r) => (
                 <button
@@ -142,7 +142,7 @@ export default function CancelSubscription() {
             <div className="flex items-start gap-3">
               <Heart className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
               <div>
-                <h1 className="text-2xl font-bold mb-2">Wait — here's 25% off your next 3 months</h1>
+                <h1 className="text-2xl font-bold text-foreground mb-2">Wait — here's 25% off your next 3 months</h1>
                 <p className="text-muted-foreground">
                   Many subscribers tell us they love the convenience but want to pause spend. We'd love to keep helping Max thrive.
                 </p>
@@ -175,7 +175,7 @@ export default function CancelSubscription() {
 
         {step === "confirm" && (
           <Card data-attr="cancel-step-confirm" className="p-8 space-y-6">
-            <h1 className="text-2xl font-bold">Confirm cancellation</h1>
+            <h1 className="text-2xl font-bold text-foreground">Confirm cancellation</h1>
             <p className="text-muted-foreground">
               This will end your hedgehog supply subscription at the next billing date. You can resubscribe at any time.
             </p>
@@ -202,7 +202,7 @@ export default function CancelSubscription() {
 
         {step === "done" && (
           <Card data-attr="cancel-step-done" className="p-8 space-y-6">
-            <h1 className="text-2xl font-bold">Subscription cancelled</h1>
+            <h1 className="text-2xl font-bold text-foreground">Subscription cancelled</h1>
             <p className="text-muted-foreground">
               You'll continue to receive supplies until the end of the current billing cycle. We'll miss you — Max waves goodbye 👋
             </p>
@@ -215,7 +215,7 @@ export default function CancelSubscription() {
             <div className="flex items-start gap-3">
               <AlertTriangle className="h-6 w-6 text-destructive flex-shrink-0 mt-1" />
               <div>
-                <h1 className="text-2xl font-bold mb-2">We couldn't cancel right now</h1>
+                <h1 className="text-2xl font-bold text-foreground mb-2">We couldn't cancel right now</h1>
                 <p className="text-muted-foreground">
                   Our billing provider returned an error. Your subscription is unchanged. Please try again in a moment, or contact support.
                 </p>
