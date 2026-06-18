@@ -7,6 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
+    "build:with-sourcemaps": "npm run build && npm run sourcemaps:inject && npm run sourcemaps:upload",
+    "sourcemaps:inject": "npx @posthog/cli sourcemap inject --directory dist",
+    "sourcemaps:upload": "npx @posthog/cli sourcemap upload --directory dist",
     "lint": "eslint .",
     "preview": "vite preview"
   },

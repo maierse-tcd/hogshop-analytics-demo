@@ -372,6 +372,10 @@ cp .env.example .env
 npm run dev
 ```
 
+### Source maps
+
+Production builds emit hidden source maps (no public `sourceMappingURL`) so PostHog can symbolicate stack traces in the error-tracking inbox. To ship a deploy with maps uploaded, run `npm run build:with-sourcemaps` locally, or set `POSTHOG_CLI_TOKEN` and `POSTHOG_CLI_ENV_ID` in your CI environment and have it run that same script after install. The bare `npm run build` still works for previews — it just won't update the symbol store. See https://posthog.com/docs/error-tracking/upload-source-maps.
+
 ### Environment Variables
 
 ```env

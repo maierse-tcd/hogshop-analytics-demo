@@ -59,6 +59,7 @@
       },
       "devDependencies": {
         "@eslint/js": "^9.32.0",
+        "@posthog/cli": "^0.7.25",
         "@tailwindcss/typography": "^0.5.16",
         "@types/node": "^22.16.5",
         "@types/react": "^18.3.23",
@@ -196,6 +197,8 @@
     "@nodelib/fs.walk": ["@nodelib/fs.walk@1.2.8", "", { "dependencies": { "@nodelib/fs.scandir": "2.1.5", "fastq": "^1.6.0" } }, "sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg=="],
 
     "@pkgjs/parseargs": ["@pkgjs/parseargs@0.11.0", "", {}, "sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg=="],
+
+    "@posthog/cli": ["@posthog/cli@0.7.25", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@posthog/cli/-/cli-0.7.25.tgz", { "dependencies": { "detect-libc": "^2.1.2" }, "bin": { "posthog-cli": "run-posthog-cli.js" } }, "sha512-o+NiX3D7nmXPiY2aOQ7WqzhNyLXsGfpCrha/i8dnBGouP43Pqeyxw+N/H5CM0McH7uMZyEv76JIziPzL91YMJw=="],
 
     "@posthog/core": ["@posthog/core@1.34.0", "", { "dependencies": { "@posthog/types": "^1.387.0" } }, "sha512-hf+COAWSAG1UQHluPsfAOJDOR8tr8YY7cdf58ENGt20pEEWZ6sH3IbtvFDWkhp0ulSftA62x17w8R/f6IAwwEA=="],
 
@@ -544,6 +547,8 @@
     "decimal.js-light": ["decimal.js-light@2.5.1", "", {}, "sha512-qIMFpTMZmny+MMIitAB6D7iVPEorVw6YQRWkvarTkT4tBeSLLiHzcwj6q0MmYSFCiVpiqPJTJEYIrpcPzVEIvg=="],
 
     "deep-is": ["deep-is@0.1.4", "", {}, "sha512-oIPzksmTg4/MriiaYGO+okXDT7ztn/w3Eptv/+gSIdMdKsJo0u4CfYNFJPy+4SKMuCqGw2wxnA+URMg3t8a/bQ=="],
+
+    "detect-libc": ["detect-libc@2.1.2", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/detect-libc/-/detect-libc-2.1.2.tgz", {}, "sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ=="],
 
     "detect-node-es": ["detect-node-es@1.1.0", "", {}, "sha512-ypdmJU/TbBby2Dxibuv7ZLW3Bs1QEmM7nHjEANfohJLvE0XVujisn1qPJcZxg+qDucsr+bP6fLD1rPS3AhJ7EQ=="],
 
