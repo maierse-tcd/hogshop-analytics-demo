@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, ReactNode } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { supabase } from "@/integrations/supabase/client";
+import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/hooks/use-toast";
 import { RegistrationDialog } from "@/components/RegistrationDialog";
 import { posthog, trackEvent, setUserProperties, initializeCLTV, ensureIdentified } from "@/lib/posthog";
@@ -141,10 +142,31 @@ export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
       console.error("Checkout error:", error);
       checkoutSpan.recordException(error);
       checkoutSpan.end();
+      trackEvent("checkout_failed", {
+        basket_value: totalPrice,
+        items_count: totalItems,
+        error_message: error instanceof Error ? error.message : String(error),
+      });
+
       toast({
         variant: "destructive",
         title: "Checkout failed",
-        description: "Please try again later.",
+        description: "We couldn't start your payment. You can try again now or in a moment.",
+        action: (
+          <ToastAction
+            altText="Retry checkout"
+            data-attr="checkout-retry"
+            onClick={() => {
+              trackEvent("checkout_retry_clicked", {
+                basket_value: totalPrice,
+                items_count: totalItems,
+              });
+              void proceedToCheckout(email, name);
+            }}
+          >
+            Retry
+          </ToastAction>
+        ),
       });
     } finally {
       setIsCheckingOut(false);
