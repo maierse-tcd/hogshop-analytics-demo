@@ -46,6 +46,11 @@ export const FlashSaleBanner = () => {
     }
   }, [flashSaleActive, discountPct]);
 
+  // Known UX issue: the countdown is driven by the client clock via setInterval.
+  // On long-lived or backgrounded tabs the interval throttles and the displayed
+  // time drifts — users occasionally see "00:00:00"/expired while the flag-gated
+  // discount is still active. A server-authoritative end time would remove the
+  // client/flag mismatch.
   useEffect(() => {
     if (!flashSaleActive) return;
     const tick = () => {

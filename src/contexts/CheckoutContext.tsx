@@ -91,6 +91,9 @@ export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
         hashed_example_property: "posthog",
       });
 
+      // NOTE: a fraction of checkouts fail here before reaching Stripe with a
+      // "network timeout". Users hit a dead end unless they use the retry action on
+      // the toast below — this is a known conversion drag worth revisiting.
       const CHECKOUT_FAILURE_RATE = 0.11;
       if (Math.random() < CHECKOUT_FAILURE_RATE) {
         const checkoutError = new Error("Failed to initialize payment session: network timeout");

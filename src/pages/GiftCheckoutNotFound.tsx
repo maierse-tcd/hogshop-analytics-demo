@@ -5,6 +5,10 @@ import { Home, Package } from "lucide-react";
 import { trackEvent, captureException, posthog } from "@/lib/posthog";
 
 const GiftCheckoutNotFound = () => {
+  // Placeholder route: the real gift checkout (/checkout/gift) isn't built yet, so
+  // the "Claim Free Gift" CTA intentionally lands here on a 404. Tracked as a
+  // funnel drop-off (funnel_drop_off, stage: gift_checkout); building the actual
+  // flow is still TODO.
   const location = useLocation();
 
   useEffect(() => {

@@ -151,6 +151,9 @@ const Index = () => {
 
   // Feature flag tracking is handled automatically by the PostHog SDK
 
+  // Known issue: the newsletter modal can reappear on later visits for users who
+  // dismissed it without subscribing — we persist "subscribed" but not
+  // "dismissed". Repeat visitors have reported this as nagging.
   useEffect(() => {
     // Check localStorage for subscription status
     const subscribed = localStorage.getItem("newsletter_subscribed") === "true";

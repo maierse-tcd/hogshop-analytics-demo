@@ -19,6 +19,10 @@ const REASONS = [
 
 const CANCEL_FAILURE_RATE = 0.1;
 
+// Retention-driven multi-step cancel flow (intro → reason → save-offer → confirm).
+// The friction is intentional, but chat/support feedback shows some users can't
+// tell how to actually complete the cancellation. Measure per-step drop-off
+// before adding any more steps.
 export default function CancelSubscription() {
   const navigate = useNavigate();
   const { toast } = useToast();
