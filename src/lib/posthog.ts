@@ -50,6 +50,7 @@ export const initPostHog = () => {
         api_host: POSTHOG_HOST,
         ui_host: "https://eu.posthog.com",
         person_profiles: 'always',
+        capture_exceptions: true,
         capture_pageview: false,
         capture_pageleave: true,
         capture_performance: true,
