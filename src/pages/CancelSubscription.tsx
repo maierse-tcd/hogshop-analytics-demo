@@ -166,6 +166,7 @@ export default function CancelSubscription() {
                 data-attr="cancel-decline-offer"
                 onClick={() => advance("confirm")}
                 variant="outline"
+                className="text-foreground"
               >
                 No thanks, cancel anyway
               </Button>
