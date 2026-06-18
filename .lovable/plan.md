@@ -18,7 +18,7 @@ PostHog Distributed Tracing (currently **alpha**) is a generic **OTLP/HTTP recei
 | **Supabase Edge Functions (Deno)** | ✅ Clean fit | We already POST OTLP logs to `/i/v1/logs` via a hand-rolled exporter (`_shared/posthog-logger.ts`). Doing the same for `/i/v1/traces` is ~80 lines. Either reuse that pattern (no npm deps, fast cold start) or use `npm:@opentelemetry/sdk-trace-base` — both work in Deno. Reuses existing `POSTHOG_PROJECT_API_KEY` secret. |
 | **Browser (React + Vite)** | ✅ Works | `@opentelemetry/sdk-trace-web` + `@opentelemetry/exporter-trace-otlp-proto` + auto-instrumentations. Cost: ~45–55 KB gzipped. Uses `VITE_PUBLIC_POSTHOG_KEY` (already public). |
 | **Distributed (browser → edge)** | ✅ Works | Propagate W3C `traceparent` header; needs `traceparent` added to `Access-Control-Allow-Headers` on each edge function. |
-| **Bots** (`playwright-hedgehog-bots`) | ✅ Trivial later | Node OTel SDK; can emit "bot session" traces if useful for the demo. |
+| **Bots** | ✅ Trivial later | Node OTel SDK; can emit "bot session" traces if useful for the demo. Bots live in a separate repo on a dedicated VM. |
 | **Metrics** | ⛔ Skip | PostHog tracing covers traces only; no first-class OTel metrics. |
 
 ### Honest caveats
