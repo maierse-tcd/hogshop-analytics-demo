@@ -59,6 +59,11 @@ export const useAIChat = () => {
     }
   }, [isOpen]);
 
+  const messagesLengthRef = useRef(0);
+  useEffect(() => {
+    messagesLengthRef.current = messages.length;
+  });
+
   // Flush $ai_trace when the hook unmounts or page becomes hidden, so the
   // conversation summary isn't lost when users navigate away without
   // explicitly closing the widget.
@@ -72,8 +77,8 @@ export const useAIChat = () => {
         $ai_total_output_tokens: tokenCountRef.current.output,
         $ai_total_tokens: tokenCountRef.current.input + tokenCountRef.current.output,
         conversation_duration_seconds: Math.floor(conversationDuration / 1000),
-        total_messages: messages.length,
-        total_user_messages: Math.ceil(messages.length / 2),
+        total_messages: messagesLengthRef.current,
+        total_user_messages: Math.ceil(messagesLengthRef.current / 2),
         flush_reason: "unmount_or_pagehide",
       });
       traceIdRef.current = null;
@@ -92,7 +97,7 @@ export const useAIChat = () => {
       document.removeEventListener("visibilitychange", onHide);
       flushTrace();
     };
-  }, [messages.length]);
+  }, []);
 
   const sendMessage = useCallback(async (userMessage: string) => {
     if (!userMessage.trim()) return;
