@@ -250,6 +250,10 @@ export const useAIChat = () => {
       chatSpan.recordException(error);
       chatSpan.end({ code: SpanStatus.ERROR });
 
+      // Even with the retry/backoff above, a residual fraction of generations still
+      // fail terminally and surface a "Sorry, I encountered an error" message.
+      // Repeated failures within one session are a known frustration point — see the
+      // chat_request_failed exceptions in error tracking for volume.
       setMessages(prev => [...prev, {
         role: "assistant",
         content: fallback,
