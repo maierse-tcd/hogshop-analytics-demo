@@ -1,9 +1,0 @@
-# Hedgehog Bots Cron Jobs
-# Daily user generation at 9 AM
-0 9 * * * ubuntu cd /home/ubuntu/playwright-hedgehog-bots && /usr/bin/npm run users:create >> /var/log/hedgehog-bots-users.log 2>&1
-
-# Churn processing every day at 2 AM
-0 2 * * * ubuntu cd /home/ubuntu/playwright-hedgehog-bots && /usr/bin/npm run churn:process >> /var/log/hedgehog-bots-churn.log 2>&1
-
-# Database backup every day at 3 AM
-0 3 * * * ubuntu cp /home/ubuntu/playwright-hedgehog-bots/database/hedgehog_bots.db /home/ubuntu/playwright-hedgehog-bots/database/hedgehog_bots_backup_$(date +\%Y\%m\%d).db
