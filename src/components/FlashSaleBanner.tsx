@@ -85,6 +85,11 @@ export const FlashSaleBanner = () => {
           "linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(17 100% 55%) 50%, hsl(var(--primary)) 100%)",
       }}
       data-attr="flash-sale-banner"
+      // The discount copy and the per-second countdown below are dynamic text.
+      // `translate="no"` stops browser translation extensions from rewrapping
+      // these nodes mid-render, which is what corrupts the live DOM and makes
+      // React's commit-phase removeChild fail with a NotFoundError DOMException.
+      translate="no"
     >
       <div className="container flex flex-col sm:flex-row items-center justify-between gap-3 py-2.5">
         <div className="flex items-center gap-3 text-sm md:text-base font-bold">

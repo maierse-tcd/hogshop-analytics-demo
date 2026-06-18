@@ -16,6 +16,7 @@ import { getThemeConfig, type SeasonalTheme } from "@/utils/seasonalThemes";
 import { useNavigate } from "react-router-dom";
 import { useTour } from "@/hooks/useTour";
 import { TourTooltip } from "@/components/TourTooltip";
+import { StableMount } from "@/components/StableMount";
 import { shopGettingStartedSteps } from "@/lib/tours";
 
 
@@ -604,14 +605,18 @@ const Index = () => {
         </div>
       </footer>
 
-      {tour.active && tour.step &&
-        <TourTooltip
-          step={tour.step}
-          stepIndex={tour.stepIndex}
-          totalSteps={tour.totalSteps}
-          onNext={tour.advance}
-          onDismiss={tour.dismiss} />
-      }
+      {/* The tour mounts after flags resolve (post first paint); keep it inside
+          a StableMount so toggling it never removes a bare sibling node. */}
+      <StableMount>
+        {tour.active && tour.step &&
+          <TourTooltip
+            step={tour.step}
+            stepIndex={tour.stepIndex}
+            totalSteps={tour.totalSteps}
+            onNext={tour.advance}
+            onDismiss={tour.dismiss} />
+        }
+      </StableMount>
       </div>
     </ErrorBoundary>);
 
