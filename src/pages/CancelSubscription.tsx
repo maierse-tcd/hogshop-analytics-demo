@@ -194,6 +194,7 @@ export default function CancelSubscription() {
                 onClick={() => abort("confirm_keep")}
                 variant="outline"
                 disabled={submitting}
+                className="text-foreground"
               >
                 Keep my subscription
               </Button>
