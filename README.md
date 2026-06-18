@@ -196,6 +196,35 @@ $exception: {
 }
 ```
 
+#### Uploading source maps to PostHog
+
+Production builds emit source maps (`build.sourcemap: true` in `vite.config.ts`).
+Upload them after each build so Error Tracking resolves the minified bundle
+frames (e.g. `Yn`/`LS`/`BS` in `index-*.js`) back to real source locations —
+otherwise every rebuild creates a new, unsymbolicated error fingerprint:
+
+```bash
+npm run build
+# Inject chunk IDs and upload the maps for the just-built bundle
+npx @posthog/cli sourcemap inject --directory dist
+npx @posthog/cli sourcemap upload --directory dist
+```
+
+The CLI needs `POSTHOG_CLI_TOKEN` (a personal API key with error-tracking write
+access) and `POSTHOG_CLI_ENV_ID` set; run these in CI as part of the deploy
+pipeline. See the [PostHog source map docs](https://posthog.com/docs/error-tracking/upload-source-maps).
+
+#### `removeChild` DOMException hardening
+
+Feature-flag-gated subtrees (`FlashSaleBanner`, `AIChatWidget`,
+`RelatedProductsCarousel`, `TourTooltip`, and the toast portals) resolve
+asynchronously, after first paint. To stop them from triggering React's
+recurring non-fatal `NotFoundError: ... removeChild ...` DOMException, each is
+wrapped in [`StableMount`](src/components/StableMount.tsx) — a `display: contents`
+container with `translate="no"` that stays mounted while only its contents
+toggle, so React never removes a bare sibling node and translation extensions
+leave the dynamic text alone. Reuse `StableMount` for any new flag-gated feature.
+
 ## Feature Flags Configuration
 
 ### Required Flags

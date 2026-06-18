@@ -16,6 +16,7 @@ import { AIChatWidget } from "@/components/AIChatWidget";
 import { StickyCheckoutBar } from "@/components/StickyCheckoutBar";
 import { FlashSaleBanner } from "@/components/FlashSaleBanner";
 import { TracingDemoBadge } from "@/components/TracingDemoBadge";
+import { StableMount } from "@/components/StableMount";
 import Index from "./pages/Index";
 import Success from "./pages/Success";
 import ProductDetail from "./pages/ProductDetail";
@@ -35,13 +36,24 @@ const AppContent = () => {
 
   return (
     <>
-      <Toaster />
-      <Sonner />
-      {showChatbot && <AIChatWidget />}
+      {/* Toast portals and flag-gated widgets resolve after first paint. Each
+          sits inside a StableMount so React only ever toggles content within a
+          container it owns — never a bare sibling at the top of the tree —
+          which is what triggers the recurring removeChild DOMException when a
+          browser translation extension has rewrapped nearby text nodes. */}
+      <StableMount>
+        <Toaster />
+      </StableMount>
+      <StableMount>
+        <Sonner />
+      </StableMount>
+      <StableMount>{showChatbot && <AIChatWidget />}</StableMount>
       <TracingDemoBadge />
       <BrowserRouter>
         <RouteTracker />
-        <FlashSaleBanner />
+        <StableMount>
+          <FlashSaleBanner />
+        </StableMount>
         <CheckoutProvider>
           <Routes>
             <Route path="/" element={<Index />} />

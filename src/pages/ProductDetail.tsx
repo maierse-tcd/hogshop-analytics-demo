@@ -13,6 +13,7 @@ import { trackEvent } from "@/lib/posthog";
 import { useFlashSale } from "@/hooks/useFlashSale";
 import { useTour } from "@/hooks/useTour";
 import { TourTooltip } from "@/components/TourTooltip";
+import { StableMount } from "@/components/StableMount";
 import { productDetailBuyingSteps } from "@/lib/tours";
 
 // Import all product images
@@ -307,19 +308,25 @@ const ProductDetail = () => {
           </div>
         </div>
 
-        <RelatedProductsCarousel currentProductId={id!} />
+        <StableMount>
+          <RelatedProductsCarousel currentProductId={id!} />
+        </StableMount>
       </div>
     </div>
 
-      {tour.active && tour.step && (
-        <TourTooltip
-          step={tour.step}
-          stepIndex={tour.stepIndex}
-          totalSteps={tour.totalSteps}
-          onNext={tour.advance}
-          onDismiss={tour.dismiss}
-        />
-      )}
+      {/* The tour mounts after flags resolve (post first paint); keep it inside
+          a StableMount so toggling it never removes a bare sibling node. */}
+      <StableMount>
+        {tour.active && tour.step && (
+          <TourTooltip
+            step={tour.step}
+            stepIndex={tour.stepIndex}
+            totalSteps={tour.totalSteps}
+            onNext={tour.advance}
+            onDismiss={tour.dismiss}
+          />
+        )}
+      </StableMount>
     </div>
   );
 };
