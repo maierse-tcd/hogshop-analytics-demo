@@ -106,7 +106,7 @@ export default function CancelSubscription() {
               <Button data-attr="cancel-continue" onClick={() => advance("reason")} variant="destructive">
                 Continue cancelling
               </Button>
-              <Button data-attr="cancel-back" onClick={() => abort("intro_keep")} variant="outline">
+              <Button data-attr="cancel-back" onClick={() => abort("intro_keep")} variant="outline" className="text-foreground">
                 Keep my subscription
               </Button>
             </div>
@@ -166,6 +166,7 @@ export default function CancelSubscription() {
                 data-attr="cancel-decline-offer"
                 onClick={() => advance("confirm")}
                 variant="outline"
+                className="text-foreground"
               >
                 No thanks, cancel anyway
               </Button>
@@ -193,6 +194,7 @@ export default function CancelSubscription() {
                 onClick={() => abort("confirm_keep")}
                 variant="outline"
                 disabled={submitting}
+                className="text-foreground"
               >
                 Keep my subscription
               </Button>
@@ -225,7 +227,7 @@ export default function CancelSubscription() {
               <Button data-attr="cancel-retry" onClick={() => setStep("confirm")} variant="destructive">
                 Try again
               </Button>
-              <Button data-attr="cancel-give-up" onClick={() => navigate("/")} variant="outline">
+              <Button data-attr="cancel-give-up" onClick={() => navigate("/")} variant="outline" className="text-foreground">
                 Back to shop
               </Button>
             </div>
