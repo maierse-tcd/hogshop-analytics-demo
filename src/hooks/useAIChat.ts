@@ -1,6 +1,33 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { trackEvent, posthog } from "@/lib/posthog";
+import { trackEvent, posthog, captureException } from "@/lib/posthog";
 import { startSpan, traceparent, SpanKind, SpanStatus } from "@/lib/otel";
+
+const TRANSIENT_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504, 529]);
+const MAX_RETRIES = 3;
+
+async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+  attempt = 0,
+): Promise<Response> {
+  try {
+    const res = await fetch(url, init);
+    if (res.ok) return res;
+    if (TRANSIENT_STATUSES.has(res.status) && attempt < MAX_RETRIES) {
+      const delay = 500 * Math.pow(2, attempt) + Math.random() * 250;
+      await new Promise((r) => setTimeout(r, delay));
+      return fetchWithRetry(url, init, attempt + 1);
+    }
+    return res;
+  } catch (networkErr) {
+    if (attempt < MAX_RETRIES) {
+      const delay = 500 * Math.pow(2, attempt) + Math.random() * 250;
+      await new Promise((r) => setTimeout(r, delay));
+      return fetchWithRetry(url, init, attempt + 1);
+    }
+    throw networkErr;
+  }
+}
 
 type Message = { 
   role: "user" | "assistant"; 
@@ -31,6 +58,41 @@ export const useAIChat = () => {
       });
     }
   }, [isOpen]);
+
+  // Flush $ai_trace when the hook unmounts or page becomes hidden, so the
+  // conversation summary isn't lost when users navigate away without
+  // explicitly closing the widget.
+  useEffect(() => {
+    const flushTrace = () => {
+      if (!traceIdRef.current || !conversationStartRef.current) return;
+      const conversationDuration = Date.now() - conversationStartRef.current;
+      trackEvent("$ai_trace", {
+        $ai_trace_id: traceIdRef.current,
+        $ai_total_input_tokens: tokenCountRef.current.input,
+        $ai_total_output_tokens: tokenCountRef.current.output,
+        $ai_total_tokens: tokenCountRef.current.input + tokenCountRef.current.output,
+        conversation_duration_seconds: Math.floor(conversationDuration / 1000),
+        total_messages: messages.length,
+        total_user_messages: Math.ceil(messages.length / 2),
+        flush_reason: "unmount_or_pagehide",
+      });
+      traceIdRef.current = null;
+      conversationStartRef.current = null;
+      tokenCountRef.current = { input: 0, output: 0 };
+    };
+
+    const onHide = () => {
+      if (document.visibilityState === "hidden") flushTrace();
+    };
+    window.addEventListener("pagehide", flushTrace);
+    document.addEventListener("visibilitychange", onHide);
+
+    return () => {
+      window.removeEventListener("pagehide", flushTrace);
+      document.removeEventListener("visibilitychange", onHide);
+      flushTrace();
+    };
+  }, [messages.length]);
 
   const sendMessage = useCallback(async (userMessage: string) => {
     if (!userMessage.trim()) return;
@@ -68,7 +130,7 @@ export const useAIChat = () => {
 
     try {
       const allMessages = [...messages, userMsg];
-      const response = await fetch(
+      const response = await fetchWithRetry(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`,
         {
           method: "POST",
@@ -134,6 +196,18 @@ export const useAIChat = () => {
     } catch (error) {
       console.error("Chat error:", error);
 
+      const msg = error instanceof Error ? error.message : String(error);
+      const statusMatch = /HTTP (\d+)/.exec(msg);
+      const status = statusMatch ? Number(statusMatch[1]) : null;
+      const fallback =
+        status === 400
+          ? "I can't process that request right now — could you try rephrasing?"
+          : status === 401 || status === 403
+            ? "I'm having trouble authenticating with the assistant. Please try again in a moment."
+            : status && status >= 500
+              ? "The assistant is overloaded right now. Please try again in a few seconds."
+              : "Sorry, I encountered an error. Please try again.";
+
       trackEvent("$ai_generation", {
         $ai_trace_id: traceIdRef.current,
         $ai_span_id: spanId,
@@ -154,12 +228,26 @@ export const useAIChat = () => {
         error_type: "chat_generation_failed",
       });
 
+      captureException(
+        error instanceof Error ? error : new Error(String(error)),
+        "chat_request_failed",
+        {
+          trace_id: traceIdRef.current,
+          span_id: spanId,
+          http_status:
+            error instanceof Error && /HTTP (\d+)/.exec(error.message)?.[1]
+              ? Number(/HTTP (\d+)/.exec(error.message)![1])
+              : undefined,
+          message_number: Math.floor(messages.length / 2) + 1,
+        }
+      );
+
       chatSpan.recordException(error);
-      chatSpan.end();
+      chatSpan.end({ code: SpanStatus.ERROR });
 
       setMessages(prev => [...prev, {
         role: "assistant",
-        content: "Sorry, I encountered an error. Please try again.",
+        content: fallback,
         timestamp: Date.now(),
       }]);
     } finally {
