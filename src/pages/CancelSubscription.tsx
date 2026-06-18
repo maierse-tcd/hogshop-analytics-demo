@@ -106,7 +106,7 @@ export default function CancelSubscription() {
               <Button data-attr="cancel-continue" onClick={() => advance("reason")} variant="destructive">
                 Continue cancelling
               </Button>
-              <Button data-attr="cancel-back" onClick={() => abort("intro_keep")} variant="outline">
+              <Button data-attr="cancel-back" onClick={() => abort("intro_keep")} variant="outline" className="text-foreground">
                 Keep my subscription
               </Button>
             </div>
