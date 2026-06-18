@@ -27,6 +27,7 @@ import Readme from "./pages/Readme";
 import GiftLanding from "./pages/GiftLanding";
 import GiftCheckoutNotFound from "./pages/GiftCheckoutNotFound";
 import NotFound from "./pages/NotFound";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const queryClient = new QueryClient();
 
@@ -37,11 +38,17 @@ const AppContent = () => {
     <>
       <Toaster />
       <Sonner />
-      {showChatbot && <AIChatWidget />}
-      <TracingDemoBadge />
+      <div id="chat-slot" data-slot="ai-chat">
+        {showChatbot && <AIChatWidget />}
+      </div>
+      <div id="tracing-badge-slot" data-slot="tracing-badge">
+        <TracingDemoBadge />
+      </div>
       <BrowserRouter>
         <RouteTracker />
-        <FlashSaleBanner />
+        <div id="flash-sale-slot" data-slot="flash-sale">
+          <FlashSaleBanner />
+        </div>
         <CheckoutProvider>
           <Routes>
             <Route path="/" element={<Index />} />
@@ -81,7 +88,9 @@ const App = () => {
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <CartProvider>
             <TooltipProvider>
-              <AppContent />
+              <ErrorBoundary>
+                <AppContent />
+              </ErrorBoundary>
             </TooltipProvider>
           </CartProvider>
         </ThemeProvider>

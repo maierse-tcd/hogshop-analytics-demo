@@ -604,14 +604,16 @@ const Index = () => {
         </div>
       </footer>
 
-      {tour.active && tour.step &&
-        <TourTooltip
-          step={tour.step}
-          stepIndex={tour.stepIndex}
-          totalSteps={tour.totalSteps}
-          onNext={tour.advance}
-          onDismiss={tour.dismiss} />
-      }
+      <div id="tour-slot" data-slot="product-tour">
+        {tour.active && tour.step &&
+          <TourTooltip
+            step={tour.step}
+            stepIndex={tour.stepIndex}
+            totalSteps={tour.totalSteps}
+            onNext={tour.advance}
+            onDismiss={tour.dismiss} />
+        }
+      </div>
       </div>
     </ErrorBoundary>);
 
