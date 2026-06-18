@@ -227,7 +227,7 @@ export default function CancelSubscription() {
               <Button data-attr="cancel-retry" onClick={() => setStep("confirm")} variant="destructive">
                 Try again
               </Button>
-              <Button data-attr="cancel-give-up" onClick={() => navigate("/")} variant="outline">
+              <Button data-attr="cancel-give-up" onClick={() => navigate("/")} variant="outline" className="text-foreground">
                 Back to shop
               </Button>
             </div>
