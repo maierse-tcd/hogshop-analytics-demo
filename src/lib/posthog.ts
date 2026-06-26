@@ -30,6 +30,29 @@ export const applyPostHogIdentityHash = async (distinctId: string) => {
   }
 };
 
+/**
+ * Canonicalize a URL to the exact form PostHog uses for User Paths nodes:
+ * origin + pathname, with any trailing slash and the query string / hash
+ * removed. PostHog's "Create funnel from a path step" pre-fills a
+ * `$current_url` *exact* filter built from that normalized label, so unless
+ * the captured `$current_url` matches it byte-for-byte the funnel finds
+ * nothing — the homepage `…dev/` and every `?utm_*` visit would otherwise
+ * miss. Canonicalizing here makes those auto-generated funnels work for every
+ * page. `$pathname` and the dedicated `$utm_*` properties are left untouched,
+ * so page-path reporting and campaign attribution are unaffected.
+ */
+export const canonicalizeUrl = (rawUrl: string): string => {
+  try {
+    const url = new URL(rawUrl);
+    // Drop the query string + hash (PostHog collapses these into one path
+    // node) and any trailing slash. The root path "/" collapses to "" so the
+    // homepage becomes "https://shop.hogflix.dev" — matching the path label.
+    return url.origin + url.pathname.replace(/\/+$/, "");
+  } catch {
+    return rawUrl;
+  }
+};
+
 export const initPostHog = () => {
   if (typeof window !== "undefined") {
     const POSTHOG_KEY = 
@@ -62,6 +85,19 @@ export const initPostHog = () => {
         enable_recording_console_log: true,
         session_recording: {
           recordCrossOriginIframes: false,
+        },
+        // Normalize $current_url on every captured event so it matches the
+        // slash-less, query-less labels PostHog builds for User Paths nodes.
+        // Without this, "Create funnel from a path step" emits a $current_url
+        // exact filter that never matches the raw captured URLs. See
+        // canonicalizeUrl above.
+        before_send: (event) => {
+          if (event?.properties?.$current_url) {
+            event.properties.$current_url = canonicalizeUrl(
+              event.properties.$current_url as string,
+            );
+          }
+          return event;
         },
         loaded: (posthog) => {
           if (import.meta.env.DEV) {
