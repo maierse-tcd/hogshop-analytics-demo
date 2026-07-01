@@ -128,7 +128,7 @@ serve(async (req) => {
         const origin = req.headers.get("origin") || "http://localhost:3000";
         const supabaseUrl = Deno.env.get("SUPABASE_URL");
         const functionsBase = `${supabaseUrl}/functions/v1`;
-        const successUrl = `${functionsBase}/track-success?session_id={CHECKOUT_SESSION_ID}&redirect=${encodeURIComponent(origin + "/success")}`;
+        const successUrl = `${functionsBase}/track-success?session_id={CHECKOUT_SESSION_ID}&redirect=${encodeURIComponent(origin + "/success")}${ph_session_id ? `&ph_session_id=${encodeURIComponent(ph_session_id)}` : ""}`;
         log.info("Building checkout session", { mode, origin, successUrl });
 
         // ---------- Stripe checkout session ----------
