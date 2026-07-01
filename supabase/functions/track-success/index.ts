@@ -248,6 +248,45 @@ serve(async (req) => {
 
         // ---------- person properties ----------
         if (customerEmail) {
+          let priorSum: number | null = null;
+          let priorCount = 0;
+          try {
+            const PROJECT_ID = Deno.env.get("POSTHOG_PROJECT_ID");
+            const PERSONAL_KEY = Deno.env.get("POSTHOG_PERSONAL_API_KEY");
+            const API_HOST = Deno.env.get("POSTHOG_API_HOST") || "https://eu.posthog.com";
+            if (PROJECT_ID && PERSONAL_KEY) {
+              const safeId = customerEmail.replace(/'/g, "''");
+              const hogql = `SELECT coalesce(sum(toFloat(properties.total_amount)),0) AS s, count() AS c FROM events WHERE event='purchase_completed' AND distinct_id = '${safeId}' AND ifNull(toString(properties.backfilled),'') != 'true'`;
+              const qr = await fetch(`${API_HOST}/api/projects/${PROJECT_ID}/query/`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${PERSONAL_KEY}` },
+                body: JSON.stringify({ query: { kind: "HogQLQuery", query: hogql } }),
+              });
+              if (qr.ok) {
+                const j = await qr.json();
+                const row = (j.results && j.results[0]) || [0, 0];
+                priorSum = Number(row[0]) || 0;
+                priorCount = Number(row[1]) || 0;
+              }
+            }
+          } catch (e) {
+            log.warn("CLTV prior lookup failed", { error: String(e) });
+          }
+
+          const setProps: Record<string, unknown> = {
+            subscription_active: hasSubscription,
+            subscription_start_date: hasSubscription ? new Date().toISOString() : null,
+            subscription_monthly_value: subscriptionValue || null,
+            customer_lifecycle: lifecycle,
+            customer_value_tier: valueTier,
+            last_purchase_date: new Date().toISOString(),
+            last_purchase_amount: totalAmount,
+          };
+          if (priorSum !== null) {
+            setProps.customer_lifetime_value = priorSum + totalAmount;
+            setProps.total_purchases = priorCount + 1;
+          }
+
           await tracer.withSpan(
             "posthog.person.set",
             (span) => postJson(span, "$set", {
@@ -256,16 +295,7 @@ serve(async (req) => {
               distinct_id: customerEmail,
               properties: {
                 $session_id: phSessionId,
-                $set: {
-                  subscription_active: hasSubscription,
-                  subscription_start_date: hasSubscription ? new Date().toISOString() : null,
-                  subscription_monthly_value: subscriptionValue || null,
-                  customer_lifecycle: lifecycle,
-                  customer_value_tier: valueTier,
-                  last_purchase_date: new Date().toISOString(),
-                  last_purchase_amount: totalAmount,
-                },
-                $add: { customer_lifetime_value: totalAmount, total_purchases: 1 },
+                $set: setProps,
               },
             }),
             { kind: SpanKind.CLIENT },
