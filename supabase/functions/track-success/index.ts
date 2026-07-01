@@ -255,6 +255,7 @@ serve(async (req) => {
               event: "$set",
               distinct_id: customerEmail,
               properties: {
+                $session_id: phSessionId,
                 $set: {
                   subscription_active: hasSubscription,
                   subscription_start_date: hasSubscription ? new Date().toISOString() : null,
