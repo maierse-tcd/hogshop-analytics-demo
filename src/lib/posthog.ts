@@ -164,9 +164,11 @@ export const updateCLTV = (purchaseAmount: number) => {
       
       localStorage.setItem('user_cltv', newCLTV.toString());
 
-      // Note: customer_lifetime_value is now incremented server-side via $add
-      // in the track-success edge function. Client only mirrors to localStorage
-      // for any local UI usage and writes non-cumulative last_purchase_* fields.
+      // Note: customer_lifetime_value is owned server-side by track-success,
+      // which computes it from purchase history via HogQL and writes it with
+      // $set (PostHog's capture API does not support $add for person properties).
+      // Client only mirrors CLTV to localStorage and writes non-cumulative
+      // last_purchase_* fields here.
       posthog.setPersonProperties({
         last_purchase_amount: purchaseAmount,
         last_purchase_date: new Date().toISOString(),
