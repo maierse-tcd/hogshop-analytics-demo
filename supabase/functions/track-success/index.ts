@@ -148,7 +148,7 @@ serve(async (req) => {
             api_key: POSTHOG_KEY,
             event: "$identify",
             distinct_id: customerEmail || sessionId,
-            properties: { $set: { email: customerEmail, name: customerName } },
+            properties: { $session_id: phSessionId, $set: { email: customerEmail, name: customerName } },
           }),
           { kind: SpanKind.CLIENT },
         );
