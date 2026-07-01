@@ -6,6 +6,8 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { LoginDialog } from "./LoginDialog";
 import { SubscriptionManagementDialog } from "./SubscriptionManagementDialog";
+import { SubscriptionChoiceDialog } from "./SubscriptionChoiceDialog";
+import { supabase } from "@/integrations/supabase/client";
 import { posthog, trackEvent, identifyUser } from "@/lib/posthog";
 import { useFeatureFlagEnabled, useFeatureFlagVariantKey } from "posthog-js/react";
 import { getUser, clearUser } from "@/lib/auth";
@@ -25,6 +27,9 @@ export const Header = () => {
   const [userName, setUserName] = useState("");
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
+  const [showSubscriptionChoice, setShowSubscriptionChoice] = useState(false);
+  const [isSubscriber, setIsSubscriber] = useState<boolean | null>(null);
+  const [subCheckLoading, setSubCheckLoading] = useState(false);
   const signupVariant = useFeatureFlagVariantKey('increase_sales_cta');
   const halloweenMode = useFeatureFlagEnabled('hero_banner_halloween');
 
@@ -134,7 +139,34 @@ export const Header = () => {
         <div className="flex items-center gap-2">
           {isLoggedIn ? (
             <div className="flex items-center gap-2">
-              <DropdownMenu>
+              <DropdownMenu
+                onOpenChange={(isOpen) => {
+                  // Check subscription only when dropdown opens for the first time.
+                  // Synthetic traffic makes per-pageview checks too expensive (hits Stripe).
+                  if (!isOpen || isSubscriber !== null || subCheckLoading) return;
+                  const user = getUser();
+                  if (!user?.email) {
+                    setIsSubscriber(false);
+                    return;
+                  }
+                  setSubCheckLoading(true);
+                  supabase.functions
+                    .invoke("check-subscription", { body: { email: user.email } })
+                    .then(({ data, error }) => {
+                      if (error) {
+                        console.error("check-subscription failed", error);
+                        setIsSubscriber(false);
+                      } else {
+                        setIsSubscriber(!!data?.subscribed);
+                      }
+                    })
+                    .catch((err) => {
+                      console.error("check-subscription error", err);
+                      setIsSubscriber(false);
+                    })
+                    .finally(() => setSubCheckLoading(false));
+                }}
+              >
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="gap-1">
                     <span className={`text-sm hidden md:inline ${
@@ -146,9 +178,19 @@ export const Header = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setShowSubscriptionDialog(true)}>
-                    Cancel Subscription
-                  </DropdownMenuItem>
+                  {isSubscriber === null ? (
+                    <DropdownMenuItem disabled>
+                      {subCheckLoading ? "Checking subscription…" : "Checking subscription…"}
+                    </DropdownMenuItem>
+                  ) : isSubscriber ? (
+                    <DropdownMenuItem onClick={() => setShowSubscriptionDialog(true)}>
+                      Cancel Subscription
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem onClick={() => setShowSubscriptionChoice(true)}>
+                      Choose a Subscription
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
@@ -216,6 +258,11 @@ export const Header = () => {
         <SubscriptionManagementDialog
           open={showSubscriptionDialog}
           onOpenChange={setShowSubscriptionDialog}
+          onCancelled={() => setIsSubscriber(false)}
+        />
+        <SubscriptionChoiceDialog
+          open={showSubscriptionChoice}
+          onOpenChange={setShowSubscriptionChoice}
         />
       </div>
     </header>

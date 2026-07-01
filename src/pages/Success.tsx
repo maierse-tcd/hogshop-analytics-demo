@@ -43,16 +43,13 @@ const Success = () => {
                 name: userData.name,
               });
               
+              // NOTE: server (track-success) is authoritative for customer_lifecycle
+              // and CLTV — do NOT setCustomerGroups here or non-subscribers get
+              // mislabeled "Active Subscriber".
               setTimeout(() => {
-                const cltv = parseFloat(localStorage.getItem("user_cltv") || "0");
-                setCustomerGroups("Active Subscriber", cltv);
-                if (isDev) console.log("Success: User identified and groups set", { email: userData.email, cltv });
-                
-                setTimeout(() => {
-                  posthog.reloadFeatureFlags();
-                  if (isDev) console.log("Success: Feature flags reloaded (server tracking confirmed)");
-                }, 2000);
-              }, 500);
+                posthog.reloadFeatureFlags();
+                if (isDev) console.log("Success: Feature flags reloaded (server tracking confirmed)");
+              }, 2000);
             }
           } catch (error) {
             console.error("Success: Failed to restore user session", error);
