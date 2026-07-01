@@ -114,7 +114,7 @@ export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
       });
 
       const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { items, customer_email: email, customer_name: name },
+        body: { items, customer_email: email, customer_name: name, ph_session_id: posthog.get_session_id() },
         headers: { traceparent: traceparent(checkoutSpan) },
       });
       if (error) throw error;
