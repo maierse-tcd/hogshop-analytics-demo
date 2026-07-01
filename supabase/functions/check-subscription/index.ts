@@ -26,18 +26,36 @@ serve(async (req) => {
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
 
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
+    // Optional body { email } lets the client (localStorage auth, no JWT)
+    // query by email directly. Falls back to Authorization token if no email.
+    let bodyEmail: string | undefined;
+    if (req.method === "POST") {
+      try {
+        const body = await req.json();
+        if (body?.email && typeof body.email === "string") bodyEmail = body.email;
+      } catch (_) {
+        // no body / not JSON — fall through to token path
+      }
+    }
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
-    const user = userData.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
-    log.info("User authenticated", { email: user.email });
+    let lookupEmail: string;
+    if (bodyEmail) {
+      lookupEmail = bodyEmail;
+      log.info("Using email from request body", { email: lookupEmail });
+    } else {
+      const authHeader = req.headers.get("Authorization");
+      if (!authHeader) throw new Error("No authorization header or email provided");
+      const token = authHeader.replace("Bearer ", "");
+      const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+      if (userError) throw new Error(`Authentication error: ${userError.message}`);
+      const user = userData.user;
+      if (!user?.email) throw new Error("User not authenticated or email not available");
+      lookupEmail = user.email;
+      log.info("User authenticated via token", { email: lookupEmail });
+    }
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+    const customers = await stripe.customers.list({ email: lookupEmail, limit: 1 });
     
     if (customers.data.length === 0) {
       log.info("No customer found");
