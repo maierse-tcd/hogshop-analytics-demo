@@ -76,7 +76,13 @@ serve(async (req) => {
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
       subscriptionId = subscription.id;
-      subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
+      const periodEndRaw =
+        (subscription as any).current_period_end ??
+        (subscription as any).items?.data?.[0]?.current_period_end;
+      subscriptionEnd =
+        typeof periodEndRaw === "number" && !Number.isNaN(periodEndRaw)
+          ? new Date(periodEndRaw * 1000).toISOString()
+          : null;
       log.info("Active subscription found", { subscriptionId });
     } else {
       log.info("No active subscription found");
