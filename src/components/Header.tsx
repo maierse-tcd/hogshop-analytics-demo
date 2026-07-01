@@ -139,7 +139,34 @@ export const Header = () => {
         <div className="flex items-center gap-2">
           {isLoggedIn ? (
             <div className="flex items-center gap-2">
-              <DropdownMenu>
+              <DropdownMenu
+                onOpenChange={(isOpen) => {
+                  // Check subscription only when dropdown opens for the first time.
+                  // Synthetic traffic makes per-pageview checks too expensive (hits Stripe).
+                  if (!isOpen || isSubscriber !== null || subCheckLoading) return;
+                  const user = getUser();
+                  if (!user?.email) {
+                    setIsSubscriber(false);
+                    return;
+                  }
+                  setSubCheckLoading(true);
+                  supabase.functions
+                    .invoke("check-subscription", { body: { email: user.email } })
+                    .then(({ data, error }) => {
+                      if (error) {
+                        console.error("check-subscription failed", error);
+                        setIsSubscriber(false);
+                      } else {
+                        setIsSubscriber(!!data?.subscribed);
+                      }
+                    })
+                    .catch((err) => {
+                      console.error("check-subscription error", err);
+                      setIsSubscriber(false);
+                    })
+                    .finally(() => setSubCheckLoading(false));
+                }}
+              >
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="gap-1">
                     <span className={`text-sm hidden md:inline ${
@@ -151,9 +178,19 @@ export const Header = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setShowSubscriptionDialog(true)}>
-                    Cancel Subscription
-                  </DropdownMenuItem>
+                  {isSubscriber === null ? (
+                    <DropdownMenuItem disabled>
+                      {subCheckLoading ? "Checking subscription…" : "Checking subscription…"}
+                    </DropdownMenuItem>
+                  ) : isSubscriber ? (
+                    <DropdownMenuItem onClick={() => setShowSubscriptionDialog(true)}>
+                      Cancel Subscription
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem onClick={() => setShowSubscriptionChoice(true)}>
+                      Choose a Subscription
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
