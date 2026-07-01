@@ -130,6 +130,8 @@ serve(async (req) => {
         // flip-flop tiers based on order size).
         let priorSum: number | null = null;
         let priorCount = 0;
+        let lastSub = 0;
+        let lastCancel = 0;
         if (customerEmail) {
           try {
             const PROJECT_ID = Deno.env.get("POSTHOG_PROJECT_ID");
@@ -137,7 +139,12 @@ serve(async (req) => {
             const API_HOST = Deno.env.get("POSTHOG_API_HOST") || "https://eu.posthog.com";
             if (PROJECT_ID && PERSONAL_KEY) {
               const safeId = customerEmail.replace(/'/g, "''");
-              const hogql = `SELECT coalesce(sum(toFloat(properties.total_amount)),0) AS s, count() AS c FROM events WHERE event='purchase_completed' AND distinct_id = '${safeId}' AND ifNull(toString(properties.backfilled),'') != 'true'`;
+              const hogql = `SELECT
+                coalesce(sumIf(toFloat(properties.total_amount), event='purchase_completed' AND ifNull(toString(properties.backfilled),'') != 'true'),0) AS s,
+                countIf(event='purchase_completed' AND ifNull(toString(properties.backfilled),'') != 'true') AS c,
+                maxIf(toUnixTimestamp(timestamp), event='subscription_created' OR (event='purchase_completed' AND properties.has_subscription = true)) AS last_sub,
+                maxIf(toUnixTimestamp(timestamp), event='subscription_cancelled') AS last_cancel
+              FROM events WHERE distinct_id = '${safeId}' AND event IN ('purchase_completed','subscription_created','subscription_cancelled')`;
               const qr = await fetch(`${API_HOST}/api/projects/${PROJECT_ID}/query/`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", Authorization: `Bearer ${PERSONAL_KEY}` },
@@ -145,9 +152,11 @@ serve(async (req) => {
               });
               if (qr.ok) {
                 const j = await qr.json();
-                const row = (j.results && j.results[0]) || [0, 0];
+                const row = (j.results && j.results[0]) || [0, 0, 0, 0];
                 priorSum = Number(row[0]) || 0;
                 priorCount = Number(row[1]) || 0;
+                lastSub = Number(row[2]) || 0;
+                lastCancel = Number(row[3]) || 0;
               }
             }
           } catch (e) {
@@ -156,6 +165,15 @@ serve(async (req) => {
         }
         const lifetimeValue = priorSum !== null ? priorSum + totalAmount : totalAmount;
         const valueTier = getValueTier(lifetimeValue);
+
+        // Lifecycle from full history + this order — never downgrade an active
+        // subscriber just because their latest order was a one-time purchase.
+        // If the HogQL lookup failed, lastSub/lastCancel remain 0 and this
+        // reduces to the previous single-order behavior.
+        const isActiveSubscriber = hasSubscription || (lastSub > 0 && lastSub >= lastCancel);
+        const lifecycle = isActiveSubscriber
+          ? "Active Subscriber"
+          : (lastCancel > 0 ? "Churned Subscriber" : "One-Time Buyer");
 
         const postJson = async (span: Span, event: string, payload: unknown) => {
           span.setAttribute("posthog.event", event);
