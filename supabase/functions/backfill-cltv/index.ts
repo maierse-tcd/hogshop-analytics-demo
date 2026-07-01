@@ -44,14 +44,14 @@ serve(async (req) => {
     // Uses total_amount (dollars) which has been correct from day one.
     const hogql = `
       SELECT
-        properties.customer_email AS email,
+        distinct_id AS email,
         sum(toFloat(properties.total_amount)) AS lifetime_value,
         count() AS total_purchases
       FROM events
       WHERE event = 'purchase_completed'
-        AND properties.customer_email IS NOT NULL
-        AND properties.customer_email != ''
-      GROUP BY email
+        AND distinct_id LIKE '%@%'
+        AND ifNull(toString(properties.backfilled), '') != 'true'
+      GROUP BY distinct_id
       LIMIT 100000
     `;
 
