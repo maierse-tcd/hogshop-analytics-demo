@@ -45,8 +45,14 @@ serve(async (req) => {
       SELECT
         distinct_id AS email,
         multiIf(
-          maxIf(toUnixTimestamp(timestamp), event = 'subscription_created') > 0
-            AND maxIf(toUnixTimestamp(timestamp), event = 'subscription_created') > maxIf(toUnixTimestamp(timestamp), event = 'subscription_cancelled'),
+          greatest(
+            maxIf(toUnixTimestamp(timestamp), event = 'subscription_created'),
+            maxIf(toUnixTimestamp(timestamp), event = 'purchase_completed' AND properties.has_subscription = true)
+          ) > 0
+          AND greatest(
+            maxIf(toUnixTimestamp(timestamp), event = 'subscription_created'),
+            maxIf(toUnixTimestamp(timestamp), event = 'purchase_completed' AND properties.has_subscription = true)
+          ) >= maxIf(toUnixTimestamp(timestamp), event = 'subscription_cancelled'),
             'Active Subscriber',
           maxIf(toUnixTimestamp(timestamp), event = 'subscription_cancelled') > 0,
             'Churned Subscriber',
