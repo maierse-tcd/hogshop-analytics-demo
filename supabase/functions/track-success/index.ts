@@ -231,6 +231,7 @@ serve(async (req) => {
               event: "subscription_created",
               distinct_id: customerEmail || sessionId,
               properties: {
+                $session_id: phSessionId,
                 subscription_id: subscriptionId,
                 plan_name: subscriptionItems.map((item: any) => item.name).join(", "),
                 monthly_value: subscriptionValue,
