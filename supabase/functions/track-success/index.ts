@@ -240,7 +240,7 @@ serve(async (req) => {
                 properties: {
                   $group_type: "customer_lifecycle",
                   $group_key: lifecycle,
-                  $group_set: { name: lifecycle, is_subscriber: hasSubscription },
+                  $group_set: { name: lifecycle, is_subscriber: isActiveSubscriber },
                 },
               }),
               postJson(span, "$groupidentify:value_tier", {
