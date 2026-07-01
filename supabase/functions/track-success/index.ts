@@ -125,7 +125,38 @@ serve(async (req) => {
           if (amount >= 100) return "Silver";
           return "Bronze";
         };
-        const valueTier = getValueTier(totalAmount);
+
+        // Look up prior lifetime value BEFORE computing tier, so tier reflects
+        // lifetime spend rather than a single order (repeat customers shouldn't
+        // flip-flop tiers based on order size).
+        let priorSum: number | null = null;
+        let priorCount = 0;
+        if (customerEmail) {
+          try {
+            const PROJECT_ID = Deno.env.get("POSTHOG_PROJECT_ID");
+            const PERSONAL_KEY = Deno.env.get("POSTHOG_PERSONAL_API_KEY");
+            const API_HOST = Deno.env.get("POSTHOG_API_HOST") || "https://eu.posthog.com";
+            if (PROJECT_ID && PERSONAL_KEY) {
+              const safeId = customerEmail.replace(/'/g, "''");
+              const hogql = `SELECT coalesce(sum(toFloat(properties.total_amount)),0) AS s, count() AS c FROM events WHERE event='purchase_completed' AND distinct_id = '${safeId}' AND ifNull(toString(properties.backfilled),'') != 'true'`;
+              const qr = await fetch(`${API_HOST}/api/projects/${PROJECT_ID}/query/`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${PERSONAL_KEY}` },
+                body: JSON.stringify({ query: { kind: "HogQLQuery", query: hogql } }),
+              });
+              if (qr.ok) {
+                const j = await qr.json();
+                const row = (j.results && j.results[0]) || [0, 0];
+                priorSum = Number(row[0]) || 0;
+                priorCount = Number(row[1]) || 0;
+              }
+            }
+          } catch (e) {
+            log.warn("CLTV prior lookup failed", { error: String(e) });
+          }
+        }
+        const lifetimeValue = priorSum !== null ? priorSum + totalAmount : totalAmount;
+        const valueTier = getValueTier(lifetimeValue);
 
         const postJson = async (span: Span, event: string, payload: unknown) => {
           span.setAttribute("posthog.event", event);
@@ -248,31 +279,6 @@ serve(async (req) => {
 
         // ---------- person properties ----------
         if (customerEmail) {
-          let priorSum: number | null = null;
-          let priorCount = 0;
-          try {
-            const PROJECT_ID = Deno.env.get("POSTHOG_PROJECT_ID");
-            const PERSONAL_KEY = Deno.env.get("POSTHOG_PERSONAL_API_KEY");
-            const API_HOST = Deno.env.get("POSTHOG_API_HOST") || "https://eu.posthog.com";
-            if (PROJECT_ID && PERSONAL_KEY) {
-              const safeId = customerEmail.replace(/'/g, "''");
-              const hogql = `SELECT coalesce(sum(toFloat(properties.total_amount)),0) AS s, count() AS c FROM events WHERE event='purchase_completed' AND distinct_id = '${safeId}' AND ifNull(toString(properties.backfilled),'') != 'true'`;
-              const qr = await fetch(`${API_HOST}/api/projects/${PROJECT_ID}/query/`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json", Authorization: `Bearer ${PERSONAL_KEY}` },
-                body: JSON.stringify({ query: { kind: "HogQLQuery", query: hogql } }),
-              });
-              if (qr.ok) {
-                const j = await qr.json();
-                const row = (j.results && j.results[0]) || [0, 0];
-                priorSum = Number(row[0]) || 0;
-                priorCount = Number(row[1]) || 0;
-              }
-            }
-          } catch (e) {
-            log.warn("CLTV prior lookup failed", { error: String(e) });
-          }
-
           const setProps: Record<string, unknown> = {
             subscription_active: hasSubscription,
             subscription_start_date: hasSubscription ? new Date().toISOString() : null,
@@ -283,7 +289,7 @@ serve(async (req) => {
             last_purchase_amount: totalAmount,
           };
           if (priorSum !== null) {
-            setProps.customer_lifetime_value = priorSum + totalAmount;
+            setProps.customer_lifetime_value = lifetimeValue;
             setProps.total_purchases = priorCount + 1;
           }
 

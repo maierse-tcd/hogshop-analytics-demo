@@ -164,9 +164,11 @@ export const updateCLTV = (purchaseAmount: number) => {
       
       localStorage.setItem('user_cltv', newCLTV.toString());
 
-      // Note: customer_lifetime_value is now incremented server-side via $add
-      // in the track-success edge function. Client only mirrors to localStorage
-      // for any local UI usage and writes non-cumulative last_purchase_* fields.
+      // Note: customer_lifetime_value is owned server-side by track-success,
+      // which computes it from purchase history via HogQL and writes it with
+      // $set (PostHog's capture API does not support $add for person properties).
+      // Client only mirrors CLTV to localStorage and writes non-cumulative
+      // last_purchase_* fields here.
       posthog.setPersonProperties({
         last_purchase_amount: purchaseAmount,
         last_purchase_date: new Date().toISOString(),
@@ -283,46 +285,24 @@ export const updateSubscriptionStatus = (subscriptionData: {
 };
 
 /**
- * Calculate customer value tier based on CLTV
- */
-const getValueTier = (cltv: number): string => {
-  if (cltv >= 1000) return "Platinum";
-  if (cltv >= 500) return "Gold";
-  if (cltv >= 100) return "Silver";
-  return "Bronze";
-};
-
-/**
- * Set customer lifecycle and value tier groups
+ * Set customer lifecycle group + person property.
+ * customer_value_tier is owned server-side (derived from lifetime value in
+ * track-success), so we no longer write it from the client to avoid
+ * clobbering the accurate lifetime-based tier on the Success page.
  */
 export const setCustomerGroups = (
-  lifecycle: "One-Time Buyer" | "Active Subscriber" | "Churned Subscriber" | "Reactivated Subscriber", 
-  cltv?: number
+  lifecycle: "One-Time Buyer" | "Active Subscriber" | "Churned Subscriber" | "Reactivated Subscriber",
+  _cltv?: number
 ) => {
   if (typeof window !== "undefined") {
     try {
       posthog.group("customer_lifecycle", lifecycle);
-      
-      if (cltv !== undefined) {
-        const tier = getValueTier(cltv);
-        posthog.group("customer_value_tier", tier);
-        
-        // customer_lifetime_value omitted — owned server-side via $add.
-        posthog.setPersonProperties({
-          customer_lifecycle: lifecycle,
-          customer_value_tier: tier,
-          customer_groups_updated_at: new Date().toISOString(),
-        });
-        
-        if (import.meta.env.DEV) console.log("PostHog: Customer groups set", { lifecycle, tier, cltv });
-      } else {
-        posthog.setPersonProperties({
-          customer_lifecycle: lifecycle,
-          customer_groups_updated_at: new Date().toISOString(),
-        });
-        
-        if (import.meta.env.DEV) console.log("PostHog: Customer lifecycle set", lifecycle);
-      }
+      posthog.setPersonProperties({
+        customer_lifecycle: lifecycle,
+        customer_groups_updated_at: new Date().toISOString(),
+      });
+
+      if (import.meta.env.DEV) console.log("PostHog: Customer lifecycle set", lifecycle);
     } catch (error) {
       console.error("PostHog customer groups error:", error);
     }
