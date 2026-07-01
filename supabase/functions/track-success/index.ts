@@ -118,7 +118,6 @@ serve(async (req) => {
           "customer.email": customerEmail,
         });
 
-        const lifecycle = hasSubscription ? "Active Subscriber" : "One-Time Buyer";
         const getValueTier = (amount: number): string => {
           if (amount >= 1000) return "Platinum";
           if (amount >= 500) return "Gold";
