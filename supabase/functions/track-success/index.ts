@@ -38,6 +38,7 @@ serve(async (req) => {
         const url = new URL(req.url);
         let sessionId = url.searchParams.get("session_id");
         const redirect = url.searchParams.get("redirect");
+        const phSessionId = url.searchParams.get("ph_session_id") || undefined;
         log.info("URL params", { sessionId, redirect });
 
         if (!sessionId) {
@@ -147,7 +148,7 @@ serve(async (req) => {
             api_key: POSTHOG_KEY,
             event: "$identify",
             distinct_id: customerEmail || sessionId,
-            properties: { $set: { email: customerEmail, name: customerName } },
+            properties: { $session_id: phSessionId, $set: { email: customerEmail, name: customerName } },
           }),
           { kind: SpanKind.CLIENT },
         );
@@ -159,6 +160,7 @@ serve(async (req) => {
           event: "purchase_completed",
           distinct_id: customerEmail || sessionId,
           properties: {
+            $session_id: phSessionId,
             session_id: sessionId,
             total_amount: totalAmount,
             revenue: totalAmount,
@@ -229,6 +231,7 @@ serve(async (req) => {
               event: "subscription_created",
               distinct_id: customerEmail || sessionId,
               properties: {
+                $session_id: phSessionId,
                 subscription_id: subscriptionId,
                 plan_name: subscriptionItems.map((item: any) => item.name).join(", "),
                 monthly_value: subscriptionValue,
@@ -252,6 +255,7 @@ serve(async (req) => {
               event: "$set",
               distinct_id: customerEmail,
               properties: {
+                $session_id: phSessionId,
                 $set: {
                   subscription_active: hasSubscription,
                   subscription_start_date: hasSubscription ? new Date().toISOString() : null,
