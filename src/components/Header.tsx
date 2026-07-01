@@ -258,6 +258,11 @@ export const Header = () => {
         <SubscriptionManagementDialog
           open={showSubscriptionDialog}
           onOpenChange={setShowSubscriptionDialog}
+          onCancelled={() => setIsSubscriber(false)}
+        />
+        <SubscriptionChoiceDialog
+          open={showSubscriptionChoice}
+          onOpenChange={setShowSubscriptionChoice}
         />
       </div>
     </header>
