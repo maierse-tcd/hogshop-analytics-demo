@@ -38,6 +38,7 @@ serve(async (req) => {
         const url = new URL(req.url);
         let sessionId = url.searchParams.get("session_id");
         const redirect = url.searchParams.get("redirect");
+        const phSessionId = url.searchParams.get("ph_session_id") || undefined;
         log.info("URL params", { sessionId, redirect });
 
         if (!sessionId) {
