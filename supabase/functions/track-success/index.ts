@@ -160,6 +160,7 @@ serve(async (req) => {
           event: "purchase_completed",
           distinct_id: customerEmail || sessionId,
           properties: {
+            $session_id: phSessionId,
             session_id: sessionId,
             total_amount: totalAmount,
             revenue: totalAmount,
