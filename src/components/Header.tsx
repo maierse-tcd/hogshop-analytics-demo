@@ -6,6 +6,8 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { LoginDialog } from "./LoginDialog";
 import { SubscriptionManagementDialog } from "./SubscriptionManagementDialog";
+import { SubscriptionChoiceDialog } from "./SubscriptionChoiceDialog";
+import { supabase } from "@/integrations/supabase/client";
 import { posthog, trackEvent, identifyUser } from "@/lib/posthog";
 import { useFeatureFlagEnabled, useFeatureFlagVariantKey } from "posthog-js/react";
 import { getUser, clearUser } from "@/lib/auth";
