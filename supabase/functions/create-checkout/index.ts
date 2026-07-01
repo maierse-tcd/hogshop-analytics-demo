@@ -43,7 +43,7 @@ serve(async (req) => {
         });
         log.info("Function invoked");
 
-        const { items, customer_email, customer_name } = await req.json();
+        const { items, customer_email, customer_name, ph_session_id } = await req.json();
 
         rootSpan.setAttributes({
           "cart.item_count": items?.length ?? 0,
