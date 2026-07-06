@@ -102,7 +102,23 @@ export const Header = () => {
       )}
       <div className="container flex h-16 items-center justify-between relative">
         <div className="flex items-center gap-8">
-          <Link to="/" data-attr="brand-logo" className="flex items-center space-x-2">
+          <Link
+            to="/"
+            data-attr="brand-logo"
+            className="flex items-center space-x-2"
+            onClick={(e) => {
+              // Let the browser handle modified clicks (cmd/ctrl/shift = open in
+              // new tab/window) so those keep working.
+              if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+              // Otherwise navigate explicitly. React Router's built-in <Link>
+              // handler silently bails when the click's default was already
+              // prevented upstream (seen in replay as a no-op first click on the
+              // logo that only worked on a retry). Navigating here fires
+              // regardless of defaultPrevented, so a single click always lands on "/".
+              e.preventDefault();
+              navigate("/");
+            }}
+          >
             <span className={`text-2xl font-bold ${
               halloweenMode 
                 ? 'bg-gradient-to-r from-[hsl(var(--halloween-orange))] to-[hsl(var(--halloween-purple))] bg-clip-text text-transparent drop-shadow-[0_0_10px_hsl(var(--halloween-orange))]' 

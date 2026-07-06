@@ -169,6 +169,17 @@ const Index = () => {
     }
   }, [showNewsletterFlag]);
 
+  // Navigate to the free-gift landing. Used by both the banner card (whole card
+  // is clickable) and the "Claim Free Gift" button inside it.
+  const goToGift = (ctaText: string) => {
+    trackEvent("gift_cta_clicked", {
+      location: "homepage_banner",
+      cta_text: ctaText,
+      timestamp: new Date().toISOString()
+    });
+    navigate("/gift");
+  };
+
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-background">
@@ -202,7 +213,18 @@ const Index = () => {
       {/* Free Gift CTA Banner */}
       <div className="bg-background/60 backdrop-blur-md border-b">
         <div className="container py-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 max-w-5xl mx-auto bg-primary/5 border border-primary/10 rounded-xl px-6 py-4">
+          <div
+            role="button"
+            tabIndex={0}
+            aria-label="Claim Max's Starter Kit free gift"
+            onClick={() => goToGift("banner_card")}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                goToGift("banner_card");
+              }
+            }}
+            className="flex flex-col md:flex-row items-center justify-between gap-4 max-w-5xl mx-auto bg-primary/5 border border-primary/10 rounded-xl px-6 py-4 cursor-pointer transition-colors hover:bg-primary/10 hover:border-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background">
             <div className="flex items-center gap-4">
               <div className="bg-primary/10 p-3 rounded-full">
                 <Gift className="h-8 w-8 text-primary" />
@@ -214,16 +236,14 @@ const Index = () => {
             </div>
             <Button
                 size="lg"
-                onClick={() => {
-                  trackEvent("gift_cta_clicked", {
-                    location: "homepage_banner",
-                    cta_text: "Claim Free Gift",
-                    timestamp: new Date().toISOString()
-                  });
-                  navigate("/gift");
+                onClick={(e) => {
+                  // Card is clickable too; stop propagation so the button keeps
+                  // its own CTA attribution instead of firing the card handler.
+                  e.stopPropagation();
+                  goToGift("Claim Free Gift");
                 }}
                 className="gap-2 whitespace-nowrap">
-                
+
               Claim Free Gift
               <ArrowRight className="h-5 w-5" />
             </Button>
