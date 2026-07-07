@@ -45,7 +45,7 @@ export const CartDrawer = () => {
       }}
     >
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" data-attr="cart-trigger" className="rounded-full relative">
+        <Button variant="ghost" size="icon" data-attr="cart-button" className="rounded-full relative">
           <ShoppingCart className="h-5 w-5" />
           {totalItems > 0 && (
             <Badge
