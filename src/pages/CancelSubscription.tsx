@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Header } from "@/components/Header";
-import { trackEvent, captureException, posthog } from "@/lib/posthog";
-import { ArrowLeft, AlertTriangle, Heart } from "lucide-react";
+import { SubscriptionChoiceDialog } from "@/components/SubscriptionChoiceDialog";
+import { trackEvent, captureException } from "@/lib/posthog";
+import { ArrowLeft, AlertTriangle, Heart, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { getUser } from "@/lib/auth";
 
 type Step = "intro" | "reason" | "offer" | "confirm" | "done" | "failed";
 
@@ -19,6 +21,8 @@ const REASONS = [
 
 const CANCEL_FAILURE_RATE = 0.1;
 
+type GateState = "checking" | "not_logged_in" | "not_subscribed" | "ok";
+
 // Retention-driven multi-step cancel flow (intro → reason → save-offer → confirm).
 // The friction is intentional, but chat/support feedback shows some users can't
 // tell how to actually complete the cancellation. Measure per-step drop-off
@@ -29,9 +33,54 @@ export default function CancelSubscription() {
   const [step, setStep] = useState<Step>("intro");
   const [reason, setReason] = useState<(typeof REASONS)[number] | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [gate, setGate] = useState<GateState>("checking");
+  const [showChoiceDialog, setShowChoiceDialog] = useState(false);
 
   useEffect(() => {
     trackEvent("subscription_cancel_started", { entry_step: "intro" });
+  }, []);
+
+  // Gate: require login + active subscription. Fail-open on network/edge errors
+  // so bots and legitimate users aren't blocked by transient issues.
+  useEffect(() => {
+    const user = getUser();
+    if (!user?.email) {
+      setGate("not_logged_in");
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-subscription`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
+            body: JSON.stringify({ email: user.email }),
+          }
+        );
+        if (cancelled) return;
+        if (!res.ok) {
+          setGate("ok"); // fail-open
+          return;
+        }
+        const data = await res.json().catch(() => null);
+        if (data && data.subscribed === false) {
+          trackEvent("subscription_cancel_blocked", { reason: "not_subscribed" });
+          setGate("not_subscribed");
+        } else {
+          setGate("ok");
+        }
+      } catch {
+        if (!cancelled) setGate("ok"); // fail-open
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Fire an aborted event if the user navigates away before reaching `done`.
@@ -63,6 +112,7 @@ export default function CancelSubscription() {
   const confirm = async () => {
     setSubmitting(true);
     // Synthetic backend failure — feeds the error-tracking inbox.
+    // Must run first, before the real call, so the demo failure rate is preserved.
     await new Promise((r) => setTimeout(r, 700 + Math.random() * 400));
     if (Math.random() < CANCEL_FAILURE_RATE) {
       const err = new Error("Subscription cancellation failed: billing provider returned 503");
@@ -77,15 +127,113 @@ export default function CancelSubscription() {
       setStep("failed");
       return;
     }
-    trackEvent("subscription_cancelled", { reason, source: "cancel_subscription_page" });
-    posthog.setPersonProperties({
-      subscription_active: false,
-      subscription_cancelled: true,
-      subscription_cancelled_at: new Date().toISOString(),
-    });
-    setSubmitting(false);
-    setStep("done");
+
+    // Real cancellation via the edge function. It emits subscription_cancelled,
+    // sets person properties and updates the customer_lifecycle group server-side.
+    try {
+      const user = getUser();
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cancel-subscription`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: user?.email }),
+        }
+      );
+      const result = await res.json().catch(() => ({}));
+
+      if (!res.ok || !result?.success) {
+        const errMsg: string = result?.error || "Cancellation failed";
+        if (errMsg === "No active subscription found to cancel") {
+          trackEvent("subscription_cancel_noop", { reason, message: errMsg });
+          setSubmitting(false);
+          setStep("done");
+          return;
+        }
+        const err = new Error(errMsg);
+        captureException(err, "subscription_cancel_failed", { reason });
+        trackEvent("subscription_cancel_failed", { reason, error: errMsg });
+        setSubmitting(false);
+        setStep("failed");
+        return;
+      }
+
+      setSubmitting(false);
+      setStep("done");
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e));
+      captureException(err, "subscription_cancel_failed", { reason });
+      trackEvent("subscription_cancel_failed", { reason, error: err.message });
+      setSubmitting(false);
+      setStep("failed");
+    }
   };
+
+  if (gate === "checking") {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container max-w-2xl py-12">
+          <Card className="p-8 flex items-center gap-3">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <span className="text-muted-foreground">Checking your subscription…</span>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (gate === "not_logged_in") {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container max-w-2xl py-12">
+          <Card className="p-8 space-y-6">
+            <h1 className="text-2xl font-bold text-foreground">
+              You need to be logged in to manage a subscription
+            </h1>
+            <p className="text-muted-foreground">
+              Please log in with the email tied to your subscription, then come back here.
+            </p>
+            <Button onClick={() => navigate("/")}>Back to shop</Button>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (gate === "not_subscribed") {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container max-w-2xl py-12">
+          <Card data-attr="cancel-no-subscription" className="p-8 space-y-6">
+            <h1 className="text-2xl font-bold text-foreground">
+              You don't have an active subscription
+            </h1>
+            <p className="text-muted-foreground">
+              There's nothing to cancel right now. Want to start one instead?
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <Button
+                data-attr="cancel-choose-subscription"
+                onClick={() => setShowChoiceDialog(true)}
+              >
+                Choose a subscription
+              </Button>
+              <Button variant="outline" onClick={() => navigate("/")}>
+                Back to shop
+              </Button>
+            </div>
+          </Card>
+        </div>
+        <SubscriptionChoiceDialog
+          open={showChoiceDialog}
+          onOpenChange={setShowChoiceDialog}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
