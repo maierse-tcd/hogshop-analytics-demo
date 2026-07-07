@@ -98,10 +98,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     const item = items.find((i) => i.id === productId);
-    const newItems = items.map((i) =>
-      i.id === productId ? { ...i, quantity } : i
-    );
-    setItems(newItems);
+    setItems((prev) => prev.map((i) => i.id === productId ? { ...i, quantity } : i));
     if (item && item.quantity !== quantity) {
       trackEvent("update_cart_quantity", {
         product_id: item.id,
