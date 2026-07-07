@@ -60,35 +60,43 @@ serve(async (req) => {
         );
         log.info("Found Stripe customer", { customerId });
 
-        const subscription = await tracer.withSpan(
+        const subscriptions = await tracer.withSpan(
           "stripe.subscriptions.list_active",
           async (span) => {
             span.setAttribute("stripe.api", "subscriptions.list");
-            const subs = await stripe.subscriptions.list({ customer: customerId, status: "active", limit: 1 });
+            const subs = await stripe.subscriptions.list({ customer: customerId, status: "active", limit: 100 });
             if (subs.data.length === 0) throw new Error("No active subscription found to cancel");
-            span.setAttribute("subscription.id", subs.data[0].id);
-            return subs.data[0];
+            span.setAttribute("subscription.count", subs.data.length);
+            return subs.data;
           },
           { kind: SpanKind.CLIENT },
         );
-        log.info("Found active subscription", { subscriptionId: subscription.id });
+        log.info("Found active subscriptions", { count: subscriptions.length, ids: subscriptions.map((s) => s.id) });
 
-        const cancelledSubscription = await tracer.withSpan(
-          "stripe.subscription.cancel",
+        const cancelledSubscriptions = await tracer.withSpan(
+          "stripe.subscriptions.cancel_all",
           async (span) => {
             span.setAttributes({
               "stripe.api": "subscriptions.cancel",
-              "subscription.id": subscription.id,
+              "subscription.count": subscriptions.length,
+              "subscription.ids": subscriptions.map((s) => s.id).join(","),
             });
-            const c = await stripe.subscriptions.cancel(subscription.id);
-            span.setAttribute("subscription.status", c.status);
-            return c;
+            const results = [];
+            for (const sub of subscriptions) {
+              const c = await stripe.subscriptions.cancel(sub.id);
+              results.push(c);
+            }
+            return results;
           },
           { kind: SpanKind.CLIENT },
         );
-        log.info("Subscription cancelled", {
-          subscriptionId: cancelledSubscription.id,
-          status: cancelledSubscription.status,
+        const cancelledSubscription = cancelledSubscriptions[0];
+        const cancelledIds = cancelledSubscriptions.map((c) => c.id);
+        const firstTs = (cancelledSubscription as any).canceled_at;
+        const firstIso = typeof firstTs === "number" ? new Date(firstTs * 1000).toISOString() : new Date().toISOString();
+        log.info("Subscriptions cancelled", {
+          count: cancelledSubscriptions.length,
+          ids: cancelledIds,
         });
 
         // ---------- PostHog updates ----------
