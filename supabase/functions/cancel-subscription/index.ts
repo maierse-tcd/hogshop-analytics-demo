@@ -128,8 +128,10 @@ serve(async (req) => {
                 event: "subscription_cancelled",
                 distinct_id: email,
                 properties: {
-                  subscription_id: cancelledSubscription.id,
-                  cancelled_at: new Date(cancelledSubscription.canceled_at! * 1000).toISOString(),
+                  subscription_id: cancelledIds[0],
+                  cancelled_subscription_ids: cancelledIds,
+                  cancelled_count: cancelledIds.length,
+                  cancelled_at: firstIso,
                   hashed_example_property: "posthog",
                   $groups: { customer_lifecycle: "Churned Subscriber" },
                 },
@@ -143,7 +145,7 @@ serve(async (req) => {
                   $set: {
                     subscription_active: false,
                     subscription_cancelled: true,
-                    subscription_cancelled_at: new Date(cancelledSubscription.canceled_at! * 1000).toISOString(),
+                    subscription_cancelled_at: firstIso,
                     customer_lifecycle: "Churned Subscriber",
                   },
                 },
@@ -159,8 +161,9 @@ serve(async (req) => {
 
         return new Response(JSON.stringify({
           success: true,
-          subscription_id: cancelledSubscription.id,
-          cancelled_at: new Date(cancelledSubscription.canceled_at! * 1000).toISOString(),
+          subscription_id: cancelledIds[0],
+          cancelled_at: firstIso,
+          cancelled_count: cancelledIds.length,
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 200,
