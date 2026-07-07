@@ -204,6 +204,7 @@ export const Header = () => {
               <Button
                 variant="ghost"
                 size="sm"
+                data-attr="header-login"
                 onClick={() => {
                   posthog.capture('login_signup_clicked', {
                     source: 'header',
