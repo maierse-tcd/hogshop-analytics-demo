@@ -178,7 +178,7 @@ export const CartDrawer = () => {
                 <span>Total</span>
                 <span>${(flashSaleActive ? discountedTotal : totalPrice).toFixed(2)}</span>
               </div>
-              <Button className="w-full" size="lg" onClick={startCheckout} disabled={isCheckingOut}>
+              <Button className="w-full" size="lg" data-attr="proceed-to-checkout" onClick={startCheckout} disabled={isCheckingOut}>
                 {isCheckingOut ? "Processing..." : "Proceed to Checkout"}
               </Button>
             </div>
