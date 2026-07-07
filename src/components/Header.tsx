@@ -168,7 +168,7 @@ export const Header = () => {
                 }}
               >
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="gap-1">
+                  <Button variant="ghost" size="sm" data-attr="account-menu-trigger" className="gap-1">
                     <span className={`text-sm hidden md:inline ${
                       halloweenMode ? 'text-[hsl(var(--halloween-orange))]' : 'text-muted-foreground'
                     }`}>
@@ -183,16 +183,16 @@ export const Header = () => {
                       {subCheckLoading ? "Checking subscription…" : "Checking subscription…"}
                     </DropdownMenuItem>
                   ) : isSubscriber ? (
-                    <DropdownMenuItem onClick={() => setShowSubscriptionDialog(true)}>
+                    <DropdownMenuItem data-attr="menu-cancel-subscription" onClick={() => setShowSubscriptionDialog(true)}>
                       Cancel Subscription
                     </DropdownMenuItem>
                   ) : (
-                    <DropdownMenuItem onClick={() => setShowSubscriptionChoice(true)}>
+                    <DropdownMenuItem data-attr="menu-choose-subscription" onClick={() => setShowSubscriptionChoice(true)}>
                       Choose a Subscription
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>
+                  <DropdownMenuItem data-attr="menu-logout" onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     Logout
                   </DropdownMenuItem>
@@ -204,6 +204,7 @@ export const Header = () => {
               <Button
                 variant="ghost"
                 size="sm"
+                data-attr="header-login"
                 onClick={() => {
                   posthog.capture('login_signup_clicked', {
                     source: 'header',

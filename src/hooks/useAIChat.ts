@@ -102,6 +102,16 @@ export const useAIChat = () => {
   const sendMessage = useCallback(async (userMessage: string) => {
     if (!userMessage.trim()) return;
 
+    // If the trace was flushed (pagehide/visibility) but the chat is still
+    // open, re-mint a trace_id so subsequent $ai_generation events aren't
+    // orphaned with trace_id=null.
+    if (traceIdRef.current === null) {
+      const newTraceId = `trace_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      traceIdRef.current = newTraceId;
+      conversationStartRef.current = Date.now();
+      trackEvent("chat_resumed", { trace_id: newTraceId });
+    }
+
     const userMsg: Message = { 
       role: "user", 
       content: userMessage,
