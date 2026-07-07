@@ -77,10 +77,6 @@ export const SubscriptionManagementDialog = ({
         title: "Subscription Cancelled",
         description: "We'll stop shipping your monthly Hedgehog Food boxes.",
       });
-        timestamp: new Date().toISOString(),
-        cancellation_date: result.cancelled_at,
-        subscription_id: result.subscription_id,
-      });
 
       onCancelled?.();
       onOpenChange(false);
