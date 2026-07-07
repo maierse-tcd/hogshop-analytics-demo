@@ -36,15 +36,26 @@ export const SubscriptionChoiceDialog = ({ open, onOpenChange }: Props) => {
     if (!open) return;
     trackEvent("subscription_choice_viewed", {});
     setLoading(true);
-    supabase
-      .from("products")
-      .select("id, title, description, price, subscription_interval")
-      .eq("is_subscription", true)
-      .then(({ data, error }) => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("products")
+          .select("id, title, description, price, subscription_interval")
+          .eq("is_subscription", true);
+        if (cancelled) return;
         if (error) console.error("Failed to load subscription plans", error);
         setPlans((data as SubscriptionProduct[]) || []);
-        setLoading(false);
-      });
+      } catch (e) {
+        if (!cancelled) {
+          console.error("Failed to load subscription plans", e);
+          setPlans([]);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [open]);
 
   const handleSubscribe = async (plan: SubscriptionProduct) => {
