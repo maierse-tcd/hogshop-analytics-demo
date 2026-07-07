@@ -140,6 +140,7 @@ export const SubscriptionChoiceDialog = ({ open, onOpenChange }: Props) => {
             {plans.map((plan) => (
               <div
                 key={plan.id}
+                data-attr="subscription-plan"
                 className="flex items-start justify-between gap-4 rounded-lg border p-4"
               >
                 <div className="flex-1 min-w-0">
@@ -154,6 +155,7 @@ export const SubscriptionChoiceDialog = ({ open, onOpenChange }: Props) => {
                   )}
                 </div>
                 <Button
+                  data-attr="subscription-subscribe"
                   onClick={() => handleSubscribe(plan)}
                   disabled={subscribingId !== null}
                   size="sm"
