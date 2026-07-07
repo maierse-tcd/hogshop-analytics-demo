@@ -34,63 +34,58 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
 
   const addToCart = (product: Product, source?: string) => {
-    setItems((prev) => {
-      const existing = prev.find((item) => item.id === product.id);
-      const newItems = existing 
-        ? prev.map((item) =>
-            item.id === product.id
-              ? { ...item, quantity: item.quantity + 1 }
-              : item
-          )
-        : [...prev, { ...product, quantity: 1 }];
-      
-      // Calculate totals AFTER adding item
-      const totalItems = newItems.reduce((sum, item) => sum + item.quantity, 0);
-      const totalValue = newItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-      
-      trackEvent("add_to_cart", {
-        product_id: product.id,
-        product_name: product.title,
-        price: product.price,
-        quantity: 1,
-        new_quantity: existing ? existing.quantity + 1 : 1,
-        category: product.category,
-        is_subscription: product.is_subscription,
-        cart_total_items: totalItems,
-        cart_total_value: totalValue,
-        product_category: product.category,
-        source: source || "unknown",
-        hashed_example_property: "posthog",
-      });
-      
-      // Track cart_updated event
-      trackEvent("cart_updated", {
-        cart_total_items: totalItems,
-        cart_total_value: totalValue,
-        action: "add",
-        product_id: product.id,
-        hashed_example_property: "posthog",
-      });
-      
-      return newItems;
+    const existing = items.find((item) => item.id === product.id);
+    const newItems = existing
+      ? items.map((item) =>
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        )
+      : [...items, { ...product, quantity: 1 }];
+
+    setItems(newItems);
+
+    const totalItems = newItems.reduce((sum, item) => sum + item.quantity, 0);
+    const totalValue = newItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+    trackEvent("add_to_cart", {
+      product_id: product.id,
+      product_name: product.title,
+      price: product.price,
+      quantity: 1,
+      new_quantity: existing ? existing.quantity + 1 : 1,
+      category: product.category,
+      is_subscription: product.is_subscription,
+      cart_total_items: totalItems,
+      cart_total_value: totalValue,
+      product_category: product.category,
+      source: source || "unknown",
+      hashed_example_property: "posthog",
+    });
+
+    trackEvent("cart_updated", {
+      cart_total_items: totalItems,
+      cart_total_value: totalValue,
+      action: "add",
+      product_id: product.id,
+      hashed_example_property: "posthog",
     });
   };
 
   const removeFromCart = (productId: string) => {
-    setItems((prev) => {
-      const item = prev.find((i) => i.id === productId);
-      if (item) {
-        trackEvent("remove_from_cart", {
-          product_id: item.id,
-          product_name: item.title,
-          price: item.price,
-          quantity: item.quantity,
-          cart_value_removed: item.price * item.quantity,
-          hashed_example_property: "posthog",
-        });
-      }
-      return prev.filter((item) => item.id !== productId);
-    });
+    const item = items.find((i) => i.id === productId);
+    const newItems = items.filter((i) => i.id !== productId);
+    setItems(newItems);
+    if (item) {
+      trackEvent("remove_from_cart", {
+        product_id: item.id,
+        product_name: item.title,
+        price: item.price,
+        quantity: item.quantity,
+        cart_value_removed: item.price * item.quantity,
+        hashed_example_property: "posthog",
+      });
+    }
   };
 
   const updateQuantity = (productId: string, quantity: number) => {
@@ -98,22 +93,21 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       removeFromCart(productId);
       return;
     }
-    setItems((prev) => {
-      const item = prev.find((i) => i.id === productId);
-      if (item && item.quantity !== quantity) {
-        trackEvent("update_cart_quantity", {
-          product_id: item.id,
-          product_name: item.title,
-          old_quantity: item.quantity,
-          new_quantity: quantity,
-          price: item.price,
-          hashed_example_property: "posthog",
-        });
-      }
-      return prev.map((item) =>
-        item.id === productId ? { ...item, quantity } : item
-      );
-    });
+    const item = items.find((i) => i.id === productId);
+    const newItems = items.map((i) =>
+      i.id === productId ? { ...i, quantity } : i
+    );
+    setItems(newItems);
+    if (item && item.quantity !== quantity) {
+      trackEvent("update_cart_quantity", {
+        product_id: item.id,
+        product_name: item.title,
+        old_quantity: item.quantity,
+        new_quantity: quantity,
+        price: item.price,
+        hashed_example_property: "posthog",
+      });
+    }
   };
 
   const clearCart = () => {
