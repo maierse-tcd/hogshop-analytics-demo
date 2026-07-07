@@ -79,8 +79,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const removeFromCart = (productId: string) => {
     const item = items.find((i) => i.id === productId);
-    const newItems = items.filter((i) => i.id !== productId);
-    setItems(newItems);
+    setItems((prev) => prev.filter((i) => i.id !== productId));
     if (item) {
       trackEvent("remove_from_cart", {
         product_id: item.id,
