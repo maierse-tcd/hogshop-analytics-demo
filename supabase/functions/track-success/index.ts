@@ -248,8 +248,12 @@ serve(async (req) => {
         await tracer.withSpan(
           "posthog.group_identify",
           async (span) => {
-            span.setAttributes({ "groups.lifecycle": lifecycle, "groups.value_tier": valueTier });
-            await Promise.all([
+            span.setAttributes({
+              "groups.lifecycle": lifecycle,
+              "groups.value_tier": valueTier,
+              "groups.company": companyKey,
+            });
+            const identifies: Promise<Response>[] = [
               postJson(span, "$groupidentify:lifecycle", {
                 api_key: POSTHOG_KEY,
                 event: "$groupidentify",
@@ -273,7 +277,22 @@ serve(async (req) => {
                   },
                 },
               }),
-            ]);
+            ];
+            if (isB2B) {
+              identifies.push(
+                postJson(span, "$groupidentify:company", {
+                  api_key: POSTHOG_KEY,
+                  event: "$groupidentify",
+                  distinct_id: customerEmail || sessionId,
+                  properties: {
+                    $group_type: "company",
+                    $group_key: companyKey,
+                    $group_set: { name: companyName, icp_type: "B2B" },
+                  },
+                }),
+              );
+            }
+            await Promise.all(identifies);
           },
           { kind: SpanKind.CLIENT },
         );
