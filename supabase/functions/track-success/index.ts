@@ -212,6 +212,12 @@ serve(async (req) => {
 
         const subscriptionId = (session as any).subscription || null;
 
+        const eventGroups: Record<string, string> = {
+          customer_lifecycle: lifecycle,
+          customer_value_tier: valueTier,
+        };
+        if (isB2B) eventGroups.company = companyKey;
+
         const capturePayload = {
           api_key: POSTHOG_KEY,
           event: "purchase_completed",
@@ -232,7 +238,9 @@ serve(async (req) => {
             source: "edge_function",
             timestamp: new Date().toISOString(),
             hashed_example_property: "posthog",
-            $groups: { customer_lifecycle: lifecycle, customer_value_tier: valueTier },
+            icp_type: icpType,
+            ...(isB2B ? { company_name: companyName, company_key: companyKey } : {}),
+            $groups: eventGroups,
           },
         };
 
