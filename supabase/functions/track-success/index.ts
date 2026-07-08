@@ -343,7 +343,12 @@ serve(async (req) => {
             customer_value_tier: valueTier,
             last_purchase_date: new Date().toISOString(),
             last_purchase_amount: totalAmount,
+            icp_type: icpType,
           };
+          if (isB2B) {
+            setProps.company_name = companyName;
+            setProps.company_key = companyKey;
+          }
           if (priorSum !== null) {
             setProps.customer_lifetime_value = lifetimeValue;
             setProps.total_purchases = priorCount + 1;
