@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { identifyUser, setUserProperties, trackEvent, initializeCLTV, applyCompanyGroup, slugifyCompany, posthog } from "@/lib/posthog";
-import { saveUser } from "@/lib/auth";
+import { saveUser, getUser } from "@/lib/auth";
 
 interface LoginDialogProps {
   open: boolean;
@@ -29,17 +29,22 @@ export const LoginDialog = ({ open, onOpenChange, onLoginSuccess, discountPercen
 
   const handleLogin = () => {
     if (email && name) {
-      saveUser(email, name);
+      // Preserve any previously stored companyName for this device so we can
+      // re-apply the company group after saveUser. Do NOT write icp_type on
+      // login — the login tab has no company field, so overwriting would
+      // downgrade a returning B2B user to "B2C".
+      const priorCompany = getUser()?.companyName;
+      saveUser(email, name, priorCompany);
 
-      // Identify first, then any group work, then event.
       identifyUser(email, { name, email });
-      posthog.setPersonProperties({ icp_type: "B2C" });
+      if (priorCompany) {
+        applyCompanyGroup(priorCompany);
+      }
       initializeCLTV();
 
       trackEvent('user_logged_in', {
         login_method: 'email',
         timestamp: new Date().toISOString(),
-        icp_type: "B2C",
       });
 
       onLoginSuccess(email, name);
