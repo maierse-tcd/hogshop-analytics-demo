@@ -142,6 +142,13 @@ serve(async (req) => {
               "checkout.mode": mode,
               "checkout.line_item_count": sessionLineItems.length,
             });
+            const metadata: Record<string, string> = {
+              icp_type: icp_type || "B2C",
+            };
+            if (company_name) metadata.company_name = String(company_name);
+            if (company_key) metadata.company_key = String(company_key);
+            if (ph_session_id) metadata.ph_session_id = String(ph_session_id);
+
             const s = await stripe.checkout.sessions.create({
               line_items: sessionLineItems,
               mode,
@@ -151,8 +158,12 @@ serve(async (req) => {
               billing_address_collection: "required",
               customer: customerId,
               customer_email: customerId ? undefined : customer_email || undefined,
+              metadata,
+              ...(mode === "subscription" && {
+                subscription_data: { metadata },
+              }),
               ...(mode === "payment" && {
-                payment_intent_data: { setup_future_usage: "off_session" },
+                payment_intent_data: { setup_future_usage: "off_session", metadata },
               }),
               ...(customer_name && {
                 custom_fields: [{
