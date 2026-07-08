@@ -390,4 +390,20 @@ export const trackAIError = (data: {
   });
 };
 
+export const slugifyCompany = (name: string) =>
+  name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+
+export const applyCompanyGroup = (companyName: string) => {
+  if (typeof window === "undefined" || !companyName) return;
+  const key = slugifyCompany(companyName);
+  if (!key) return;
+  try {
+    posthog.group("company", key, { name: companyName.trim(), icp_type: "B2B" });
+    posthog.setPersonProperties({ icp_type: "B2B", company_name: companyName.trim(), company_key: key });
+    if (import.meta.env.DEV) console.log("PostHog: company group applied", { key, name: companyName.trim() });
+  } catch (error) {
+    console.error("PostHog applyCompanyGroup error:", error);
+  }
+};
+
 export { posthog, initializeCLTV };
