@@ -43,13 +43,15 @@ serve(async (req) => {
         });
         log.info("Function invoked");
 
-        const { items, customer_email, customer_name, ph_session_id } = await req.json();
+        const { items, customer_email, customer_name, ph_session_id, company_name, company_key, icp_type } = await req.json();
 
         rootSpan.setAttributes({
           "cart.item_count": items?.length ?? 0,
           "customer.email": customer_email ?? "",
+          "customer.icp_type": icp_type || "B2C",
+          "customer.company_key": company_key || "",
         });
-        log.info("Request data", { itemCount: items?.length, customer_email, customer_name });
+        log.info("Request data", { itemCount: items?.length, customer_email, customer_name, icp_type, company_key });
 
         if (!items || items.length === 0) {
           log.error("No items in cart");
