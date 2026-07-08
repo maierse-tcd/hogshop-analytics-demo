@@ -110,12 +110,21 @@ serve(async (req) => {
           ? lineItems.filter((item: any) => item.is_subscription).reduce((sum: number, item: any) => sum + item.price * item.quantity, 0)
           : 0;
 
+        // B2B attribution — metadata was set by create-checkout.
+        const meta = (session.metadata || {}) as Record<string, string>;
+        const companyName = meta.company_name || "";
+        const companyKey = meta.company_key || "";
+        const icpType = meta.icp_type === "B2B" ? "B2B" : "B2C";
+        const isB2B = icpType === "B2B" && !!companyKey;
+
         rootSpan.setAttributes({
           "purchase.total_amount": totalAmount,
           "purchase.currency": currency,
           "purchase.item_count": itemCount,
           "purchase.has_subscription": hasSubscription,
           "customer.email": customerEmail,
+          "customer.icp_type": icpType,
+          "customer.company_key": companyKey,
         });
 
         const getValueTier = (amount: number): string => {
