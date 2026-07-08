@@ -4,7 +4,7 @@ import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
-import { trackEvent, setUserProperties, updateCLTV, updateSubscriptionStatus, setCustomerGroups } from "@/lib/posthog";
+import { trackEvent, setUserProperties, updateCLTV, updateSubscriptionStatus, setCustomerGroups, applyCompanyGroup } from "@/lib/posthog";
 import { posthog } from "@/lib/posthog";
 import { supabase } from "@/integrations/supabase/client";
 import { saveUser } from "@/lib/auth";
