@@ -81,6 +81,11 @@ const App = () => {
     const existing = getUser();
     if (existing?.email) {
       void applyPostHogIdentityHash(existing.email);
+      if (existing.companyName) {
+        applyCompanyGroup(existing.companyName);
+      } else {
+        posthog.setPersonProperties({ icp_type: "B2C" });
+      }
     }
   }, []);
 
