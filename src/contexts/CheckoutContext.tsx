@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/hooks/use-toast";
 import { RegistrationDialog } from "@/components/RegistrationDialog";
-import { posthog, trackEvent, setUserProperties, initializeCLTV, ensureIdentified } from "@/lib/posthog";
+import { posthog, trackEvent, setUserProperties, initializeCLTV, ensureIdentified, applyCompanyGroup, slugifyCompany } from "@/lib/posthog";
 import { getUser, saveUser } from "@/lib/auth";
 import { startSpan, traceparent, SpanKind, SpanStatus } from "@/lib/otel";
 
