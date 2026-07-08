@@ -45,8 +45,6 @@ const Success = () => {
 
               if (userData.companyName) {
                 applyCompanyGroup(userData.companyName);
-              } else {
-                posthog.setPersonProperties({ icp_type: "B2C" });
               }
               
               // NOTE: server (track-success) is authoritative for customer_lifecycle
