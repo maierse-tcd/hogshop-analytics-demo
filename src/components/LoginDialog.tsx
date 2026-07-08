@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { identifyUser, setUserProperties, trackEvent, initializeCLTV, applyCompanyGroup, slugifyCompany, posthog } from "@/lib/posthog";
-import { saveUser } from "@/lib/auth";
+import { saveUser, getUser } from "@/lib/auth";
 
 interface LoginDialogProps {
   open: boolean;
