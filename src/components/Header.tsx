@@ -53,10 +53,15 @@ export const Header = () => {
     if (user) {
       setIsLoggedIn(true);
       setUserName(user.name);
-      
+
       // Identify returning user in PostHog so events link to their profile
       identifyUser(user.email, { name: user.name, email: user.email });
-      
+      if (user.companyName) {
+        applyCompanyGroup(user.companyName);
+      } else {
+        posthog.setPersonProperties({ icp_type: "B2C" });
+      }
+
       posthog.reloadFeatureFlags();
       if (import.meta.env.DEV) console.log("Header: User logged in, reloading feature flags", { email: user.email });
     } else {
