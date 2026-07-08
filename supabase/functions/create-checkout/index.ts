@@ -43,13 +43,15 @@ serve(async (req) => {
         });
         log.info("Function invoked");
 
-        const { items, customer_email, customer_name, ph_session_id } = await req.json();
+        const { items, customer_email, customer_name, ph_session_id, company_name, company_key, icp_type } = await req.json();
 
         rootSpan.setAttributes({
           "cart.item_count": items?.length ?? 0,
           "customer.email": customer_email ?? "",
+          "customer.icp_type": icp_type || "B2C",
+          "customer.company_key": company_key || "",
         });
-        log.info("Request data", { itemCount: items?.length, customer_email, customer_name });
+        log.info("Request data", { itemCount: items?.length, customer_email, customer_name, icp_type, company_key });
 
         if (!items || items.length === 0) {
           log.error("No items in cart");
@@ -140,6 +142,13 @@ serve(async (req) => {
               "checkout.mode": mode,
               "checkout.line_item_count": sessionLineItems.length,
             });
+            const metadata: Record<string, string> = {
+              icp_type: icp_type || "B2C",
+            };
+            if (company_name) metadata.company_name = String(company_name);
+            if (company_key) metadata.company_key = String(company_key);
+            if (ph_session_id) metadata.ph_session_id = String(ph_session_id);
+
             const s = await stripe.checkout.sessions.create({
               line_items: sessionLineItems,
               mode,
@@ -149,8 +158,12 @@ serve(async (req) => {
               billing_address_collection: "required",
               customer: customerId,
               customer_email: customerId ? undefined : customer_email || undefined,
+              metadata,
+              ...(mode === "subscription" && {
+                subscription_data: { metadata },
+              }),
               ...(mode === "payment" && {
-                payment_intent_data: { setup_future_usage: "off_session" },
+                payment_intent_data: { setup_future_usage: "off_session", metadata },
               }),
               ...(customer_name && {
                 custom_fields: [{

@@ -3,8 +3,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { identifyUser, setUserProperties, trackEvent, initializeCLTV } from "@/lib/posthog";
+import { identifyUser, setUserProperties, trackEvent, initializeCLTV, applyCompanyGroup, slugifyCompany, posthog } from "@/lib/posthog";
+import { saveUser } from "@/lib/auth";
 
 interface LoginDialogProps {
   open: boolean;
@@ -16,26 +18,30 @@ interface LoginDialogProps {
 export const LoginDialog = ({ open, onOpenChange, onLoginSuccess, discountPercent }: LoginDialogProps) => {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [isCompanyPurchase, setIsCompanyPurchase] = useState(false);
+  const [companyName, setCompanyName] = useState("");
   const [mode, setMode] = useState<"login" | "signup">("login");
+
+  const resolveCompany = () => {
+    const trimmed = isCompanyPurchase ? companyName.trim() : "";
+    return trimmed.length >= 2 ? trimmed : "";
+  };
 
   const handleLogin = () => {
     if (email && name) {
-      // Store in localStorage (using same keys for consistency)
-      localStorage.setItem("user_email", email);
-      localStorage.setItem("user_name", name);
-      // Also store in hedgehog_user format for checkout compatibility
-      localStorage.setItem("hedgehog_user", JSON.stringify({ email, name }));
-      
-      // Identify in PostHog and initialize CLTV
+      saveUser(email, name);
+
+      // Identify first, then any group work, then event.
       identifyUser(email, { name, email });
+      posthog.setPersonProperties({ icp_type: "B2C" });
       initializeCLTV();
-      
-      // Track login event
+
       trackEvent('user_logged_in', {
         login_method: 'email',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        icp_type: "B2C",
       });
-      
+
       onLoginSuccess(email, name);
       onOpenChange(false);
       setEmail("");
@@ -44,43 +50,48 @@ export const LoginDialog = ({ open, onOpenChange, onLoginSuccess, discountPercen
   };
 
   const handleSignup = () => {
-    if (email && name) {
-      // Store in localStorage (using same keys for consistency)
-      localStorage.setItem("user_email", email);
-      localStorage.setItem("user_name", name);
-      // Also store in hedgehog_user format for checkout compatibility
-      localStorage.setItem("hedgehog_user", JSON.stringify({ email, name }));
-      
-      // Identify in PostHog and set signup properties
-      identifyUser(email, { 
-        name, 
-        email,
-        signup_discount_percent: discountPercent || 0,
-        signup_date: new Date().toISOString()
-      });
+    if (!email || !name) return;
+    if (isCompanyPurchase && companyName.trim().length < 2) return;
 
-      // Set user properties for the discount
-      if (discountPercent) {
-        setUserProperties({
-          initial_signup_discount: discountPercent,
-          signup_experiment_variant: `${discountPercent}percent`
-        });
-      }
+    const company = resolveCompany();
+    saveUser(email, name, company || undefined);
 
-      // Track signup event
-      trackEvent('user_signed_up', {
-        discount_percent: discountPercent || 0,
-        experiment_variant: discountPercent ? `${discountPercent}percent` : 'control'
-      });
-      
-      // Initialize CLTV for new user
-      initializeCLTV();
-      
-      onLoginSuccess(email, name);
-      onOpenChange(false);
-      setEmail("");
-      setName("");
+    // Identify FIRST so subsequent group + events attach to the right person.
+    identifyUser(email, {
+      name,
+      email,
+      signup_discount_percent: discountPercent || 0,
+      signup_date: new Date().toISOString(),
+    });
+
+    if (company) {
+      applyCompanyGroup(company);
+    } else {
+      posthog.setPersonProperties({ icp_type: "B2C" });
     }
+
+    if (discountPercent) {
+      setUserProperties({
+        initial_signup_discount: discountPercent,
+        signup_experiment_variant: `${discountPercent}percent`,
+      });
+    }
+
+    trackEvent('user_signed_up', {
+      discount_percent: discountPercent || 0,
+      experiment_variant: discountPercent ? `${discountPercent}percent` : 'control',
+      icp_type: company ? "B2B" : "B2C",
+      ...(company ? { company_name: company, company_key: slugifyCompany(company) } : {}),
+    });
+
+    initializeCLTV();
+
+    onLoginSuccess(email, name);
+    onOpenChange(false);
+    setEmail("");
+    setName("");
+    setCompanyName("");
+    setIsCompanyPurchase(false);
   };
 
   return (
@@ -98,7 +109,7 @@ export const LoginDialog = ({ open, onOpenChange, onLoginSuccess, discountPercen
             )}
           </DialogDescription>
         </DialogHeader>
-        
+
         <Tabs value={mode} onValueChange={(v) => setMode(v as "login" | "signup")} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="login">Login</TabsTrigger>
@@ -107,7 +118,7 @@ export const LoginDialog = ({ open, onOpenChange, onLoginSuccess, discountPercen
               {discountPercent && <span className="ml-1 text-xs">({discountPercent}% off)</span>}
             </TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="login" className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label htmlFor="login-name">Name</Label>
@@ -132,7 +143,7 @@ export const LoginDialog = ({ open, onOpenChange, onLoginSuccess, discountPercen
               Login
             </Button>
           </TabsContent>
-          
+
           <TabsContent value="signup" className="space-y-4 mt-4">
             {discountPercent && (
               <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 text-center">
@@ -160,7 +171,35 @@ export const LoginDialog = ({ open, onOpenChange, onLoginSuccess, discountPercen
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
-            <Button onClick={handleSignup} className="w-full" disabled={!email || !name}>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="signup-company-purchase"
+                checked={isCompanyPurchase}
+                onCheckedChange={(checked) => setIsCompanyPurchase(checked === true)}
+              />
+              <Label htmlFor="signup-company-purchase" className="text-sm font-normal cursor-pointer">
+                I'm buying for a company
+              </Label>
+            </div>
+
+            {isCompanyPurchase && (
+              <div className="space-y-2">
+                <Label htmlFor="signup-company-name">Company Name</Label>
+                <Input
+                  id="signup-company-name"
+                  placeholder="Acme Inc."
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                />
+              </div>
+            )}
+
+            <Button
+              onClick={handleSignup}
+              className="w-full"
+              disabled={!email || !name || (isCompanyPurchase && companyName.trim().length < 2)}
+            >
               Sign Up {discountPercent && `& Get ${discountPercent}% Off`}
             </Button>
           </TabsContent>

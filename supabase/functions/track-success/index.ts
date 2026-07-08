@@ -110,12 +110,21 @@ serve(async (req) => {
           ? lineItems.filter((item: any) => item.is_subscription).reduce((sum: number, item: any) => sum + item.price * item.quantity, 0)
           : 0;
 
+        // B2B attribution — metadata was set by create-checkout.
+        const meta = (session.metadata || {}) as Record<string, string>;
+        const companyName = meta.company_name || "";
+        const companyKey = meta.company_key || "";
+        const icpType = meta.icp_type === "B2B" ? "B2B" : "B2C";
+        const isB2B = icpType === "B2B" && !!companyKey;
+
         rootSpan.setAttributes({
           "purchase.total_amount": totalAmount,
           "purchase.currency": currency,
           "purchase.item_count": itemCount,
           "purchase.has_subscription": hasSubscription,
           "customer.email": customerEmail,
+          "customer.icp_type": icpType,
+          "customer.company_key": companyKey,
         });
 
         const getValueTier = (amount: number): string => {
@@ -203,6 +212,12 @@ serve(async (req) => {
 
         const subscriptionId = (session as any).subscription || null;
 
+        const eventGroups: Record<string, string> = {
+          customer_lifecycle: lifecycle,
+          customer_value_tier: valueTier,
+        };
+        if (isB2B) eventGroups.company = companyKey;
+
         const capturePayload = {
           api_key: POSTHOG_KEY,
           event: "purchase_completed",
@@ -223,7 +238,9 @@ serve(async (req) => {
             source: "edge_function",
             timestamp: new Date().toISOString(),
             hashed_example_property: "posthog",
-            $groups: { customer_lifecycle: lifecycle, customer_value_tier: valueTier },
+            icp_type: icpType,
+            ...(isB2B ? { company_name: companyName, company_key: companyKey } : {}),
+            $groups: eventGroups,
           },
         };
 
@@ -231,8 +248,12 @@ serve(async (req) => {
         await tracer.withSpan(
           "posthog.group_identify",
           async (span) => {
-            span.setAttributes({ "groups.lifecycle": lifecycle, "groups.value_tier": valueTier });
-            await Promise.all([
+            span.setAttributes({
+              "groups.lifecycle": lifecycle,
+              "groups.value_tier": valueTier,
+              "groups.company": companyKey,
+            });
+            const identifies: Promise<Response>[] = [
               postJson(span, "$groupidentify:lifecycle", {
                 api_key: POSTHOG_KEY,
                 event: "$groupidentify",
@@ -256,7 +277,22 @@ serve(async (req) => {
                   },
                 },
               }),
-            ]);
+            ];
+            if (isB2B) {
+              identifies.push(
+                postJson(span, "$groupidentify:company", {
+                  api_key: POSTHOG_KEY,
+                  event: "$groupidentify",
+                  distinct_id: customerEmail || sessionId,
+                  properties: {
+                    $group_type: "company",
+                    $group_key: companyKey,
+                    $group_set: { name: companyName, icp_type: "B2B" },
+                  },
+                }),
+              );
+            }
+            await Promise.all(identifies);
           },
           { kind: SpanKind.CLIENT },
         );
@@ -288,6 +324,9 @@ serve(async (req) => {
                 source: "edge_function",
                 timestamp: new Date().toISOString(),
                 hashed_example_property: "posthog",
+                icp_type: icpType,
+                ...(isB2B ? { company_name: companyName, company_key: companyKey } : {}),
+                $groups: eventGroups,
               },
             }),
             { kind: SpanKind.CLIENT },
@@ -304,7 +343,12 @@ serve(async (req) => {
             customer_value_tier: valueTier,
             last_purchase_date: new Date().toISOString(),
             last_purchase_amount: totalAmount,
+            icp_type: icpType,
           };
+          if (isB2B) {
+            setProps.company_name = companyName;
+            setProps.company_key = companyKey;
+          }
           if (priorSum !== null) {
             setProps.customer_lifetime_value = lifetimeValue;
             setProps.total_purchases = priorCount + 1;

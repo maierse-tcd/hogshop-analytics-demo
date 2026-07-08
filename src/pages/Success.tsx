@@ -4,7 +4,7 @@ import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
-import { trackEvent, setUserProperties, updateCLTV, updateSubscriptionStatus, setCustomerGroups } from "@/lib/posthog";
+import { trackEvent, setUserProperties, updateCLTV, updateSubscriptionStatus, setCustomerGroups, applyCompanyGroup } from "@/lib/posthog";
 import { posthog } from "@/lib/posthog";
 import { supabase } from "@/integrations/supabase/client";
 import { saveUser } from "@/lib/auth";
@@ -35,13 +35,19 @@ const Success = () => {
           try {
             const userData = JSON.parse(storedUserData);
             if (userData.email && userData.name && (!userData.expiresAt || Date.now() < userData.expiresAt)) {
-              saveUser(userData.email, userData.name);
+              saveUser(userData.email, userData.name, userData.companyName);
               if (isDev) console.log("Success: User session restored", { email: userData.email });
-              
+
               posthog.identify(userData.email, {
                 email: userData.email,
                 name: userData.name,
               });
+
+              if (userData.companyName) {
+                applyCompanyGroup(userData.companyName);
+              } else {
+                posthog.setPersonProperties({ icp_type: "B2C" });
+              }
               
               // NOTE: server (track-success) is authoritative for customer_lifecycle
               // and CLTV — do NOT setCustomerGroups here or non-subscribers get
@@ -217,7 +223,7 @@ const Success = () => {
       trackEvent("purchase_completed", {
         session_id: sessionId,
         total_amount: basketValue,
-        revenue: Math.round(basketValue * 100),
+        revenue: basketValue,
         currency: "USD",
         subscription_id: hasSubscriptionItem ? sessionId : null,
         customer_email: userEmail,

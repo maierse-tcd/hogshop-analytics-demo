@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/hooks/use-toast";
 import { RegistrationDialog } from "@/components/RegistrationDialog";
-import { posthog, trackEvent, setUserProperties, initializeCLTV, ensureIdentified } from "@/lib/posthog";
+import { posthog, trackEvent, setUserProperties, initializeCLTV, ensureIdentified, applyCompanyGroup, slugifyCompany } from "@/lib/posthog";
 import { getUser, saveUser } from "@/lib/auth";
 import { startSpan, traceparent, SpanKind, SpanStatus } from "@/lib/otel";
 
@@ -25,19 +25,29 @@ export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
     if (items.length === 0) return;
     const user = getUser();
     if (user) {
-      proceedToCheckout(user.email, user.name);
+      proceedToCheckout(user.email, user.name, user.companyName);
     } else {
       setShowRegistration(true);
     }
   };
 
-  const handleRegistrationComplete = async (email: string, name: string) => {
-    saveUser(email, name);
+  const handleRegistrationComplete = async (email: string, name: string, companyName?: string) => {
+    const trimmedCompany = companyName?.trim() || undefined;
+    saveUser(email, name, trimmedCompany);
+
+    // Identify FIRST so subsequent group + events attach to the right person.
     await ensureIdentified(email, {
       email,
       name,
       identified_at: new Date().toISOString(),
     });
+
+    if (trimmedCompany) {
+      applyCompanyGroup(trimmedCompany);
+    } else {
+      posthog.setPersonProperties({ icp_type: "B2C" });
+    }
+
     setUserProperties({
       $name: name,
       $email: email,
@@ -49,14 +59,20 @@ export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
       name,
       registration_source: "checkout_dialog",
       timestamp: new Date().toISOString(),
+      icp_type: trimmedCompany ? "B2B" : "B2C",
+      ...(trimmedCompany ? { company_name: trimmedCompany, company_key: slugifyCompany(trimmedCompany) } : {}),
     });
     initializeCLTV();
     setShowRegistration(false);
-    proceedToCheckout(email, name);
+    proceedToCheckout(email, name, trimmedCompany);
   };
 
-  const proceedToCheckout = async (email: string, name: string) => {
+  const proceedToCheckout = async (email: string, name: string, companyName?: string) => {
     setIsCheckingOut(true);
+
+    const trimmedCompany = companyName?.trim() || undefined;
+    const companyKey = trimmedCompany ? slugifyCompany(trimmedCompany) : undefined;
+    const icpType = trimmedCompany ? "B2B" : "B2C";
 
     // Browser-side root span for the whole checkout round-trip. The traceparent
     // header propagates into the create-checkout edge function so PostHog
@@ -72,6 +88,7 @@ export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       await ensureIdentified(email, { email, name });
+      if (trimmedCompany) applyCompanyGroup(trimmedCompany);
       initializeCLTV();
 
       const basketItems = items.map((item) => ({
@@ -89,6 +106,8 @@ export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
         currency: "USD",
         items: basketItems,
         hashed_example_property: "posthog",
+        icp_type: icpType,
+        ...(trimmedCompany ? { company_name: trimmedCompany, company_key: companyKey } : {}),
       });
 
       // NOTE: a fraction of checkouts fail here before reaching Stripe with a
@@ -114,14 +133,25 @@ export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
       });
 
       const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { items, customer_email: email, customer_name: name, ph_session_id: posthog.get_session_id() },
+        body: {
+          items,
+          customer_email: email,
+          customer_name: name,
+          ph_session_id: posthog.get_session_id(),
+          company_name: trimmedCompany,
+          company_key: companyKey,
+          icp_type: icpType,
+        },
         headers: { traceparent: traceparent(checkoutSpan) },
       });
       if (error) throw error;
 
       if (data?.url) {
         const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
-        localStorage.setItem("checkout_user", JSON.stringify({ email, name, expiresAt }));
+        localStorage.setItem(
+          "checkout_user",
+          JSON.stringify({ email, name, companyName: trimmedCompany, expiresAt })
+        );
         localStorage.setItem(
           "checkout_basket",
           JSON.stringify({
@@ -164,7 +194,7 @@ export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
                 basket_value: totalPrice,
                 items_count: totalItems,
               });
-              void proceedToCheckout(email, name);
+              void proceedToCheckout(email, name, trimmedCompany);
             }}
           >
             Retry

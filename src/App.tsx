@@ -7,7 +7,7 @@ import { CheckoutProvider } from "@/contexts/CheckoutContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
-import { initPostHog, posthog, applyPostHogIdentityHash } from "@/lib/posthog";
+import { initPostHog, posthog, applyPostHogIdentityHash, applyCompanyGroup } from "@/lib/posthog";
 import { initOtel } from "@/lib/otel";
 import { getUser } from "@/lib/auth";
 import { PostHogProvider, useFeatureFlagEnabled } from "posthog-js/react";
@@ -81,6 +81,11 @@ const App = () => {
     const existing = getUser();
     if (existing?.email) {
       void applyPostHogIdentityHash(existing.email);
+      if (existing.companyName) {
+        applyCompanyGroup(existing.companyName);
+      } else {
+        posthog.setPersonProperties({ icp_type: "B2C" });
+      }
     }
   }, []);
 
