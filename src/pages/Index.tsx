@@ -208,7 +208,22 @@ const Index = () => {
                 <Gift className="h-8 w-8 text-primary" />
               </div>
               <div className="text-center md:text-left">
-                <p className="font-bold text-lg">Get Max's Starter Kit FREE</p>
+                {/* Bold headline sits next to the real CTA, so people click it and
+                    nothing happens (a dead click). Make it actually navigate to the
+                    gift page, same as the "Claim Free Gift" button. */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    trackEvent("gift_cta_clicked", {
+                      location: "homepage_banner",
+                      cta_text: "Get Max's Starter Kit FREE",
+                      timestamp: new Date().toISOString()
+                    });
+                    navigate("/gift");
+                  }}
+                  className="font-bold text-lg text-center md:text-left bg-transparent border-0 p-0 cursor-pointer hover:text-primary transition-colors">
+                  Get Max's Starter Kit FREE
+                </button>
                 <p className="text-sm text-muted-foreground">Everything your new hedgehog needs • $45 value</p>
               </div>
             </div>
@@ -344,7 +359,10 @@ const Index = () => {
                 'From premium nutrition to cozy habitats. Everything your spiky friend needs to thrive, delivered with love.'}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center pt-6">
-              <Button size="lg" className="gap-2 h-12 px-8 text-base font-semibold" onClick={() => {
+              {/* Smooth-scroll works but produces no DOM/network change PostHog's
+                  dead-click detector recognizes, so it's a false positive —
+                  ph-no-deadclick excludes it. */}
+              <Button size="lg" className="gap-2 h-12 px-8 text-base font-semibold ph-no-deadclick" onClick={() => {
                   document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' });
                   trackEvent("hero_cta_clicked", {
                     cta: "shop_now",
@@ -478,19 +496,28 @@ const Index = () => {
             </p>
           </div>
           <div data-attr="category-filter" className="flex gap-2 flex-wrap justify-center mb-8">
-            {categories.map((category) =>
+            {categories.map((category) => {
+              const isActive = selectedCategory === category;
+              return (
               <Button
                 key={category}
-                variant={selectedCategory === category ? "default" : "outline"}
-                className={`font-semibold ${selectedCategory === category ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
+                variant={isActive ? "default" : "outline"}
+                // Re-clicking the active filter changes nothing, so PostHog flags it
+                // as a dead click. ph-no-deadclick excludes it from that detection
+                // without affecting autocapture, heatmaps, or session replay.
+                className={`font-semibold ${isActive ? 'ring-2 ring-primary ring-offset-2 ring-offset-background ph-no-deadclick' : ''}`}
                 onClick={() => {
+                  // Guard: re-clicking the already-active filter is a no-op. Bail
+                  // early instead of triggering a redundant render + analytics event.
+                  if (isActive) return;
                   setSelectedCategory(category);
                   trackEvent("category_filtered", { category });
                 }}>
-                
+
                 {category}
               </Button>
-              )}
+              );
+            })}
           </div>
         </div>
 
