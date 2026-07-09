@@ -174,10 +174,15 @@ export const CartDrawer = () => {
                   </div>
                 </>
               )}
-              <div className="flex justify-between text-lg font-bold">
+              <button
+                type="button"
+                onClick={startCheckout}
+                disabled={isCheckingOut}
+                className="flex w-full justify-between text-lg font-bold rounded-md transition hover:opacity-90 disabled:cursor-not-allowed"
+              >
                 <span>Total</span>
                 <span>${(flashSaleActive ? discountedTotal : totalPrice).toFixed(2)}</span>
-              </div>
+              </button>
               <Button className="w-full" size="lg" data-attr="proceed-to-checkout" onClick={startCheckout} disabled={isCheckingOut}>
                 {isCheckingOut ? "Processing..." : "Proceed to Checkout"}
               </Button>
