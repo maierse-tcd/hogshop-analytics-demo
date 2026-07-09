@@ -19,13 +19,18 @@ export const StickyCheckoutBar = () => {
       className="fixed bottom-0 left-0 right-0 z-40 shadow-lg bg-primary text-primary-foreground"
     >
       <div className="container flex items-center justify-between gap-4 py-3">
-        <div className="flex items-center gap-4 text-sm sm:text-base font-medium">
+        <button
+          type="button"
+          onClick={startCheckout}
+          disabled={isCheckingOut}
+          className="flex items-center gap-4 text-sm sm:text-base font-medium rounded-md -mx-1 px-1 py-1 transition hover:opacity-90 disabled:cursor-not-allowed"
+        >
           <span>
             {totalItems} {totalItems === 1 ? "item" : "items"}
           </span>
           <span className="opacity-80">·</span>
           <span className="font-bold">${totalPrice.toFixed(2)}</span>
-        </div>
+        </button>
         <button
           onClick={startCheckout}
           disabled={isCheckingOut}
