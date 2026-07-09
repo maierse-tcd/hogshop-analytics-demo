@@ -247,7 +247,9 @@ export const Header = () => {
               trackEvent("theme_toggled", { from: theme, to: newTheme });
               posthog.group("ux_choice", `${newTheme}_mode`, { theme: newTheme });
             }}
-            className="rounded-full"
+            // Toggling theme swaps a class on <html>, which PostHog's dead-click
+            // detector doesn't register — ph-no-deadclick excludes this false positive.
+            className="rounded-full ph-no-deadclick"
           >
             <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
             <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
