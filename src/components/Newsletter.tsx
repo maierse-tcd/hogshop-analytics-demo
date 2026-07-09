@@ -25,18 +25,25 @@ export const Newsletter = ({ variant = "card", onSubscribed }: NewsletterProps) 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (email) {
-      trackEvent("newsletter_subscribed", { 
-        email, 
-        source: variant === "banner" ? "hero_banner" : "newsletter_card",
-        variant,
-        subscribed_at: new Date().toISOString()
-      });
-      toast.success("Thanks for subscribing! Check your inbox for your 15% discount code.");
-      localStorage.setItem("newsletter_subscribed", "true");
-      onSubscribed?.(email);
-      setEmail("");
+    const trimmedEmail = email.trim();
+
+    // Give visible feedback on empty/invalid input instead of silently doing
+    // nothing — otherwise Subscribe becomes a dead end inside the modal.
+    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      toast.error("Please enter a valid email address to subscribe.");
+      return;
     }
+
+    trackEvent("newsletter_subscribed", {
+      email: trimmedEmail,
+      source: variant === "banner" ? "hero_banner" : "newsletter_card",
+      variant,
+      subscribed_at: new Date().toISOString()
+    });
+    toast.success("Thanks for subscribing! Check your inbox for your 15% discount code.");
+    localStorage.setItem("newsletter_subscribed", "true");
+    onSubscribed?.(trimmedEmail);
+    setEmail("");
   };
 
   if (variant === "banner") {

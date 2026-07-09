@@ -151,16 +151,24 @@ const Index = () => {
 
   // Feature flag tracking is handled automatically by the PostHog SDK
 
-  // Known issue: the newsletter modal can reappear on later visits for users who
-  // dismissed it without subscribing — we persist "subscribed" but not
-  // "dismissed". Repeat visitors have reported this as nagging.
+  // Close the newsletter modal and remember that the user dismissed it, so the
+  // auto-show timer doesn't nag them again on this or later visits. Manually
+  // clicking the "Sign up for newsletter" CTA still reopens it on demand.
+  const dismissNewsletterModal = (event: string) => {
+    setShowNewsletterModal(false);
+    localStorage.setItem("newsletter_dismissed", "true");
+    trackEvent(event);
+  };
+
   useEffect(() => {
-    // Check localStorage for subscription status
+    // Check localStorage for subscription and prior-dismissal status
     const subscribed = localStorage.getItem("newsletter_subscribed") === "true";
+    const dismissed = localStorage.getItem("newsletter_dismissed") === "true";
     setHasSubscribed(subscribed);
 
-    // Show modal when feature flag is enabled and user hasn't subscribed
-    if (showNewsletterFlag && !subscribed) {
+    // Auto-show modal only when the flag is enabled and the user hasn't already
+    // subscribed or dismissed it — persisting "dismissed" stops the nag loop.
+    if (showNewsletterFlag && !subscribed && !dismissed) {
       // Delay modal slightly for better UX
       const timer = setTimeout(() => {
         setShowNewsletterModal(true);
@@ -410,21 +418,15 @@ const Index = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
           <div
             className="absolute inset-0 bg-background/80 backdrop-blur-sm"
-            onClick={() => {
-              setShowNewsletterModal(false);
-              trackEvent("newsletter_modal_dismissed");
-            }} />
-          
+            onClick={() => dismissNewsletterModal("newsletter_modal_dismissed")} />
+
           <div className="relative animate-in zoom-in-95 duration-300">
             <Button
               variant="ghost"
               size="icon"
               className="absolute -top-2 -right-2 z-10 rounded-full bg-background shadow-lg hover:bg-accent"
-              onClick={() => {
-                setShowNewsletterModal(false);
-                trackEvent("newsletter_modal_closed");
-              }}>
-              
+              onClick={() => dismissNewsletterModal("newsletter_modal_closed")}>
+
               <X className="h-4 w-4" />
             </Button>
             <Newsletter
