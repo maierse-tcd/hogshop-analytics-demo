@@ -122,6 +122,27 @@ const Index = () => {
   products :
   products?.filter((p) => p.category === selectedCategory);
 
+  // The accent-colored words in the hero heading read as a link, so give them a
+  // real action (scroll to products, like the "Shop Now" CTA) instead of leaving
+  // them as a dead click. Reused by both the seasonal and default headings.
+  const handleHeroHeadingActivate = () => {
+    document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' });
+    trackEvent("hero_heading_clicked");
+  };
+
+  const heroHeadingProps = {
+    role: "button" as const,
+    tabIndex: 0,
+    className: "text-primary cursor-pointer hover:underline underline-offset-4 focus-visible:outline-none focus-visible:underline",
+    onClick: handleHeroHeadingActivate,
+    onKeyDown: (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        handleHeroHeadingActivate();
+      }
+    },
+  };
+
   // Use PostHog React hook for feature flags
   const showNewsletterFlag = useFeatureFlagEnabled('show_newsletter');
   const halloweenHeroFlag = useFeatureFlagEnabled('hero_banner_halloween');
@@ -326,7 +347,7 @@ const Index = () => {
                 <>
                   {getThemeConfig(seasonalTheme)?.title.line1}
                   <br />
-                  <span style={{ color: getThemeConfig(seasonalTheme)?.colors.primary }}>
+                  <span {...heroHeadingProps} style={{ color: getThemeConfig(seasonalTheme)?.colors.primary }}>
                     {getThemeConfig(seasonalTheme)?.title.line2}
                   </span>
                 </> :
@@ -334,7 +355,7 @@ const Index = () => {
                 <>
                   Your Hedgehog's
                   <br />
-                  <span className="text-primary">Happy Place</span>
+                  <span {...heroHeadingProps}>Happy Place</span>
                 </>
                 }
             </h1>
