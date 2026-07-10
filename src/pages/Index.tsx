@@ -122,6 +122,14 @@ const Index = () => {
   products :
   products?.filter((p) => p.category === selectedCategory);
 
+  // The "Shop by Category" heading looks clickable (bold, centered, and it glows
+  // when a seasonal theme is active), so users click it expecting something to
+  // happen. Reset the category filter back to "All" so that click is meaningful.
+  const handleShopHeadingClick = () => {
+    setSelectedCategory("All");
+    trackEvent("category_filter_reset", { source: "shop_heading" });
+  };
+
   // Use PostHog React hook for feature flags
   const showNewsletterFlag = useFeatureFlagEnabled('show_newsletter');
   const halloweenHeroFlag = useFeatureFlagEnabled('hero_banner_halloween');
@@ -466,7 +474,19 @@ const Index = () => {
           })}
         <div className="mb-12 relative">
           <div className="text-center mb-8">
-            <h2 className={`text-4xl md:text-5xl font-bold mb-4`}
+            <h2
+              role="button"
+              tabIndex={0}
+              aria-label="Show all categories"
+              title="Show all categories"
+              onClick={handleShopHeadingClick}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleShopHeadingClick();
+                }
+              }}
+              className={`text-4xl md:text-5xl font-bold mb-4 inline-block cursor-pointer transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-md`}
               style={seasonalTheme ? { color: getThemeConfig(seasonalTheme)?.colors.primary, textShadow: `0 0 20px ${getThemeConfig(seasonalTheme)?.colors.primary}` } : {}}>
               {seasonalTheme ? getThemeConfig(seasonalTheme)?.shopTitle : 'Shop by Category'}
             </h2>
