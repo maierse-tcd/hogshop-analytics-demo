@@ -35,6 +35,7 @@ interface Product {
 const Index = () => {
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const [highlightProducts, setHighlightProducts] = useState(false);
   const productsViewedRef = useRef(false);
   const loadStartRef = useRef(typeof performance !== "undefined" ? performance.now() : 0);
   const cacheHitRef = useRef<boolean | null>(null);
@@ -169,6 +170,33 @@ const Index = () => {
     }
   }, [showNewsletterFlag]);
 
+  // The Free Gift banner routes to /gift. Both the banner surface and its
+  // button share this handler so clicking anywhere on the banner navigates
+  // (previously only the button did, so the heading area was a dead click).
+  const handleClaimGift = () => {
+    trackEvent("gift_cta_clicked", {
+      location: "homepage_banner",
+      cta_text: "Claim Free Gift",
+      timestamp: new Date().toISOString()
+    });
+    navigate("/gift");
+  };
+
+  // "Shop Now" must always produce a perceptible action. A plain smooth scroll
+  // is a no-op — and gets recorded as a dead click — when the products section
+  // is already in view or the page can't scroll further, so we also briefly
+  // highlight the section as visual confirmation the click registered.
+  const handleShopNow = () => {
+    document.getElementById("products")?.scrollIntoView({ behavior: "smooth" });
+    setHighlightProducts(true);
+    window.setTimeout(() => setHighlightProducts(false), 1200);
+    trackEvent("hero_cta_clicked", {
+      cta: "shop_now",
+      experiment: "newsletter_sub",
+      variant: newsletterSubVariant || "control"
+    });
+  };
+
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-background">
@@ -202,7 +230,17 @@ const Index = () => {
       {/* Free Gift CTA Banner */}
       <div className="bg-background/60 backdrop-blur-md border-b">
         <div className="container py-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 max-w-5xl mx-auto bg-primary/5 border border-primary/10 rounded-xl px-6 py-4">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={handleClaimGift}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleClaimGift();
+              }
+            }}
+            className="flex flex-col md:flex-row items-center justify-between gap-4 max-w-5xl mx-auto bg-primary/5 border border-primary/10 rounded-xl px-6 py-4 cursor-pointer transition-colors hover:bg-primary/10 hover:border-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background">
             <div className="flex items-center gap-4">
               <div className="bg-primary/10 p-3 rounded-full">
                 <Gift className="h-8 w-8 text-primary" />
@@ -214,16 +252,12 @@ const Index = () => {
             </div>
             <Button
                 size="lg"
-                onClick={() => {
-                  trackEvent("gift_cta_clicked", {
-                    location: "homepage_banner",
-                    cta_text: "Claim Free Gift",
-                    timestamp: new Date().toISOString()
-                  });
-                  navigate("/gift");
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleClaimGift();
                 }}
                 className="gap-2 whitespace-nowrap">
-                
+
               Claim Free Gift
               <ArrowRight className="h-5 w-5" />
             </Button>
@@ -344,14 +378,7 @@ const Index = () => {
                 'From premium nutrition to cozy habitats. Everything your spiky friend needs to thrive, delivered with love.'}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center pt-6">
-              <Button size="lg" className="gap-2 h-12 px-8 text-base font-semibold" onClick={() => {
-                  document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' });
-                  trackEvent("hero_cta_clicked", {
-                    cta: "shop_now",
-                    experiment: "newsletter_sub",
-                    variant: newsletterSubVariant || "control"
-                  });
-                }}>
+              <Button size="lg" className="gap-2 h-12 px-8 text-base font-semibold" onClick={handleShopNow}>
                 Shop Now <ArrowRight className="h-5 w-5" />
               </Button>
               
@@ -439,8 +466,9 @@ const Index = () => {
         }
 
       {/* Products Section */}
-      <section id="products" className={`container py-16 md:py-24 relative ${
-        seasonalTheme ? 'overflow-hidden' : ''}`
+      <section id="products" className={`container py-16 md:py-24 relative scroll-mt-20 rounded-2xl transition-shadow duration-500 ${
+        seasonalTheme ? 'overflow-hidden' : ''} ${
+        highlightProducts ? 'ring-2 ring-primary/60 ring-offset-4 ring-offset-background' : 'ring-0'}`
         }>
         {seasonalTheme && getThemeConfig(seasonalTheme)?.emoji.decorative.slice(0, 4).map((emoji, i) => {
             const positions = [
