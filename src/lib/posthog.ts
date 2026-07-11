@@ -62,6 +62,16 @@ export const initPostHog = () => {
         enable_recording_console_log: true,
         session_recording: {
           recordCrossOriginIframes: false,
+          // Mask only genuinely sensitive fields, never all text/images.
+          // A remote project-level masking config previously set
+          // maskTextSelector: '*' (masking every text node as asterisks)
+          // and blockSelector: 'img'. These explicit defaults document the
+          // intended behavior in code: mask input values (passwords, card
+          // numbers, etc.) but keep page text and images visible so replays
+          // are actually watchable. Tag anything sensitive with
+          // `data-ph-mask` to mask it without over-masking everything.
+          maskAllInputs: true,
+          maskTextSelector: '[data-ph-mask]',
         },
         loaded: (posthog) => {
           if (import.meta.env.DEV) {
