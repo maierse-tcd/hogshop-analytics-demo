@@ -478,19 +478,31 @@ const Index = () => {
             </p>
           </div>
           <div data-attr="category-filter" className="flex gap-2 flex-wrap justify-center mb-8">
-            {categories.map((category) =>
-              <Button
-                key={category}
-                variant={selectedCategory === category ? "default" : "outline"}
-                className={`font-semibold ${selectedCategory === category ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
-                onClick={() => {
-                  setSelectedCategory(category);
-                  trackEvent("category_filtered", { category });
-                }}>
-                
-                {category}
-              </Button>
-              )}
+            {categories.map((category) => {
+              const isActive = selectedCategory === category;
+              return (
+                <Button
+                  key={category}
+                  variant={isActive ? "default" : "outline"}
+                  // Disable filters while the grid is still a skeleton so a click
+                  // always maps to a visible change once products render.
+                  disabled={isLoading}
+                  aria-pressed={isActive}
+                  // The active category is a no-op target: mark it non-interactive
+                  // so re-clicking it can't register as a $dead_click.
+                  className={`font-semibold ${isActive ? 'ring-2 ring-primary ring-offset-2 ring-offset-background pointer-events-none cursor-default' : ''}`}
+                  onClick={() => {
+                    // Re-selecting the active category would set state to the same
+                    // value (React bails out, no DOM change) — skip it entirely.
+                    if (category === selectedCategory) return;
+                    setSelectedCategory(category);
+                    trackEvent("category_filtered", { category });
+                  }}>
+
+                  {category}
+                </Button>);
+
+            })}
           </div>
         </div>
 
