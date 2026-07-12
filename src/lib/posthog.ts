@@ -62,6 +62,13 @@ export const initPostHog = () => {
         enable_recording_console_log: true,
         session_recording: {
           recordCrossOriginIframes: false,
+          // Mask all input values in recordings so customer PII (e.g. the
+          // checkout email/name fields flowing through CheckoutContext, plus
+          // RegistrationDialog / Newsletter / LoginDialog inputs) is never
+          // captured in plaintext. posthog-js otherwise masks only password
+          // fields. DOM structure and layout stay visible so the checkout
+          // funnel remains debuggable in replay.
+          maskAllInputs: true,
         },
         loaded: (posthog) => {
           if (import.meta.env.DEV) {
