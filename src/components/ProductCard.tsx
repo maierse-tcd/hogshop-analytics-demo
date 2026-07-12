@@ -6,7 +6,8 @@ import { trackEvent, posthog } from "@/lib/posthog";
 import { ShoppingCart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useFeatureFlagEnabled, useFeatureFlagVariantKey } from "posthog-js/react";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { useFlashSale } from "@/hooks/useFlashSale";
 import { getThemeConfig, type SeasonalTheme } from "@/utils/seasonalThemes";
 
@@ -111,24 +112,55 @@ export const ProductCard = ({
 
   // Feature flag tracking is handled automatically by the PostHog SDK
 
+  // Guard against rapid repeat clicks so mis-clicks don't silently pile up
+  // multiple units in the cart (which flow straight into checkout). The ref is
+  // the source of truth for the lock because it updates synchronously — several
+  // clicks fired in the same tick, before React re-renders and disables the
+  // button, would otherwise all read a stale `isAdding` and slip through.
+  const [isAdding, setIsAdding] = useState(false);
+  const isAddingRef = useRef(false);
+  const addLockRef = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    return () => {
+      if (addLockRef.current) clearTimeout(addLockRef.current);
+    };
+  }, []);
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (isAddingRef.current) return;
+
+    isAddingRef.current = true;
+    setIsAdding(true);
+    if (addLockRef.current) clearTimeout(addLockRef.current);
+    addLockRef.current = setTimeout(() => {
+      isAddingRef.current = false;
+      setIsAdding(false);
+    }, 800);
+
     const imageSrc = imageMap[image_url] || image_url;
-    addToCart({ 
-      id, 
-      title, 
+    addToCart({
+      id,
+      title,
       description,
-      price, 
-      image_url: imageSrc, 
+      price,
+      image_url: imageSrc,
       stock,
       category,
       quantity: 1,
-      is_subscription, 
-      subscription_interval 
+      is_subscription,
+      subscription_interval
     }, "product_card");
+
+    toast.success(`Added ${title} to cart`);
   };
 
   const handleCardClick = () => {
+    // While the add-to-cart button is in its brief disabled window it has
+    // `pointer-events: none`, so mash-clicks fall through to the card. Ignore
+    // them so rapid clicking doesn't yank the user to the product page.
+    if (isAddingRef.current) return;
     navigate(`/product/${id}`);
     trackEvent("product_viewed", {
       product_id: id,
@@ -188,10 +220,10 @@ export const ProductCard = ({
               className="w-full gap-2 font-semibold"
               data-attr="add-to-cart"
               onClick={handleAddToCart}
-              disabled={stock === 0}
+              disabled={stock === 0 || isAdding}
             >
               <ShoppingCart className="h-4 w-4" />
-              {stock === 0 ? "Out of Stock" : ctaText}
+              {stock === 0 ? "Out of Stock" : isAdding ? "Added!" : ctaText}
             </Button>
           </div>
         </div>
@@ -313,11 +345,11 @@ export const ProductCard = ({
             boxShadow: `hover: 0 0 20px ${themeConfig.colors.primary}`
           } : {}}
           onClick={handleAddToCart}
-          disabled={stock === 0}
+          disabled={stock === 0 || isAdding}
           size="lg"
         >
           <ShoppingCart className="h-4 w-4" />
-          {stock === 0 ? "Out of Stock" : seasonalMode && themeConfig ? `${themeConfig.emoji.primary} ${ctaText}` : ctaText}
+          {stock === 0 ? "Out of Stock" : isAdding ? "Added!" : seasonalMode && themeConfig ? `${themeConfig.emoji.primary} ${ctaText}` : ctaText}
         </Button>
       </CardFooter>
     </Card>
