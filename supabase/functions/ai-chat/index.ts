@@ -41,8 +41,16 @@ const RESPONSES: { keywords: string[]; reply: string }[] = [
     reply: "We have options for every budget! 🦔 Starting from $12.99 for treats up to $249.99 for the luxury mansion. Our most popular items are the **Exercise Wheel** ($39.99) and **Care Starter Kit** ($79.99). The food subscription saves you 10% monthly too!",
   },
   {
-    keywords: ["ship", "deliver", "shipping", "delivery", "arrive"],
-    reply: "We offer standard shipping on all orders! 📦 Subscription orders always ship free. Most orders arrive within 3-5 business days. Check our Shipping page for full details. 🦔",
+    keywords: ["ship", "deliver", "shipping", "delivery", "arrive", "canada", "international", "country", "abroad", "customs"],
+    reply: "Here's the shipping rundown 📦🦔\n\n- **Where we ship:** the US (all 50 states), Canada 🇨🇦 (yes!), and most countries worldwide. International orders may incur customs/duties on arrival.\n- **Speed:** Standard is 5-7 business days (free over $50), Premium Rush 2-3 days, and subscription orders always ship free.\n- **Tracking:** you'll get an order confirmation email right after checkout, then a separate tracking email once it ships (usually within 24h).\n\nFull details — including how to change your shipping address — are on our Shipping page (/shipping).",
+  },
+  {
+    keywords: ["track", "tracking", "confirmation email", "order status", "where is my order", "no email", "didn't get"],
+    reply: "Tracking your order 🦔📦\n\n- **Order confirmation** email is sent right after checkout with your order number.\n- **Tracking** email (with a tracking number) is sent the moment your order ships — usually within 24 hours.\n\nDon't see either? Check your spam folder and confirm the email on your order is correct. If it's been more than 2 business days with no tracking email, reach out to support with your order number and we'll track down your hedgehog. See our Shipping page (/shipping) for full details.",
+  },
+  {
+    keywords: ["address", "change my order", "wrong address", "update order", "reroute"],
+    reply: "Need to change your shipping address? 🏠🦔 You can update it within **24 hours** of ordering, as long as the order hasn't shipped yet — just contact support with your order number and the corrected address and we'll reroute the hedgehogs. Once it's shipped (you'll get a tracking email), the address is locked in, but if it comes back to us undelivered we'll re-send it. More details on our Shipping page (/shipping).",
   },
   {
     keywords: ["hello", "hi", "hey", "help", "start"],
