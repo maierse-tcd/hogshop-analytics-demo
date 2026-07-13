@@ -37,6 +37,10 @@ const RESPONSES: { keywords: string[]; reply: string }[] = [
     reply: "Hedgehogs love burrowing! We have great options:\n\n- **Cozy Hedgehog Hideout** ($24.99) — soft fleece pouch, machine washable\n- **Hedgehog Sleeping Bag** ($34.99) — ultra-soft, perfect for staying warm\n- **Soft Fleece Bedding** ($22.99) — 2 yards of comfortable bedding\n\nAll are hedgehog-safe and easy to wash! 🦔",
   },
   {
+    keywords: ["discount", "student", "promo", "coupon", "deal", "sale", "voucher", "code", "save money"],
+    reply: "Happy to help you save! 🦔 Here's what's on offer:\n\n- **Flash sale** — when it's running, everything is 20% off automatically at checkout (keep an eye out, it comes and goes!)\n- **Subscription saving** — the **Premium Hedgehog Food** subscription ($29.99/month) is 10% cheaper than buying one-time, with free shipping\n- **Newsletter code** — sign up for our newsletter and get **15% off your first order**\n\nWe don't currently offer a dedicated student discount, but between the newsletter code and flash sales there's usually a way to save. 🛒",
+  },
+  {
     keywords: ["price", "cost", "expensive", "cheap", "budget", "afford"],
     reply: "We have options for every budget! 🦔 Starting from $12.99 for treats up to $249.99 for the luxury mansion. Our most popular items are the **Exercise Wheel** ($39.99) and **Care Starter Kit** ($79.99). The food subscription saves you 10% monthly too!",
   },
