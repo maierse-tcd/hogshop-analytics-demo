@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { createTracer, parseTraceparent, SpanKind } from "../_shared/otel.ts";
 
 const corsHeaders = {
@@ -56,14 +57,227 @@ const RESPONSES: { keywords: string[]; reply: string }[] = [
 
 const DEFAULT_REPLY = "That's a great question! 🦔 While I'm not sure about that specific topic, I can help you with our products, hedgehog care tips, subscriptions, and shipping. What would you like to know about? Browse our full catalog on the homepage!";
 
-function findResponse(userMessage: string): string {
-  const lower = userMessage.toLowerCase();
-  for (const entry of RESPONSES) {
-    if (entry.keywords.some(kw => lower.includes(kw))) {
-      return entry.reply;
-    }
+// ---------------------------------------------------------------------------
+// Fuzzy / substring matching helpers
+//
+// The chat used to only match a message against a static keyword list with
+// `lower.includes(kw)`, so anything phrased differently — a synonym, a typo,
+// or a product we never hardcoded — silently fell through to DEFAULT_REPLY.
+// The helpers below add typo tolerance and, crucially, let us match against
+// the *real* product catalog so product searches resolve even when the wording
+// doesn't land on a hardcoded keyword.
+// ---------------------------------------------------------------------------
+
+// Common filler words that shouldn't drive a product match on their own.
+const STOPWORDS = new Set([
+  "the", "a", "an", "and", "or", "for", "with", "to", "of", "in", "on", "at",
+  "my", "me", "i", "you", "your", "we", "our", "is", "are", "am", "be", "do",
+  "does", "did", "can", "could", "would", "should", "will", "get", "got",
+  "have", "has", "need", "needs", "want", "wants", "looking", "look", "find",
+  "show", "buy", "any", "some", "there", "that", "this", "these", "those",
+  "it", "its", "please", "help", "hello", "hi", "hey", "hedgehog", "hedgehogs",
+  "product", "products", "item", "items", "sell", "shop", "store",
+]);
+
+function normalize(text: string): string {
+  return text.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function tokenize(text: string): string[] {
+  return normalize(text).split(" ").filter((t) => t.length > 0);
+}
+
+// Query tokens worth matching on: drop stopwords and very short fragments.
+function meaningfulTokens(text: string): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const t of tokenize(text)) {
+    if (t.length < 3 || STOPWORDS.has(t)) continue;
+    if (seen.has(t)) continue;
+    seen.add(t);
+    out.push(t);
   }
-  return DEFAULT_REPLY;
+  return out;
+}
+
+// Standard Levenshtein edit distance for typo tolerance.
+function levenshtein(a: string, b: string): number {
+  if (a === b) return 0;
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+  let prev = new Array(b.length + 1);
+  let curr = new Array(b.length + 1);
+  for (let j = 0; j <= b.length; j++) prev[j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    curr[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+    }
+    [prev, curr] = [curr, prev];
+  }
+  return prev[b.length];
+}
+
+// Does query token `q` match catalog token `t`? Allows exact match, substring
+// (for longer tokens) and a small edit distance so typos still resolve.
+function tokenMatches(q: string, t: string): boolean {
+  if (q === t) return true;
+  if (q.length >= 4 && t.length >= 4 && (t.includes(q) || q.includes(t))) {
+    return true;
+  }
+  const maxLen = Math.max(q.length, t.length);
+  if (maxLen < 4) return false;
+  const allowed = maxLen <= 5 ? 1 : 2;
+  return levenshtein(q, t) <= allowed;
+}
+
+interface CatalogProduct {
+  title: string;
+  description: string | null;
+  price: number;
+  category: string | null;
+  is_subscription?: boolean;
+  subscription_interval?: string | null;
+}
+
+// Keyword matching, now typo-tolerant. Longer keywords match query tokens
+// within a small edit distance; short keywords (greetings like "hi") still
+// require a substring hit to avoid false positives.
+function findKeywordResponse(userMessage: string): string | null {
+  const lower = userMessage.toLowerCase();
+  const tokens = tokenize(userMessage);
+  for (const entry of RESPONSES) {
+    const hit = entry.keywords.some((kw) => {
+      if (lower.includes(kw)) return true;
+      if (kw.length < 5) return false;
+      return tokens.some((tok) => tok.length >= 4 && tokenMatches(tok, kw));
+    });
+    if (hit) return entry.reply;
+  }
+  return null;
+}
+
+function formatPrice(product: CatalogProduct): string {
+  const price = `$${product.price.toFixed(2)}`;
+  if (product.is_subscription && product.subscription_interval) {
+    return `${price}/${product.subscription_interval}`;
+  }
+  return price;
+}
+
+// Match the message against the real product catalog. Titles are weighted more
+// heavily than descriptions, and a whole-title substring is treated as a strong
+// signal. Returns the best-matching products (highest score first).
+function findMatchingProducts(
+  userMessage: string,
+  products: CatalogProduct[],
+): CatalogProduct[] {
+  const queryTokens = meaningfulTokens(userMessage);
+  if (queryTokens.length === 0) return [];
+  const normalizedQuery = normalize(userMessage);
+
+  const scored = products.map((product) => {
+    const titleTokens = tokenize(product.title);
+    const descTokens = tokenize(product.description ?? "");
+    let score = 0;
+
+    for (const q of queryTokens) {
+      if (titleTokens.some((t) => tokenMatches(q, t))) {
+        score += 3;
+      } else if (descTokens.some((t) => tokenMatches(q, t))) {
+        score += 2;
+      }
+    }
+
+    // Strong boost when the message contains (most of) the product title.
+    const normalizedTitle = normalize(product.title);
+    if (normalizedTitle.length > 0 && normalizedQuery.includes(normalizedTitle)) {
+      score += 5;
+    }
+
+    return { product, score };
+  });
+
+  // A single matched word (title, or a distinctive description term like a
+  // synonym) is enough to surface a product — this is a fallback after the
+  // curated keyword replies, so we bias toward recall over a generic reply.
+  return scored
+    .filter((s) => s.score >= 2)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3)
+    .map((s) => s.product);
+}
+
+function buildProductReply(products: CatalogProduct[]): string {
+  const lines = products.map((p) => {
+    const desc = (p.description ?? "").trim();
+    const shortDesc = desc.length > 120 ? `${desc.slice(0, 117)}…` : desc;
+    return `- **${p.title}** (${formatPrice(p)})${shortDesc ? ` — ${shortDesc}` : ""}`;
+  });
+  const intro = products.length === 1
+    ? "I found a product that might be just what you're looking for! 🦔"
+    : "Here are some products that might be what you're looking for! 🦔";
+  return `${intro}\n\n${lines.join("\n")}\n\nWant more details on any of these? Just ask!`;
+}
+
+interface MatchResult {
+  reply: string;
+  matchType: "keyword" | "catalog" | "default";
+  matchedProductCount: number;
+}
+
+function findResponse(userMessage: string, products: CatalogProduct[]): MatchResult {
+  // 1) Curated topic replies (care advice, shipping, greetings…) — now typo tolerant.
+  const keywordReply = findKeywordResponse(userMessage);
+  if (keywordReply) {
+    return { reply: keywordReply, matchType: "keyword", matchedProductCount: 0 };
+  }
+
+  // 2) Fall back to the real catalog with fuzzy matching so synonyms, typos and
+  //    products we never hardcoded still surface instead of a generic reply.
+  const matches = findMatchingProducts(userMessage, products);
+  if (matches.length > 0) {
+    return {
+      reply: buildProductReply(matches),
+      matchType: "catalog",
+      matchedProductCount: matches.length,
+    };
+  }
+
+  return { reply: DEFAULT_REPLY, matchType: "default", matchedProductCount: 0 };
+}
+
+// Small in-memory cache so we don't re-query the catalog on every message.
+// Edge instances are reused across invocations, so this keeps chat snappy.
+let catalogCache: { products: CatalogProduct[]; fetchedAt: number } | null = null;
+const CATALOG_TTL_MS = 60_000;
+
+async function loadCatalog(): Promise<CatalogProduct[]> {
+  if (catalogCache && Date.now() - catalogCache.fetchedAt < CATALOG_TTL_MS) {
+    return catalogCache.products;
+  }
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  if (!supabaseUrl || !anonKey) return catalogCache?.products ?? [];
+
+  const supabase = createClient(supabaseUrl, anonKey);
+  const { data, error } = await supabase
+    .from("products")
+    .select("title, description, price, category, is_subscription, subscription_interval");
+
+  if (error || !data) {
+    // Fall back to any previously cached catalog (or nothing) — matching then
+    // degrades to keyword-only rather than failing the whole request.
+    return catalogCache?.products ?? [];
+  }
+
+  const products = (data as CatalogProduct[]).map((p) => ({
+    ...p,
+    price: typeof p.price === "number" ? p.price : Number(p.price),
+  }));
+  catalogCache = { products, fetchedAt: Date.now() };
+  return products;
 }
 
 serve(async (req) => {
@@ -100,6 +314,11 @@ serve(async (req) => {
           "chat.user_message_length": lastUserMessage.content.length,
         });
 
+        // Load the real product catalog so product searches can be matched
+        // against actual titles/descriptions (with fuzzy tolerance) rather than
+        // only a hardcoded keyword list. Failures degrade to keyword matching.
+        const catalog = await loadCatalog();
+
         // Simulated "Gemini call" — wrapped in a child span with gen_ai.* attributes
         // so it lines up with PostHog's LLM trace conventions.
         const reply = await tracer.withSpan(
@@ -110,7 +329,13 @@ serve(async (req) => {
               "gen_ai.request.model": "google/gemini-2.5-flash",
               "gen_ai.operation.name": "chat",
             });
-            const r = findResponse(lastUserMessage.content);
+            const match = findResponse(lastUserMessage.content, catalog);
+            const r = match.reply;
+            genSpan.setAttributes({
+              "chat.match_type": match.matchType,
+              "chat.matched_product_count": match.matchedProductCount,
+              "chat.catalog_size": catalog.length,
+            });
             // Simulate slight delay for realism
             await new Promise((res) => setTimeout(res, 300 + Math.random() * 700));
             const inputTokens = Math.ceil(
