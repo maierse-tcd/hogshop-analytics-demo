@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/contexts/CartContext";
 import { trackEvent, posthog } from "@/lib/posthog";
-import { ShoppingCart } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { ShoppingCart, Eye } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useFeatureFlagEnabled, useFeatureFlagVariantKey } from "posthog-js/react";
 import { useEffect } from "react";
 import { useFlashSale } from "@/hooks/useFlashSale";
@@ -78,7 +78,6 @@ export const ProductCard = ({
   subscription_interval_count
 }: ProductCardProps) => {
   const { addToCart } = useCart();
-  const navigate = useNavigate();
   const halloweenMode = useFeatureFlagEnabled('hero_banner_halloween');
   const christmasMode = useFeatureFlagEnabled('hero_banner_christmas');
   const easterMode = useFeatureFlagEnabled('hero_banner_easter');
@@ -112,6 +111,9 @@ export const ProductCard = ({
   // Feature flag tracking is handled automatically by the PostHog SDK
 
   const handleAddToCart = (e: React.MouseEvent) => {
+    // The button lives inside the product's navigable link, so cancel the
+    // link navigation (preventDefault) as well as bubbling (stopPropagation).
+    e.preventDefault();
     e.stopPropagation();
     const imageSrc = imageMap[image_url] || image_url;
     addToCart({ 
@@ -128,8 +130,9 @@ export const ProductCard = ({
     }, "product_card");
   };
 
-  const handleCardClick = () => {
-    navigate(`/product/${id}`);
+  // Navigation itself is handled by the wrapping <Link>; this only records the
+  // analytics event so it fires on every real navigation to the detail page.
+  const handleProductView = () => {
     trackEvent("product_viewed", {
       product_id: id,
       product_name: title,
@@ -137,15 +140,23 @@ export const ProductCard = ({
     });
   };
 
+  const productPath = `/product/${id}`;
+
   const imageSrc = imageMap[image_url] || image_url;
   const themeConfig = seasonalMode ? getThemeConfig(seasonalMode as SeasonalTheme) : null;
 
   // Horizontal card variant (experiment)
   if (cardDesignV2) {
     return (
-      <Card 
+      <Link
+        to={productPath}
+        onClick={handleProductView}
+        data-attr="product-card-link"
+        aria-label={`View ${title}`}
+        className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-lg"
+      >
+      <Card
         className="overflow-hidden group transition-all duration-300 border-2 cursor-pointer hover:shadow-lg"
-        onClick={handleCardClick}
       >
         <div className="flex">
           <div className="relative w-1/2 overflow-hidden">
@@ -154,6 +165,11 @@ export const ProductCard = ({
               alt={title}
               className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
             />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-300 group-hover:bg-black/40 group-hover:opacity-100 pointer-events-none">
+              <span className="flex items-center gap-1.5 rounded-full bg-background/90 px-4 py-2 text-sm font-semibold shadow-lg">
+                <Eye className="h-4 w-4" /> View product
+              </span>
+            </div>
             {flashSaleActive && (
               <Badge className="absolute bottom-3 left-3 bg-primary text-primary-foreground font-bold shadow-[0_0_12px_hsl(var(--primary)/0.7)] rounded-full px-2.5 py-0.5">
                 ⚡ −{discountPct}% SALE
@@ -196,15 +212,23 @@ export const ProductCard = ({
           </div>
         </div>
       </Card>
+      </Link>
     );
   }
 
   // Default vertical card
   return (
-    <Card 
+    <Link
+      to={productPath}
+      onClick={handleProductView}
+      data-attr="product-card-link"
+      aria-label={`View ${title}`}
+      className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-lg"
+    >
+    <Card
       className={`overflow-hidden group transition-all duration-300 border-2 cursor-pointer hover:-translate-y-1 ${
-        seasonalMode 
-          ? '' 
+        seasonalMode
+          ? ''
           : 'hover:shadow-xl'
       }`}
       style={seasonalMode && themeConfig ? {
@@ -212,7 +236,6 @@ export const ProductCard = ({
         borderColor: themeConfig.colors.secondary + '4d',
         background: `linear-gradient(135deg, ${themeConfig.colors.dark}80 0%, hsl(var(--background)) 100%)`
       } : {}}
-      onClick={handleCardClick}
     >
       <div className={`relative aspect-square overflow-hidden ${
         seasonalMode && themeConfig ? '' : 'bg-accent/5'
@@ -226,6 +249,11 @@ export const ProductCard = ({
             seasonalMode ? 'group-hover:scale-110 group-hover:brightness-110' : 'group-hover:scale-105'
           }`}
         />
+        <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-300 group-hover:bg-black/40 group-hover:opacity-100 pointer-events-none">
+          <span className="flex items-center gap-1.5 rounded-full bg-background/90 px-4 py-2 text-sm font-semibold shadow-lg">
+            <Eye className="h-4 w-4" /> View product
+          </span>
+        </div>
         {seasonalMode && themeConfig && (
           <>
             <div className="absolute top-2 left-2 text-2xl animate-bounce opacity-60" style={{ animationDuration: '2s' }}>{themeConfig.emoji.decorative[0]}</div>
@@ -321,5 +349,6 @@ export const ProductCard = ({
         </Button>
       </CardFooter>
     </Card>
+    </Link>
   );
 };
