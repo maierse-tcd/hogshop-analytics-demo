@@ -4,21 +4,6 @@ import { Button } from "@/components/ui/button";
 import { useFlashSale } from "@/hooks/useFlashSale";
 import { trackEvent } from "@/lib/posthog";
 
-const TARGET_KEY = "flash_sale_target_ts";
-
-function getOrCreateTarget(): number {
-  const now = Date.now();
-  const raw = localStorage.getItem(TARGET_KEY);
-  if (raw) {
-    const n = parseInt(raw, 10);
-    if (!Number.isNaN(n) && n > now) return n;
-  }
-  const next = new Date();
-  next.setHours(24, 0, 0, 0); // next local midnight
-  localStorage.setItem(TARGET_KEY, String(next.getTime()));
-  return next.getTime();
-}
-
 function formatRemaining(ms: number) {
   const total = Math.max(0, Math.floor(ms / 1000));
   const h = Math.floor(total / 3600);
@@ -29,9 +14,8 @@ function formatRemaining(ms: number) {
 }
 
 export const FlashSaleBanner = () => {
-  const { flashSaleActive, discountPct } = useFlashSale();
-  const [target, setTarget] = useState<number>(() => (typeof window !== "undefined" ? getOrCreateTarget() : 0));
-  const [remaining, setRemaining] = useState<string>("00:00:00");
+  const { flashSaleActive, discountPct, endsAt } = useFlashSale();
+  const [remaining, setRemaining] = useState<string | null>(null);
   const shownRef = useRef(false);
 
   useEffect(() => {
@@ -46,29 +30,31 @@ export const FlashSaleBanner = () => {
     }
   }, [flashSaleActive, discountPct]);
 
-  // Known UX issue: the countdown is driven by the client clock via setInterval.
-  // On long-lived or backgrounded tabs the interval throttles and the displayed
-  // time drifts — users occasionally see "00:00:00"/expired while the flag-gated
-  // discount is still active. A server-authoritative end time would remove the
-  // client/flag mismatch.
+  // The countdown and the discount now share one source of truth: the
+  // server-authoritative `endsAt` from the flag payload (see useFlashSale). The
+  // timer simply renders `endsAt - now` clamped at zero, so a throttled or
+  // backgrounded tab can no longer drift out of sync — and because the discount
+  // is gated on the same `endsAt`, the banner unmounts the instant the timer
+  // reaches zero instead of showing "00:00:00" beside a still-active discount.
   useEffect(() => {
-    if (!flashSaleActive) return;
-    const tick = () => {
-      const now = Date.now();
-      if (now >= target) {
-        const next = new Date();
-        next.setHours(24, 0, 0, 0);
-        localStorage.setItem(TARGET_KEY, String(next.getTime()));
-        setTarget(next.getTime());
-        setRemaining(formatRemaining(next.getTime() - now));
-      } else {
-        setRemaining(formatRemaining(target - now));
-      }
-    };
+    if (!flashSaleActive || endsAt == null) {
+      setRemaining(null);
+      return;
+    }
+    const tick = () => setRemaining(formatRemaining(endsAt - Date.now()));
     tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [flashSaleActive, target]);
+    const id = window.setInterval(tick, 1000);
+    // Recompute immediately when the tab regains focus so a returning user
+    // never sees a stale value a throttled interval hasn't caught up on yet.
+    const onVisible = () => {
+      if (!document.hidden) tick();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [flashSaleActive, endsAt]);
 
   if (!flashSaleActive) return null;
 
@@ -95,14 +81,16 @@ export const FlashSaleBanner = () => {
         <div className="flex items-center gap-3 text-sm md:text-base font-bold">
           <Zap className="h-5 w-5 fill-current drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]" />
           <span className="tracking-wide">
-            24-HOUR FLASH SALE — {discountPct}% OFF EVERYTHING
+            FLASH SALE — {discountPct}% OFF EVERYTHING
           </span>
-          <span
-            className="ml-2 font-mono rounded-md bg-black/25 px-2.5 py-0.5 text-sm tabular-nums backdrop-blur-sm"
-            aria-label="Time remaining"
-          >
-            {remaining}
-          </span>
+          {remaining && (
+            <span
+              className="ml-2 font-mono rounded-md bg-black/25 px-2.5 py-0.5 text-sm tabular-nums backdrop-blur-sm"
+              aria-label="Time remaining"
+            >
+              {remaining}
+            </span>
+          )}
         </div>
         <Button
           size="sm"
