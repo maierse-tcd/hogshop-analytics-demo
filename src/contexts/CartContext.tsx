@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
+import { toast } from "sonner";
 import { trackEvent } from "@/lib/posthog";
 
 interface Product {
@@ -74,6 +75,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       action: "add",
       product_id: product.id,
       hashed_example_property: "posthog",
+    });
+
+    // Immediate, visible confirmation so the add-to-cart action never feels
+    // unresponsive. Without this the only on-screen change is the small cart
+    // badge in the header, which reads as a dead click.
+    const newQuantity = existing ? existing.quantity + 1 : 1;
+    toast.success(`Added to cart: ${product.title}`, {
+      description:
+        newQuantity > 1
+          ? `Quantity ${newQuantity} · ${totalItems} item${totalItems === 1 ? "" : "s"} in your cart`
+          : `${totalItems} item${totalItems === 1 ? "" : "s"} in your cart`,
     });
   };
 

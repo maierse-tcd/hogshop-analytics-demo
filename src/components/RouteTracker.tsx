@@ -8,8 +8,16 @@ export const RouteTracker = () => {
   const prevPathRef = useRef<string | null>(null);
 
   useEffect(() => {
-    // Scroll to top on route change
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    // Only scroll to top when the page path actually changes — not on the
+    // initial mount, and not when only the query string / hash changes (which
+    // can happen from in-page interactions). A smooth scroll on an in-page
+    // interaction reads in session replays like an unwanted redirect to the
+    // top of the page.
+    const pathChanged =
+      prevPathRef.current !== null && prevPathRef.current !== location.pathname;
+    if (pathChanged) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
 
     if (typeof window !== "undefined" && posthog) {
       // Track pageview with PostHog's built-in event
