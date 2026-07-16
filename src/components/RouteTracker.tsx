@@ -8,8 +8,16 @@ export const RouteTracker = () => {
   const prevPathRef = useRef<string | null>(null);
 
   useEffect(() => {
-    // Scroll to top on route change
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    // Only reset scroll when moving to a different page. Re-navigating to the
+    // same path (e.g. clicking the brand logo while already on the homepage)
+    // should preserve the user's scroll position instead of yanking them back to
+    // the top and making them re-find where they were browsing.
+    const fromPath = prevPathRef.current;
+    const isNewPage = fromPath !== location.pathname;
+    if (isNewPage) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    prevPathRef.current = location.pathname;
 
     if (typeof window !== "undefined" && posthog) {
       // Track pageview with PostHog's built-in event
@@ -25,7 +33,7 @@ export const RouteTracker = () => {
       const navSpan = startSpan("navigation", {
         kind: SpanKind.INTERNAL,
         attributes: {
-          "navigation.from": prevPathRef.current ?? "(initial)",
+          "navigation.from": fromPath ?? "(initial)",
           "navigation.to": location.pathname,
           "navigation.search": location.search,
           "page.title": document.title,
@@ -34,8 +42,6 @@ export const RouteTracker = () => {
       // End on next frame so the span has non-zero duration covering
       // first paint after the route change.
       requestAnimationFrame(() => navSpan.end({ code: SpanStatus.OK }));
-
-      prevPathRef.current = location.pathname;
 
       if (import.meta.env.DEV) {
         console.log("PostHog: Route tracked", location.pathname);

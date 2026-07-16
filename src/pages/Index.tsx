@@ -18,6 +18,23 @@ import { useTour } from "@/hooks/useTour";
 import { TourTooltip } from "@/components/TourTooltip";
 import { shopGettingStartedSteps } from "@/lib/tours";
 
+const CATEGORIES = ["All", "Food & Nutrition", "Housing", "Toys & Exercise", "Care & Grooming", "Bedding & Comfort", "Merchandise"];
+
+// Persist the selected category so it survives navigation (e.g. clicking the
+// brand logo to "go home"), instead of living only in ephemeral component
+// state that resets to "All" whenever the page re-mounts.
+const CATEGORY_STORAGE_KEY = "hogshop_selected_category";
+
+const readSavedCategory = (): string => {
+  try {
+    const saved = localStorage.getItem(CATEGORY_STORAGE_KEY);
+    if (saved && CATEGORIES.includes(saved)) return saved;
+  } catch {
+    // Ignore storage access failures (private mode, disabled storage, etc.)
+  }
+  return "All";
+};
+
 
 interface Product {
   id: string;
@@ -34,7 +51,9 @@ interface Product {
 
 const Index = () => {
   const navigate = useNavigate();
-  const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  // Restore the last-used category so the filter survives navigation (lazy
+  // initializer reads localStorage once on mount).
+  const [selectedCategory, setSelectedCategoryState] = useState<string>(readSavedCategory);
   const productsViewedRef = useRef(false);
   const loadStartRef = useRef(typeof performance !== "undefined" ? performance.now() : 0);
   const cacheHitRef = useRef<boolean | null>(null);
@@ -116,7 +135,20 @@ const Index = () => {
     }
   }, []);
 
-  const categories = ["All", "Food & Nutrition", "Housing", "Toys & Exercise", "Care & Grooming", "Bedding & Comfort", "Merchandise"];
+  const categories = CATEGORIES;
+
+  // Update the active category and persist it so it survives navigation.
+  const selectCategory = (category: string, opts?: {scroll?: boolean;}) => {
+    setSelectedCategoryState(category);
+    try {
+      localStorage.setItem(CATEGORY_STORAGE_KEY, category);
+    } catch {
+      // Ignore storage failures (private mode, quota, etc.)
+    }
+    if (opts?.scroll) {
+      document.getElementById("products")?.scrollIntoView({ behavior: "smooth" });
+    }
+  };
 
   const filteredProducts = selectedCategory === "All" ?
   products :
@@ -484,7 +516,10 @@ const Index = () => {
                 variant={selectedCategory === category ? "default" : "outline"}
                 className={`font-semibold ${selectedCategory === category ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
                 onClick={() => {
-                  setSelectedCategory(category);
+                  // Scroll the freshly filtered grid into view so every tap has an
+                  // immediate, visible response (and doesn't register as a dead click),
+                  // even when the buttons sit near the top of the viewport.
+                  selectCategory(category, { scroll: true });
                   trackEvent("category_filtered", { category });
                 }}>
                 
@@ -571,8 +606,7 @@ const Index = () => {
                   <li key={cat}>
                     <button
                       onClick={() => {
-                        setSelectedCategory(cat);
-                        document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' });
+                        selectCategory(cat, { scroll: true });
                       }}
                       className="text-muted-foreground hover:text-primary transition-colors">
                       
