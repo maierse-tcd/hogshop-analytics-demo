@@ -63,9 +63,29 @@ const Shipping = () => {
             <div className="bg-primary/10 p-2 rounded-full h-fit"><MapPin className="h-5 w-5 text-primary flex-shrink-0" /></div>
             <div>
               <h3 className="font-semibold text-lg mb-2">International Shipping</h3>
-              <p className="text-muted-foreground">
-                We ship worldwide! Our international hedgehog couriers are trained in 47 languages and will navigate 
-                any terrain. Delivery times vary by location (hedgehogs swim slower than they run). Customs fees may apply.
+              <p className="text-muted-foreground mb-3">
+                Yes, we ship internationally — including to <span className="font-medium text-foreground">Canada</span>! 🇨🇦
+                Our hedgehog couriers are trained in 47 languages and will navigate any terrain. Delivery times vary by
+                location (hedgehogs swim slower than they run) and customs fees may apply.
+              </p>
+              <p className="text-muted-foreground mb-2">We currently ship to these major markets:</p>
+              <ul className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-1 text-sm text-muted-foreground mb-3">
+                <li>🇺🇸 United States</li>
+                <li>🇨🇦 Canada</li>
+                <li>🇬🇧 United Kingdom</li>
+                <li>🇮🇪 Ireland</li>
+                <li>🇦🇺 Australia</li>
+                <li>🇳🇿 New Zealand</li>
+                <li>🇩🇪 Germany</li>
+                <li>🇫🇷 France</li>
+                <li>🇳🇱 Netherlands</li>
+                <li>🇪🇸 Spain</li>
+                <li>🇮🇹 Italy</li>
+                <li>🇯🇵 Japan</li>
+              </ul>
+              <p className="text-sm text-muted-foreground">
+                Don't see your country? We ship to 100+ destinations worldwide — just ask our support hedgehogs in the
+                chat widget (bottom-right corner) for the full list and a shipping quote for your region.
               </p>
             </div>
           </div>
@@ -79,6 +99,30 @@ const Shipping = () => {
               You can watch their journey in real-time via our PostHog-powered tracking system. Fun fact: you can see when 
               they stop for snacks!
             </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-semibold mb-4">Changing your shipping address</h2>
+            <p className="text-muted-foreground">
+              Typed the wrong address, or moving before your hedgehogs arrive? No problem:
+            </p>
+            <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4 mt-2">
+              <li>
+                <span className="font-medium text-foreground">Before your order ships</span> — update the delivery
+                address from your customer portal under <span className="italic">Orders → Edit shipping</span>, or reply
+                to your order confirmation email. Changes made while the order still shows{" "}
+                <span className="italic">Processing</span> are applied automatically.
+              </li>
+              <li>
+                <span className="font-medium text-foreground">After your order ships</span> — the hedgehogs are already
+                on their way, so we can't redirect them mid-sprint. Message our support team in the chat widget with your
+                order number and we'll reroute the delivery or arrange a reshipment.
+              </li>
+              <li>
+                <span className="font-medium text-foreground">Subscription orders</span> — update your saved address in
+                the customer portal and every future shipment will go to the new location.
+              </li>
+            </ul>
           </section>
 
           <section>
