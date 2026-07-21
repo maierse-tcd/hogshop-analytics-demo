@@ -1,5 +1,22 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { trackEvent } from "@/lib/posthog";
+
+// Persist the cart so a full page reload (or navigating to a page that
+// remounts the provider) doesn't silently empty it.
+const CART_STORAGE_KEY = "cart_cache";
+
+const loadCartFromStorage = (): CartItem[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    const stored = window.localStorage.getItem(CART_STORAGE_KEY);
+    if (!stored) return [];
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) ? (parsed as CartItem[]) : [];
+  } catch {
+    // Corrupt/unreadable storage should never break the shop.
+    return [];
+  }
+};
 
 interface Product {
   id: string;
@@ -31,7 +48,18 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
-  const [items, setItems] = useState<CartItem[]>([]);
+  const [items, setItems] = useState<CartItem[]>(loadCartFromStorage);
+
+  // Write the cart back to storage on every change so it survives reloads.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+    } catch {
+      // Ignore write failures (e.g. storage quota) — an unpersisted cart
+      // is better than a crashed one.
+    }
+  }, [items]);
 
   const addToCart = (product: Product, source?: string) => {
     const existing = items.find((item) => item.id === product.id);

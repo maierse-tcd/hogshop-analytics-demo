@@ -1,6 +1,7 @@
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Trash2, Plus, Minus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import { Badge } from "@/components/ui/badge";
 import { trackEvent } from "@/lib/posthog";
@@ -11,6 +12,12 @@ import { useFlashSale } from "@/hooks/useFlashSale";
 export const CartDrawer = () => {
   const { items, removeFromCart, updateQuantity, totalItems, totalPrice } = useCart();
   const { startCheckout, isCheckingOut } = useCheckout();
+  const navigate = useNavigate();
+
+  const handleContinueShopping = () => {
+    trackEvent("empty_cart_cta_clicked", { destination: "products" });
+    navigate("/#products");
+  };
   const { flashSaleActive, discountPct, getDiscountedPrice } = useFlashSale();
   const discountAmount = flashSaleActive ? +(totalPrice * (discountPct / 100)).toFixed(2) : 0;
   const discountedTotal = +(totalPrice - discountAmount).toFixed(2);
@@ -92,7 +99,16 @@ export const CartDrawer = () => {
               <div className="flex flex-col items-center justify-center h-full text-center">
                 <ShoppingCart className="h-16 w-16 text-muted-foreground mb-4" />
                 <p className="text-lg font-medium">Your cart is empty</p>
-                <p className="text-sm text-muted-foreground">Add some hedgehog goodness!</p>
+                <p className="text-sm text-muted-foreground mb-6">Add some hedgehog goodness!</p>
+                <SheetClose asChild>
+                  <Button
+                    size="lg"
+                    data-attr="empty-cart-continue-shopping"
+                    onClick={handleContinueShopping}
+                  >
+                    Browse products
+                  </Button>
+                </SheetClose>
               </div>
             ) : (
               <div className="space-y-4">
