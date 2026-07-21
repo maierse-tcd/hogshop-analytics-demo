@@ -41,8 +41,16 @@ const RESPONSES: { keywords: string[]; reply: string }[] = [
     reply: "We have options for every budget! 🦔 Starting from $12.99 for treats up to $249.99 for the luxury mansion. Our most popular items are the **Exercise Wheel** ($39.99) and **Care Starter Kit** ($79.99). The food subscription saves you 10% monthly too!",
   },
   {
+    keywords: ["canada", "canadian", "international", "abroad", "overseas", "customs", "worldwide"],
+    reply: "Yes — we ship internationally, including to **Canada** 🇨🇦! We currently deliver to 100+ countries, including the US, Canada, UK, Ireland, Australia, New Zealand, Germany, France, the Netherlands, Spain, Italy, and Japan. International delivery is typically **7-14 business days** (customs fees may apply and can vary by country). Don't see your country? Just tell me where you are and I'll confirm. 🦔",
+  },
+  {
+    keywords: ["address", "wrong address", "change address", "update address", "reroute", "moved", "moving"],
+    reply: "No problem — here's how to change your shipping address 🦔:\n\n- **Before it ships** (order still shows *Processing*): update it in your customer portal under **Orders → Edit shipping**, or reply to your confirmation email — changes apply automatically.\n- **After it ships**: give me your order number and I'll reroute the delivery or arrange a reshipment.\n- **Subscriptions**: update your saved address in the portal and all future shipments will use it.",
+  },
+  {
     keywords: ["ship", "deliver", "shipping", "delivery", "arrive"],
-    reply: "We offer standard shipping on all orders! 📦 Subscription orders always ship free. Most orders arrive within 3-5 business days. Check our Shipping page for full details. 🦔",
+    reply: "Here's the shipping rundown 📦🦔:\n\n- **Standard Hedgehog Express**: 5-7 business days — **free** on orders over $50\n- **Premium Hedgehog Rush**: 2-3 business days — $12.99 flat\n- **Overnight Teleportation™**: next day — $24.99\n- Subscription orders **always ship free**, and physical orders are processed within 24 hours.\n\nWe also ship internationally to 100+ countries (including **Canada** 🇨🇦), typically 7-14 business days. Need to change a delivery address? Just ask — I can walk you through it!",
   },
   {
     keywords: ["hello", "hi", "hey", "help", "start"],
