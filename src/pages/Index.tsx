@@ -569,15 +569,16 @@ const Index = () => {
               <ul className="space-y-3 text-sm">
                 {categories.filter((c) => c !== "All").slice(0, 5).map((cat) =>
                   <li key={cat}>
-                    <button
+                    <a
+                      href="#products"
                       onClick={() => {
                         setSelectedCategory(cat);
-                        document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' });
+                        trackEvent("category_filtered", { category: cat, source: "footer" });
                       }}
                       className="text-muted-foreground hover:text-primary transition-colors">
-                      
+
                       {cat}
-                    </button>
+                    </a>
                   </li>
                   )}
               </ul>
