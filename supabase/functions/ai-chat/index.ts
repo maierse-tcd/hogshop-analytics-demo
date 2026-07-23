@@ -56,10 +56,75 @@ const RESPONSES: { keywords: string[]; reply: string }[] = [
 
 const DEFAULT_REPLY = "That's a great question! 🦔 While I'm not sure about that specific topic, I can help you with our products, hedgehog care tips, subscriptions, and shipping. What would you like to know about? Browse our full catalog on the homepage!";
 
+// Very small English stemmer — folds common suffixes so "wheels", "feeding",
+// "grooming" collapse onto their keyword roots ("wheel", "feed", "groom").
+function stem(word: string): string {
+  let w = word;
+  for (const suffix of ["ing", "ed", "es", "s"]) {
+    if (w.length > suffix.length + 2 && w.endsWith(suffix)) {
+      w = w.slice(0, -suffix.length);
+      break;
+    }
+  }
+  return w;
+}
+
+// Levenshtein edit distance, with early exit once we exceed `max`.
+function editDistance(a: string, b: string, max: number): number {
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const curr = [i];
+    let rowMin = i;
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      const d = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+      curr[j] = d;
+      if (d < rowMin) rowMin = d;
+    }
+    if (rowMin > max) return max + 1;
+    prev = curr;
+  }
+  return prev[b.length];
+}
+
+// Allow more edits the longer the keyword, so short words stay strict
+// (avoids "hi"/"eat" matching everything) but long ones tolerate typos.
+function fuzzyThreshold(len: number): number {
+  if (len >= 8) return 2;
+  if (len >= 5) return 1;
+  return 0;
+}
+
+// True if a query token is a typo-tolerant match for a keyword. Both are
+// stemmed first so plurals/verb forms line up before the distance check.
+function tokenMatchesKeyword(token: string, keyword: string): boolean {
+  const t = stem(token);
+  const kw = stem(keyword);
+  if (t === kw) return true;
+  const threshold = fuzzyThreshold(Math.max(t.length, kw.length));
+  if (threshold === 0) return false;
+  return editDistance(t, kw, threshold) <= threshold;
+}
+
 function findResponse(userMessage: string): string {
   const lower = userMessage.toLowerCase();
+  // Split into alphanumeric tokens so we can match individual words with
+  // typo tolerance instead of requiring a literal substring of the query.
+  const tokens = lower.split(/[^a-z0-9]+/).filter(Boolean);
+
+  // 1) Keep the original exact substring behavior first, across all entries,
+  //    so any query that matched before resolves identically (handles
+  //    multi-word phrasings and keywords embedded in longer words).
   for (const entry of RESPONSES) {
     if (entry.keywords.some(kw => lower.includes(kw))) {
+      return entry.reply;
+    }
+  }
+  // 2) Fall back to fuzzy/stemmed token matching for near-misses like
+  //    "exercize wheel" -> "exercise" or "wheal" -> "wheel".
+  for (const entry of RESPONSES) {
+    if (entry.keywords.some(kw => tokens.some(tok => tokenMatchesKeyword(tok, kw)))) {
       return entry.reply;
     }
   }
