@@ -35,10 +35,25 @@ interface Product {
 const Index = () => {
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const [filterFlash, setFilterFlash] = useState(false);
+  const productGridRef = useRef<HTMLDivElement>(null);
   const productsViewedRef = useRef(false);
   const loadStartRef = useRef(typeof performance !== "undefined" ? performance.now() : 0);
   const cacheHitRef = useRef<boolean | null>(null);
   const productListLoadedRef = useRef(false);
+
+  // Applying a category filter only changes the product grid below the filter
+  // bar, so a click can leave the viewport looking unchanged — posthog-js then
+  // flags it as a $dead_click (and the summariser misreads those as a "broken
+  // footer Housing link"). Mirror the footer links: scroll the grid into view
+  // and briefly flash it so every filter click produces a visible reaction.
+  const applyCategoryFilter = (category: string) => {
+    setSelectedCategory(category);
+    trackEvent("category_filtered", { category });
+    productGridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setFilterFlash(true);
+    window.setTimeout(() => setFilterFlash(false), 450);
+  };
 
   const { data: products, isLoading } = useQuery({
     queryKey: ["products"],
@@ -483,10 +498,7 @@ const Index = () => {
                 key={category}
                 variant={selectedCategory === category ? "default" : "outline"}
                 className={`font-semibold ${selectedCategory === category ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
-                onClick={() => {
-                  setSelectedCategory(category);
-                  trackEvent("category_filtered", { category });
-                }}>
+                onClick={() => applyCategoryFilter(category)}>
                 
                 {category}
               </Button>
@@ -494,27 +506,33 @@ const Index = () => {
           </div>
         </div>
 
-        {isLoading ?
+        <div
+          ref={productGridRef}
+          className={`scroll-mt-24 rounded-xl transition-all duration-300 ${
+          filterFlash ? 'ring-2 ring-primary/50 ring-offset-4 ring-offset-background' : 'ring-0'}`
+          }>
+          {isLoading ?
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) =>
+              {[...Array(6)].map((_, i) =>
             <div key={i} className="space-y-4">
-                <Skeleton className="aspect-square w-full" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-              </div>
+                  <Skeleton className="aspect-square w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
             )}
-          </div> :
+            </div> :
           filteredProducts && filteredProducts.length > 0 ?
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProducts.map((product) =>
+              {filteredProducts.map((product) =>
             <ProductCard key={product.id} {...product} />
             )}
-          </div> :
+            </div> :
 
           <div className="text-center py-12">
-            <p className="text-muted-foreground">No products found in this category.</p>
-          </div>
+              <p className="text-muted-foreground">No products found in this category.</p>
+            </div>
           }
+        </div>
       </section>
 
       {/* Footer */}
