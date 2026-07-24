@@ -77,10 +77,16 @@ export const Header = () => {
     });
     clearUser();
     posthog.reset();
-    posthog.reloadFeatureFlags();
+    // Do NOT reloadFeatureFlags() here. reset() mints a fresh anonymous
+    // distinct ID with no experience-continuity override, so an immediate
+    // reload re-hashes every experiment flag against that throwaway ID and can
+    // land on a different variant. When the user logs back in, that anonymous
+    // session merges into the same person and imports the divergent variant,
+    // contaminating live experiments with multi-variant exposures. PostHog
+    // reloads flags naturally on the next identify.
     setIsLoggedIn(false);
     setUserName("");
-    if (import.meta.env.DEV) console.log("Header: User logged out, flags reloaded");
+    if (import.meta.env.DEV) console.log("Header: User logged out");
     navigate("/");
   };
 
