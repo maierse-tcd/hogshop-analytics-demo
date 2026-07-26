@@ -1,14 +1,17 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { trackEvent } from "@/lib/posthog";
-import { Gift, Package, Heart, ShieldCheck } from "lucide-react";
+import { Gift, Package, Heart, ShieldCheck, CheckCircle2 } from "lucide-react";
 
 const GiftLanding = () => {
-  const navigate = useNavigate();
+  // The real gift checkout (/checkout/gift) isn't built yet. Rather than sending
+  // the user to a dead 404 page, the CTA shows an honest inline "coming soon"
+  // confirmation. We still record the funnel drop-off for demo analytics, but as
+  // an intentional, handled event — not an unhandled production exception.
+  const [claimed, setClaimed] = useState(false);
 
   useEffect(() => {
     trackEvent("gift_page_viewed", {
@@ -21,11 +24,22 @@ const GiftLanding = () => {
   const handleClaimGift = () => {
     trackEvent("gift_order_attempted", {
       product_name: "Max's Starter Kit",
-      intended_destination: "/checkout/gift",
+      intended_destination: "coming_soon",
       retail_value: 45,
       timestamp: new Date().toISOString(),
     });
-    navigate("/checkout/gift");
+
+    // Demo funnel drop-off: the checkout flow isn't live yet, so the claim can't
+    // complete. Tracked for analytics but surfaced honestly to the user instead
+    // of raising a 404 / unhandled exception.
+    trackEvent("funnel_drop_off", {
+      stage: "gift_checkout",
+      reason: "coming_soon",
+      product_name: "Max's Starter Kit",
+      timestamp: new Date().toISOString(),
+    });
+
+    setClaimed(true);
   };
 
   return (
@@ -110,16 +124,32 @@ const GiftLanding = () => {
 
             {/* CTA */}
             <div className="text-center pt-6">
-              <Button 
-                size="lg" 
-                className="h-14 px-12 text-lg font-semibold"
-                onClick={handleClaimGift}
-              >
-                Claim Your Free Gift Now
-              </Button>
-              <p className="text-sm text-muted-foreground mt-4">
-                No credit card required • While supplies last
-              </p>
+              {claimed ? (
+                <div className="mx-auto max-w-md space-y-3 rounded-lg border border-primary/20 bg-primary/5 p-6">
+                  <CheckCircle2 className="mx-auto h-10 w-10 text-primary" />
+                  <h3 className="text-2xl font-semibold">You're on the list! 🎉</h3>
+                  <p className="text-muted-foreground">
+                    Free gift checkout is coming soon. We've noted your interest and
+                    will let you know the moment Max's Starter Kit is ready to claim.
+                  </p>
+                  <Button asChild variant="outline" className="mt-2">
+                    <a href="/#products">Browse Products While You Wait</a>
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <Button
+                    size="lg"
+                    className="h-14 px-12 text-lg font-semibold"
+                    onClick={handleClaimGift}
+                  >
+                    Claim Your Free Gift Now
+                  </Button>
+                  <p className="text-sm text-muted-foreground mt-4">
+                    No credit card required • While supplies last
+                  </p>
+                </>
+              )}
             </div>
           </Card>
 

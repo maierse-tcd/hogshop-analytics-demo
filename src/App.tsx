@@ -25,7 +25,6 @@ import Shipping from "./pages/Shipping";
 import Terms from "./pages/Terms";
 import Readme from "./pages/Readme";
 import GiftLanding from "./pages/GiftLanding";
-import GiftCheckoutNotFound from "./pages/GiftCheckoutNotFound";
 import NotFound from "./pages/NotFound";
 import CancelSubscription from "./pages/CancelSubscription";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -61,7 +60,6 @@ const AppContent = () => {
             <Route path="/terms" element={<Terms />} />
             <Route path="/readme" element={<Readme />} />
             <Route path="/gift" element={<GiftLanding />} />
-            <Route path="/checkout/gift" element={<GiftCheckoutNotFound />} />
             <Route path="/account/cancel-subscription" element={<CancelSubscription />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
