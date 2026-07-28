@@ -100,7 +100,13 @@ export const ProductCard = ({
   const ctaText = ctaTextMap[ctaVariant as string] || 'Add to Cart';
 
   const { flashSaleActive, discountPct, getDiscountedPrice } = useFlashSale();
-  const displayPrice = getDiscountedPrice(price);
+
+  // Price can be missing for newly added catalog products (the data carries a
+  // null/undefined price). Guard against it so we never call .toFixed on a
+  // non-number, mirroring the Number(...) pattern used in the carousel.
+  const numericPrice = Number(price);
+  const hasValidPrice = price != null && Number.isFinite(numericPrice);
+  const displayPrice = getDiscountedPrice(numericPrice);
   
   // Determine active seasonal theme
   const seasonalMode = halloweenMode ? 'halloween' 
@@ -173,14 +179,16 @@ export const ProductCard = ({
             <h3 className="font-bold text-lg mb-2">{title}</h3>
             <p className="text-sm line-clamp-2 mb-3 text-muted-foreground">{description}</p>
             <div className="flex items-baseline gap-2 mt-auto mb-3 flex-wrap">
-              {flashSaleActive ? (
+              {!hasValidPrice ? (
+                <p className="text-lg font-semibold text-muted-foreground">Price unavailable</p>
+              ) : flashSaleActive ? (
                 <>
                   <p className="text-2xl font-bold text-primary">${displayPrice.toFixed(2)}</p>
-                  <p className="text-sm text-muted-foreground line-through">${price.toFixed(2)}</p>
+                  <p className="text-sm text-muted-foreground line-through">${numericPrice.toFixed(2)}</p>
                   <Badge className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0">−{discountPct}%</Badge>
                 </>
               ) : (
-                <p className="text-2xl font-bold">${price.toFixed(2)}</p>
+                <p className="text-2xl font-bold">${numericPrice.toFixed(2)}</p>
               )}
               {is_subscription && <span className="text-sm text-muted-foreground">/{subscription_interval}</span>}
             </div>
@@ -188,10 +196,10 @@ export const ProductCard = ({
               className="w-full gap-2 font-semibold"
               data-attr="add-to-cart"
               onClick={handleAddToCart}
-              disabled={stock === 0}
+              disabled={stock === 0 || !hasValidPrice}
             >
               <ShoppingCart className="h-4 w-4" />
-              {stock === 0 ? "Out of Stock" : ctaText}
+              {stock === 0 ? "Out of Stock" : !hasValidPrice ? "Unavailable" : ctaText}
             </Button>
           </div>
         </div>
@@ -279,13 +287,15 @@ export const ProductCard = ({
           {description}
         </p>
         <div className="flex items-baseline gap-2 flex-wrap">
-          {flashSaleActive ? (
+          {!hasValidPrice ? (
+            <p className="text-lg font-semibold text-muted-foreground">Price unavailable</p>
+          ) : flashSaleActive ? (
             <>
               <p className="text-2xl font-bold bg-primary/10 px-2 py-0.5 rounded-md w-fit text-primary"
                  style={seasonalMode && themeConfig ? { color: themeConfig.colors.primary, textShadow: `0 0 10px ${themeConfig.colors.primary}` } : {}}>
                 ${displayPrice.toFixed(2)}
               </p>
-              <p className="text-base text-muted-foreground line-through">${price.toFixed(2)}</p>
+              <p className="text-base text-muted-foreground line-through">${numericPrice.toFixed(2)}</p>
             </>
           ) : (
             <p className="text-2xl font-bold bg-primary/10 px-2 py-0.5 rounded-md w-fit"
@@ -293,7 +303,7 @@ export const ProductCard = ({
                  color: themeConfig.colors.primary,
                  textShadow: `0 0 10px ${themeConfig.colors.primary}`
                } : {}}>
-              ${price.toFixed(2)}
+              ${numericPrice.toFixed(2)}
             </p>
           )}
           {is_subscription && (
@@ -313,11 +323,11 @@ export const ProductCard = ({
             boxShadow: `hover: 0 0 20px ${themeConfig.colors.primary}`
           } : {}}
           onClick={handleAddToCart}
-          disabled={stock === 0}
+          disabled={stock === 0 || !hasValidPrice}
           size="lg"
         >
           <ShoppingCart className="h-4 w-4" />
-          {stock === 0 ? "Out of Stock" : seasonalMode && themeConfig ? `${themeConfig.emoji.primary} ${ctaText}` : ctaText}
+          {stock === 0 ? "Out of Stock" : !hasValidPrice ? "Unavailable" : seasonalMode && themeConfig ? `${themeConfig.emoji.primary} ${ctaText}` : ctaText}
         </Button>
       </CardFooter>
     </Card>
