@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export const Header = () => {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -242,10 +242,25 @@ export const Header = () => {
             variant="ghost"
             size="icon"
             onClick={() => {
-              const newTheme = theme === "dark" ? "light" : "dark";
+              // Flip on the *resolved* theme so a stored "system" value can't
+              // no-op the toggle.
+              const current = resolvedTheme === "light" ? "light" : "dark";
+              const newTheme = current === "dark" ? "light" : "dark";
               setTheme(newTheme);
-              trackEvent("theme_toggled", { from: theme, to: newTheme });
-              posthog.group("ux_choice", `${newTheme}_mode`, { theme: newTheme });
+              // next-themes writes the theme class onto <html>. Verify it
+              // actually landed before reporting success: a failed React commit
+              // can leave the DOM untouched while setTheme() returns normally,
+              // which previously logged a healthy dark→light switch for a toggle
+              // that rendered nothing. Report what really happened instead.
+              requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                  const applied = document.documentElement.classList.contains(newTheme);
+                  trackEvent("theme_toggled", { from: current, to: newTheme, applied });
+                  if (applied) {
+                    posthog.group("ux_choice", `${newTheme}_mode`, { theme: newTheme });
+                  }
+                });
+              });
             }}
             className="rounded-full"
           >
