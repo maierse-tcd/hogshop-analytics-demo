@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -6,12 +6,22 @@ import { trackEvent } from "@/lib/posthog";
 
 interface NewsletterProps {
   variant?: "card" | "banner";
+  autoFocus?: boolean;
   onSubscribed?: (email: string) => void;
 }
 
-export const Newsletter = ({ variant = "card", onSubscribed }: NewsletterProps) => {
+export const Newsletter = ({ variant = "card", autoFocus = false, onSubscribed }: NewsletterProps) => {
   const [email, setEmail] = useState("");
   const formStartedRef = useRef(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // When rendered inside the modal, land the user directly on the email field
+  // so newsletter_form_started fires reliably and they don't hit a dead end.
+  useEffect(() => {
+    if (autoFocus) {
+      inputRef.current?.focus();
+    }
+  }, [autoFocus]);
 
   const handleEmailFocus = () => {
     if (!formStartedRef.current) {
@@ -44,6 +54,7 @@ export const Newsletter = ({ variant = "card", onSubscribed }: NewsletterProps) 
       <div className="mt-8 max-w-xl mx-auto">
         <form onSubmit={handleSubmit} className="bg-primary/10 border border-primary/30 rounded-full p-2 flex gap-2 items-center backdrop-blur-sm">
           <Input
+            ref={inputRef}
             type="email"
             placeholder="your@email.com"
             value={email}
@@ -73,6 +84,7 @@ export const Newsletter = ({ variant = "card", onSubscribed }: NewsletterProps) 
       </p>
       <form onSubmit={handleSubmit} className="flex gap-2 max-w-md mx-auto">
         <Input
+          ref={inputRef}
           type="email"
           placeholder="your@email.com"
           value={email}
