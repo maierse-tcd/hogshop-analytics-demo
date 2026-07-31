@@ -18,11 +18,12 @@ const GiftLanding = () => {
     });
   }, []);
 
-  const handleClaimGift = () => {
+  const handleClaimGift = (ctaLocation: string) => {
     trackEvent("gift_order_attempted", {
       product_name: "Max's Starter Kit",
       intended_destination: "/checkout/gift",
       retail_value: 45,
+      cta_location: ctaLocation,
       timestamp: new Date().toISOString(),
     });
     navigate("/checkout/gift");
@@ -47,6 +48,21 @@ const GiftLanding = () => {
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Everything your new hedgehog needs to feel at home. $45 retail value - yours for free!
             </p>
+            {/* Above-the-fold CTA so visitors can claim without scrolling past the
+                full product showcase — the landing page was shedding the vast
+                majority of visitors before they reached the button below. */}
+            <div className="pt-2">
+              <Button
+                size="lg"
+                className="h-14 px-12 text-lg font-semibold"
+                onClick={() => handleClaimGift("hero")}
+              >
+                Claim Your Free Gift Now
+              </Button>
+              <p className="text-sm text-muted-foreground mt-3">
+                No credit card required • While supplies last
+              </p>
+            </div>
           </div>
 
           {/* Product Showcase */}
@@ -110,10 +126,10 @@ const GiftLanding = () => {
 
             {/* CTA */}
             <div className="text-center pt-6">
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 className="h-14 px-12 text-lg font-semibold"
-                onClick={handleClaimGift}
+                onClick={() => handleClaimGift("product_showcase")}
               >
                 Claim Your Free Gift Now
               </Button>
