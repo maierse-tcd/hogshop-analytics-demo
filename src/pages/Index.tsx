@@ -6,9 +6,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState, useRef } from "react";
-import { trackEvent, posthog } from "@/lib/posthog";
+import { trackEvent, posthog, captureException } from "@/lib/posthog";
 import { useFeatureFlagEnabled, useFeatureFlagVariantKey } from "posthog-js/react";
 import { ArrowRight, X, Gift } from "lucide-react";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Newsletter } from "@/components/Newsletter";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { simulateDemoErrors } from "@/utils/demoErrorSimulator";
@@ -142,6 +143,43 @@ const Index = () => {
   null;
   const [hasSubscribed, setHasSubscribed] = useState(false);
   const [showNewsletterModal, setShowNewsletterModal] = useState(false);
+  // Tracks whether the user has opened the modal via the CTA, so the delayed
+  // auto-open effect doesn't race with (and dead-click over) their click.
+  const userOpenedModalRef = useRef(false);
+
+  // Open the newsletter modal from a hero CTA click. Wrapped in try/catch so a
+  // throw in the tracking calls can't leave the click producing no visible
+  // state change (which PostHog's heuristic flags as a $dead_click).
+  const openNewsletterModal = (cta: string) => {
+    try {
+      userOpenedModalRef.current = true;
+      setShowNewsletterModal(true);
+      // Explicit click→modal-open signal so conversion can be measured directly
+      // rather than inferred from newsletter_form_started.
+      trackEvent("newsletter_modal_opened", {
+        cta,
+        source: "hero_cta",
+        experiment: "newsletter_sub",
+        variant: newsletterSubVariant || "control",
+      });
+      // Track feature interaction with person property
+      posthog.capture('$feature_interaction', {
+        feature_flag: 'newsletter_sub',
+        $set: { [`$feature_interaction/newsletter_sub`]: true }
+      });
+      trackEvent("hero_cta_clicked", {
+        cta,
+        experiment: "newsletter_sub",
+        variant: newsletterSubVariant || "control",
+      });
+    } catch (error) {
+      captureException(
+        error instanceof Error ? error : new Error(String(error)),
+        "newsletter_cta_click",
+        { cta },
+      );
+    }
+  };
 
   // Product tour: home-page getting-started walkthrough (gated on its flag)
   const tour = useTour({
@@ -163,7 +201,11 @@ const Index = () => {
     if (showNewsletterFlag && !subscribed) {
       // Delay modal slightly for better UX
       const timer = setTimeout(() => {
-        setShowNewsletterModal(true);
+        // Don't auto-open if the user already opened it via the CTA, or it's
+        // already open — otherwise the delayed open races with the click and
+        // the click registers as a $dead_click (no visible state change).
+        if (userOpenedModalRef.current) return;
+        setShowNewsletterModal((prev) => (prev ? prev : true));
       }, 1500);
       return () => clearTimeout(timer);
     }
@@ -361,19 +403,7 @@ const Index = () => {
                 <Button
                   size="lg"
                   className="h-12 px-8 text-base font-semibold animate-blink-orange hover:animate-none hover:scale-105 transition-transform"
-                  onClick={() => {
-                    setShowNewsletterModal(true);
-                    // Track feature interaction with person property
-                    posthog.capture('$feature_interaction', {
-                      feature_flag: 'newsletter_sub',
-                      $set: { [`$feature_interaction/newsletter_sub`]: true }
-                    });
-                    trackEvent("hero_cta_clicked", {
-                      cta: "newsletter_signup_blink",
-                      experiment: "newsletter_sub",
-                      variant: "test"
-                    });
-                  }}>
+                  onClick={() => openNewsletterModal("newsletter_signup_blink")}>
                   
                   Sign up for newsletter
                 </Button> :
@@ -383,19 +413,7 @@ const Index = () => {
                   size="lg"
                   variant="outline"
                   className="h-12 px-8 text-base font-semibold border-primary/30 hover:border-primary"
-                  onClick={() => {
-                    setShowNewsletterModal(true);
-                    // Track feature interaction with person property
-                    posthog.capture('$feature_interaction', {
-                      feature_flag: 'newsletter_sub',
-                      $set: { [`$feature_interaction/newsletter_sub`]: true }
-                    });
-                    trackEvent("hero_cta_clicked", {
-                      cta: "newsletter_signup",
-                      experiment: "newsletter_sub",
-                      variant: newsletterSubVariant || "control"
-                    });
-                  }}>
+                  onClick={() => openNewsletterModal("newsletter_signup")}>
                   
                   Sign up for newsletter
                 </Button>
@@ -405,38 +423,32 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Newsletter Modal */}
-      {showNewsletterModal &&
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
-          <div
-            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
-            onClick={() => {
+      {/* Newsletter Modal — uses the Dialog primitive so focus management,
+          focus trapping and ARIA are handled (the old bespoke overlay had none,
+          which contributed to the CTA click registering as a $dead_click). */}
+      <Dialog
+        open={showNewsletterModal}
+        onOpenChange={(open) => {
+          setShowNewsletterModal(open);
+          if (!open) {
+            trackEvent("newsletter_modal_dismissed");
+          }
+        }}>
+        <DialogContent className="max-w-2xl border-none bg-transparent p-0 shadow-none">
+          <DialogTitle className="sr-only">Join Our Hedgehog Community</DialogTitle>
+          <DialogDescription className="sr-only">
+            Sign up for the newsletter to get 15% off your first order.
+          </DialogDescription>
+          <Newsletter
+            variant="card"
+            autoFocus
+            onSubscribed={(email) => {
+              setHasSubscribed(true);
               setShowNewsletterModal(false);
-              trackEvent("newsletter_modal_dismissed");
             }} />
-          
-          <div className="relative animate-in zoom-in-95 duration-300">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute -top-2 -right-2 z-10 rounded-full bg-background shadow-lg hover:bg-accent"
-              onClick={() => {
-                setShowNewsletterModal(false);
-                trackEvent("newsletter_modal_closed");
-              }}>
-              
-              <X className="h-4 w-4" />
-            </Button>
-            <Newsletter
-              variant="card"
-              onSubscribed={(email) => {
-                setHasSubscribed(true);
-                setShowNewsletterModal(false);
-              }} />
-            
-          </div>
-        </div>
-        }
+        </DialogContent>
+      </Dialog>
+
 
       {/* Products Section */}
       <section id="products" className={`container py-16 md:py-24 relative ${
