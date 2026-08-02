@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef, type KeyboardEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Gift, Package, Heart, ShieldCheck } from "lucide-react";
 
 const GiftLanding = () => {
   const navigate = useNavigate();
+  const ctaRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     trackEvent("gift_page_viewed", {
@@ -28,6 +29,33 @@ const GiftLanding = () => {
     navigate("/checkout/gift");
   };
 
+  // The hero copy and the "What's Included:" header are large, centered, and
+  // accent-coloured, so they read as clickable and users dead-click them. Rather
+  // than route them straight to checkout, give them an honest affordance: nudge
+  // the visitor to the real "Claim" button (and record the intent). Reused
+  // across the offer copy so every "clickable-looking" element behaves the same.
+  const focusClaimCta = (source: string) => {
+    trackEvent("gift_offer_copy_clicked", { source });
+    const btn = ctaRef.current;
+    if (btn) {
+      btn.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Focus after the smooth scroll so the CTA is obviously the next step.
+      window.setTimeout(() => btn.focus({ preventScroll: true }), 400);
+    }
+  };
+
+  const offerCopyProps = (source: string) => ({
+    role: "button" as const,
+    tabIndex: 0,
+    onClick: () => focusClaimCta(source),
+    onKeyDown: (e: KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        focusClaimCta(source);
+      }
+    },
+  });
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -42,9 +70,18 @@ const GiftLanding = () => {
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
               Get Max's Starter Kit
               <br />
-              <span className="text-primary">Absolutely Free</span>
+              <span
+                {...offerCopyProps("hero_heading")}
+                aria-label="Claim your free gift"
+                className="text-primary inline-block cursor-pointer rounded-md transition-opacity hover:opacity-80 hover:underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              >
+                Absolutely Free
+              </span>
             </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p
+              {...offerCopyProps("hero_subtitle")}
+              className="text-xl text-muted-foreground max-w-2xl mx-auto cursor-pointer rounded-md transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
               Everything your new hedgehog needs to feel at home. $45 retail value - yours for free!
             </p>
           </div>
@@ -56,7 +93,13 @@ const GiftLanding = () => {
             </div>
 
             <div className="space-y-6">
-              <h2 className="text-3xl font-bold">What's Included:</h2>
+              <h2
+                {...offerCopyProps("whats_included_heading")}
+                aria-label="See how to claim what's included"
+                className="text-3xl font-bold inline-block cursor-pointer rounded-md transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              >
+                What's Included:
+              </h2>
               <ul className="grid gap-4 md:grid-cols-2">
                 <li className="flex items-start gap-3">
                   <Package className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
@@ -110,8 +153,9 @@ const GiftLanding = () => {
 
             {/* CTA */}
             <div className="text-center pt-6">
-              <Button 
-                size="lg" 
+              <Button
+                ref={ctaRef}
+                size="lg"
                 className="h-14 px-12 text-lg font-semibold"
                 onClick={handleClaimGift}
               >
