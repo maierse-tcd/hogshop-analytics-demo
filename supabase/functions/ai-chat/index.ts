@@ -45,6 +45,10 @@ const RESPONSES: { keywords: string[]; reply: string }[] = [
     reply: "We offer standard shipping on all orders! 📦 Subscription orders always ship free. Most orders arrive within 3-5 business days. Check our Shipping page for full details. 🦔",
   },
   {
+    keywords: ["analytics", "posthog", "platform", "stack", "built", "build", "tech", "technology", "powered", "power", "made", "software", "framework", "how was this"],
+    reply: "Great question — HogShop runs on **PostHog**! 🦔 This shop is a live PostHog demo, so it showcases:\n\n- 📊 Product analytics (events, funnels, retention)\n- 🤖 LLM analytics (this very assistant is traced!)\n- 🚩 Feature flags & 🧪 experiments (A/B tests)\n- 🎬 Session replay\n- 🐛 Error tracking\n- 📝 Surveys\n\nWant the full breakdown? Check out our [/readme](/readme) for the technical stack and event taxonomy, or [/about](/about) to learn more. Built with React, TypeScript, and Supabase Edge Functions — all instrumented with PostHog. 🚀",
+  },
+  {
     keywords: ["hello", "hi", "hey", "help", "start"],
     reply: "Welcome to Hogster! 🦔 I'm here to help you find everything your hedgehog needs. I can help with:\n\n- 🍽️ Food & nutrition advice\n- 🏠 Housing recommendations\n- 🎡 Toys & exercise\n- 💊 Care & grooming tips\n\nWhat would you like to know about?",
   },
