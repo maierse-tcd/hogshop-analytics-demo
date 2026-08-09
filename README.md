@@ -196,6 +196,17 @@ $exception: {
 }
 ```
 
+#### Simulated demo errors
+
+The shop fires 1-2 simulated exceptions per session (see
+`src/utils/demoErrorSimulator.ts`) so it can show off error tracking on a
+fresh project. These are captured, never thrown, so they do not affect any
+user. Every simulated `$exception` carries `demo_error=true`.
+
+- To exclude them from RUM scanners and error tracking, filter on
+  `demo_error = true`.
+- To switch the simulation off, set `VITE_ENABLE_DEMO_ERRORS=false`.
+
 ## Feature Flags Configuration
 
 ### Required Flags
