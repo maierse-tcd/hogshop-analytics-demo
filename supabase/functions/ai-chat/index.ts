@@ -45,6 +45,10 @@ const RESPONSES: { keywords: string[]; reply: string }[] = [
     reply: "We offer standard shipping on all orders! 📦 Subscription orders always ship free. Most orders arrive within 3-5 business days. Check our Shipping page for full details. 🦔",
   },
   {
+    keywords: ["model", "gemini", "claude", "gpt", "llm", "openai", "anthropic"],
+    reply: "Good question! 🦔 Neither — these chat replies are scripted for this demo, so no live model runs behind them. The assistant tags its telemetry as **Gemini 2.5 Flash** on purpose, so this PostHog demo has LLM analytics data to show. See [/readme](/readme) for how the demo works. 🦔",
+  },
+  {
     keywords: ["hello", "hi", "hey", "help", "start"],
     reply: "Welcome to Hogster! 🦔 I'm here to help you find everything your hedgehog needs. I can help with:\n\n- 🍽️ Food & nutrition advice\n- 🏠 Housing recommendations\n- 🎡 Toys & exercise\n- 💊 Care & grooming tips\n\nWhat would you like to know about?",
   },
