@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { RegistrationDialog } from "@/components/RegistrationDialog";
 import { posthog, trackEvent, setUserProperties, initializeCLTV, ensureIdentified, applyCompanyGroup, slugifyCompany } from "@/lib/posthog";
 import { getUser, saveUser } from "@/lib/auth";
+import { safeSetItem } from "@/lib/safeStorage";
 import { startSpan, traceparent, SpanKind, SpanStatus } from "@/lib/otel";
 
 interface CheckoutContextType {
@@ -148,11 +149,11 @@ export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
 
       if (data?.url) {
         const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
-        localStorage.setItem(
+        safeSetItem(
           "checkout_user",
           JSON.stringify({ email, name, companyName: trimmedCompany, expiresAt })
         );
-        localStorage.setItem(
+        safeSetItem(
           "checkout_basket",
           JSON.stringify({
             items: basketItems,

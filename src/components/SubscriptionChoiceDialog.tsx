@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { posthog, trackEvent } from "@/lib/posthog";
 import { getUser } from "@/lib/auth";
+import { safeSetItem } from "@/lib/safeStorage";
 
 interface SubscriptionProduct {
   id: string;
@@ -99,11 +100,11 @@ export const SubscriptionChoiceDialog = ({ open, onOpenChange }: Props) => {
 
       if (data?.url) {
         const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
-        localStorage.setItem(
+        safeSetItem(
           "checkout_user",
           JSON.stringify({ email: user.email, name: user.name, expiresAt })
         );
-        localStorage.setItem(
+        safeSetItem(
           "checkout_basket",
           JSON.stringify({
             items: [item],

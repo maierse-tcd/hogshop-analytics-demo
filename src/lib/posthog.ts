@@ -1,5 +1,6 @@
 import posthog from "posthog-js";
 import { supabase } from "@/integrations/supabase/client";
+import { safeSetItem } from "@/lib/safeStorage";
 
 /**
  * Fetches an HMAC-SHA256 of the distinct_id from the edge function
@@ -161,8 +162,8 @@ export const updateCLTV = (purchaseAmount: number) => {
     try {
       const currentCLTV = parseFloat(localStorage.getItem('user_cltv') || '0');
       const newCLTV = currentCLTV + purchaseAmount;
-      
-      localStorage.setItem('user_cltv', newCLTV.toString());
+
+      safeSetItem('user_cltv', newCLTV.toString());
 
       // Note: customer_lifetime_value is owned server-side by track-success,
       // which computes it from purchase history via HogQL and writes it with
@@ -177,7 +178,7 @@ export const updateCLTV = (purchaseAmount: number) => {
       if (import.meta.env.DEV) console.log("PostHog CLTV updated (local mirror):", { previous: currentCLTV, added: purchaseAmount, new: newCLTV });
     } catch (error) {
       console.error("PostHog CLTV update error:", error);
-      localStorage.setItem('user_cltv', purchaseAmount.toString());
+      safeSetItem('user_cltv', purchaseAmount.toString());
       posthog.setPersonProperties({
         last_purchase_amount: purchaseAmount,
         last_purchase_date: new Date().toISOString(),
@@ -194,7 +195,7 @@ const initializeCLTV = () => {
     let currentCLTV = parseFloat(localStorage.getItem('user_cltv') || '0');
     
     if (!localStorage.getItem('user_cltv')) {
-      localStorage.setItem('user_cltv', '0');
+      safeSetItem('user_cltv', '0');
       currentCLTV = 0;
     }
 

@@ -3,6 +3,8 @@
  * Manages user data in localStorage consistently across the app
  */
 
+import { safeSetItem } from "@/lib/safeStorage";
+
 export interface UserData {
   email: string;
   name: string;
@@ -20,16 +22,16 @@ const LEGACY_KEY = "hedgehog_user";
  */
 export const saveUser = (email: string, name: string, companyName?: string): void => {
   try {
-    localStorage.setItem(USER_EMAIL_KEY, email);
-    localStorage.setItem(USER_NAME_KEY, name);
+    safeSetItem(USER_EMAIL_KEY, email);
+    safeSetItem(USER_NAME_KEY, name);
     if (companyName && companyName.trim()) {
-      localStorage.setItem(USER_COMPANY_KEY, companyName.trim());
+      safeSetItem(USER_COMPANY_KEY, companyName.trim());
     } else {
       localStorage.removeItem(USER_COMPANY_KEY);
     }
 
     // Also save to legacy key for backwards compatibility (temporary)
-    localStorage.setItem(LEGACY_KEY, JSON.stringify({ email, name, companyName: companyName || undefined }));
+    safeSetItem(LEGACY_KEY, JSON.stringify({ email, name, companyName: companyName || undefined }));
 
     console.log("Auth: User saved to storage", { email, name, companyName });
   } catch (error) {
