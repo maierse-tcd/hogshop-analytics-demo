@@ -8,6 +8,7 @@ import { trackEvent, setUserProperties, updateCLTV, updateSubscriptionStatus, se
 import { posthog } from "@/lib/posthog";
 import { supabase } from "@/integrations/supabase/client";
 import { saveUser } from "@/lib/auth";
+import { safeSetItem, pruneTrackedSessions } from "@/lib/safeStorage";
 import { LoyaltyPrompt } from "@/components/LoyaltyPrompt";
 
 const isDev = import.meta.env.DEV;
@@ -281,25 +282,20 @@ const Success = () => {
         }, 500);
       }
       
-      // Mark this session as tracked
+      // Prune stale + over-cap records BEFORE recording this session. The old
+      // code wrote first and cleaned up afterwards, so an oversized map filled
+      // the quota and made the write throw before the cleanup ran.
       if (sessionId) {
-        trackedSessions[sessionId] = {
+        pruneTrackedSessions();
+        const sessions = JSON.parse(localStorage.getItem("tracked_sessions") || "{}");
+        sessions[sessionId] = {
           timestamp: Date.now(),
           tracked: true,
-          method: "client-side"
+          method: "client-side",
         };
-        localStorage.setItem("tracked_sessions", JSON.stringify(trackedSessions));
+        safeSetItem("tracked_sessions", JSON.stringify(sessions));
         if (isDev) console.log("SUCCESS: Session marked as tracked (client-side)", sessionId);
       }
-      
-      // Clean up old tracked sessions (older than 7 days)
-      const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-      Object.keys(trackedSessions).forEach(key => {
-        if (trackedSessions[key].timestamp < sevenDaysAgo) {
-          delete trackedSessions[key];
-        }
-      });
-      localStorage.setItem("tracked_sessions", JSON.stringify(trackedSessions));
 
       // Clear cart and temporary checkout storage
       clearCart();

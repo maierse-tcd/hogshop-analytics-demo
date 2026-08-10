@@ -10,6 +10,7 @@ import { useEffect } from "react";
 import { initPostHog, posthog, applyPostHogIdentityHash, applyCompanyGroup } from "@/lib/posthog";
 import { initOtel } from "@/lib/otel";
 import { getUser } from "@/lib/auth";
+import { pruneExpiredStorage } from "@/lib/safeStorage";
 import { PostHogProvider, useFeatureFlagEnabled } from "posthog-js/react";
 import { RouteTracker } from "@/components/RouteTracker";
 import { AIChatWidget } from "@/components/AIChatWidget";
@@ -75,6 +76,9 @@ const AppContent = () => {
 
 const App = () => {
   useEffect(() => {
+    // Drop stale checkout blobs and old tracked sessions on load so they do
+    // not fill the storage quota and make later writes throw.
+    pruneExpiredStorage();
     initPostHog();
     initOtel();
     // If a user is already logged in (returning visitor), apply identity hash
