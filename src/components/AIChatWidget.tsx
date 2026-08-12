@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,27 @@ import { useAIChat } from "@/hooks/useAIChat";
 import { useFeatureFlagEnabled } from "posthog-js/react";
 import { trackEvent } from "@/lib/posthog";
 import { useEffect as useEffectOnce } from "react";
+
+// Canned replies use light markdown (**bold**) and mention the real Shipping
+// page in prose. Render the bold as bold and turn that mention into a link, so
+// the widget shows formatted, clickable text instead of literal asterisks and
+// inert text. The widget mounts outside the router, so a plain anchor is used
+// rather than a react-router <Link>.
+const renderReply = (text: string): ReactNode[] =>
+  text.split(/(\*\*[^*]+\*\*)/g).flatMap((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    if (!part.includes("Shipping page")) return part;
+    const [before, after] = part.split("Shipping page");
+    return [
+      before,
+      <a key={`${i}-link`} href="/shipping" className="underline font-medium">
+        Shipping page
+      </a>,
+      after,
+    ];
+  });
 
 export const AIChatWidget = () => {
   const { messages, isLoading, isOpen, sendMessage, openChat, closeChat } = useAIChat();
@@ -135,7 +156,11 @@ export const AIChatWidget = () => {
                         : "bg-muted"
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                    <p className="text-sm whitespace-pre-wrap">
+                      {message.role === "assistant"
+                        ? renderReply(message.content)
+                        : message.content}
+                    </p>
                   </div>
                 </div>
               ))}

@@ -164,7 +164,10 @@ export const useAIChat = () => {
       }
 
       const data = await response.json();
-      const assistantContent = data.reply || "Sorry, I didn't understand that.";
+      const assistantContent =
+        typeof data.reply === "string" && data.reply.length > 0
+          ? data.reply
+          : "Sorry, I didn't understand that.";
 
       const latencyMs = Date.now() - generationStartTime;
 
