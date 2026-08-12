@@ -37,12 +37,12 @@ const RESPONSES: { keywords: string[]; reply: string }[] = [
     reply: "Hedgehogs love burrowing! We have great options:\n\n- **Cozy Hedgehog Hideout** ($24.99) — soft fleece pouch, machine washable\n- **Hedgehog Sleeping Bag** ($34.99) — ultra-soft, perfect for staying warm\n- **Soft Fleece Bedding** ($22.99) — 2 yards of comfortable bedding\n\nAll are hedgehog-safe and easy to wash! 🦔",
   },
   {
-    keywords: ["price", "cost", "expensive", "cheap", "budget", "afford"],
-    reply: "We have options for every budget! 🦔 Starting from $12.99 for treats up to $249.99 for the luxury mansion. Our most popular items are the **Exercise Wheel** ($39.99) and **Care Starter Kit** ($79.99). The food subscription saves you 10% monthly too!",
+    keywords: ["ship", "shipping", "deliver", "delivery", "arrive", "international", "internationally", "worldwide", "overseas", "abroad", "country", "countries", "customs"],
+    reply: "We ship worldwide! 📦 Standard Hedgehog Express takes 5-7 business days and is free on orders over $50. Premium Hedgehog Rush ($12.99) arrives in 2-3 days. **International orders** reach most countries — delivery times vary by destination and customs fees may apply. Subscription orders always ship free. See our Shipping page for full details. 🦔",
   },
   {
-    keywords: ["ship", "deliver", "shipping", "delivery", "arrive"],
-    reply: "We offer standard shipping on all orders! 📦 Subscription orders always ship free. Most orders arrive within 3-5 business days. Check our Shipping page for full details. 🦔",
+    keywords: ["price", "cost", "expensive", "cheap", "budget", "afford"],
+    reply: "We have options for every budget! 🦔 Starting from $12.99 for treats up to $249.99 for the luxury mansion. Our most popular items are the **Exercise Wheel** ($39.99) and **Care Starter Kit** ($79.99). The food subscription saves you 10% monthly too!",
   },
   {
     keywords: ["hello", "hi", "hey", "help", "start"],
@@ -56,14 +56,31 @@ const RESPONSES: { keywords: string[]; reply: string }[] = [
 
 const DEFAULT_REPLY = "That's a great question! 🦔 While I'm not sure about that specific topic, I can help you with our products, hedgehog care tips, subscriptions, and shipping. What would you like to know about? Browse our full catalog on the homepage!";
 
+// Split the message into whole words, so "eat" matches the word "eat" but not
+// the "eat" inside "great" or "treat".
+function tokenize(text: string): string[] {
+  return text.toLowerCase().match(/[a-z0-9]+/g) ?? [];
+}
+
+// Score every bucket by how many keywords it matches and return the best one.
+// Scoring beats first-match-wins: a specific intent (shipping) wins over a
+// generic one (price) that also hits. Ties keep the earlier bucket in the
+// array, so generic buckets are listed last.
 function findResponse(userMessage: string): string {
-  const lower = userMessage.toLowerCase();
+  const tokens = new Set(tokenize(userMessage));
+  let bestReply = DEFAULT_REPLY;
+  let bestScore = 0;
   for (const entry of RESPONSES) {
-    if (entry.keywords.some(kw => lower.includes(kw))) {
-      return entry.reply;
+    const score = entry.keywords.reduce(
+      (count, kw) => (tokens.has(kw) ? count + 1 : count),
+      0,
+    );
+    if (score > bestScore) {
+      bestScore = score;
+      bestReply = entry.reply;
     }
   }
-  return DEFAULT_REPLY;
+  return bestReply;
 }
 
 serve(async (req) => {
