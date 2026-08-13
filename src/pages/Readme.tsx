@@ -139,11 +139,11 @@ const Readme = () => {
                       <span className="text-muted-foreground">Email signups</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">$survey_shown</Badge>
+                      <Badge variant="secondary" className="text-xs">survey shown</Badge>
                       <span className="text-muted-foreground">Survey displays</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">$survey_response</Badge>
+                      <Badge variant="secondary" className="text-xs">survey sent</Badge>
                       <span className="text-muted-foreground">Survey submissions</span>
                     </div>
                     <div className="flex items-center gap-2">
