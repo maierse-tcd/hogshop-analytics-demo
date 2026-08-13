@@ -16,6 +16,7 @@ const faqItems = [
   { value: "item-10", question: "Can I visit the hedgehog warehouse?", answer: "While we'd love to accommodate visitors, our hedgehog logistics center is currently classified. Security reasons. Also, the hedgehogs get shy around strangers and productivity drops by 78%." },
   { value: "item-11", question: "What makes your hoodies special?", answer: "Our hoodies feature an embroidered PostHog logo blessed by Posthoggy themselves. They're made from premium cotton, ethically sourced, and rated 10/10 for comfort by our hedgehog testing panel. Plus they make you 37% more attractive (results not scientifically verified)." },
   { value: "item-12", question: "Is this a real store?", answer: "HogShop is a fully functional demo store built to showcase PostHog's analytics features. While the products and checkout process are real, this is primarily an educational platform. But the hedgehog love is 100% genuine." },
+  { value: "item-13", question: "Do you offer discounts, promo codes, or a student discount?", answer: "There are a few ways to save! When our flash sale is running, everything is 20% off automatically at checkout. New shoppers can get 10% or 15% off their first order by creating an account, and joining our newsletter gets you 15% off your first order too. Our Premium Hedgehog Food subscription is 10% cheaper than buying one-time (with free shipping). We do not offer a student discount or a multi-buy / bulk discount at this time." },
 ];
 
 const FAQ = () => {

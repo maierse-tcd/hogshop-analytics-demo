@@ -37,6 +37,10 @@ const RESPONSES: { keywords: string[]; reply: string }[] = [
     reply: "Hedgehogs love burrowing! We have great options:\n\n- **Cozy Hedgehog Hideout** ($24.99) — soft fleece pouch, machine washable\n- **Hedgehog Sleeping Bag** ($34.99) — ultra-soft, perfect for staying warm\n- **Soft Fleece Bedding** ($22.99) — 2 yards of comfortable bedding\n\nAll are hedgehog-safe and easy to wash! 🦔",
   },
   {
+    keywords: ["discount", "discounts", "student", "students", "promo", "coupon", "coupons", "voucher", "vouchers", "code", "deal", "deals", "sale", "offer", "offers", "loyalty", "bulk", "multi", "wholesale"],
+    reply: "Here's every way to save at Hogster 🦔\n\n- **Flash sale** — when it's running, everything is 20% off automatically at checkout. It comes and goes, so grab it while it's live!\n- **Sign-up offer** — new shoppers can get 10% or 15% off their first order when they create an account.\n- **Loyalty reward** — some accounts get a 10% off code for their next order after they sign up.\n- **Newsletter** — join our newsletter for 15% off your first order.\n- **Subscription saving** — the **Premium Hedgehog Food** subscription ($29.99/month) is 10% cheaper than one-time, with free shipping.\n\nWe do **not** offer a student discount or a multi-buy / bulk discount at this time, so the deals above are the best way to save. 🛒",
+  },
+  {
     keywords: ["ship", "shipping", "deliver", "delivery", "arrive", "international", "internationally", "worldwide", "overseas", "abroad", "country", "countries", "customs"],
     reply: "We ship worldwide! 📦 Standard Hedgehog Express takes 5-7 business days and is free on orders over $50. Premium Hedgehog Rush ($12.99) arrives in 2-3 days. **International orders** reach most countries — delivery times vary by destination and customs fees may apply. Subscription orders always ship free. See our Shipping page for full details. 🦔",
   },
