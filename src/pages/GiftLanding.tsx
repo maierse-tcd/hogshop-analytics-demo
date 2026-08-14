@@ -4,11 +4,26 @@ import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { useCart } from "@/contexts/CartContext";
 import { trackEvent } from "@/lib/posthog";
 import { Gift, Package, Heart, ShieldCheck } from "lucide-react";
+import hedgehogCareKit from "@/assets/hedgehog-care-kit.jpg";
+
+// The free gift is a normal cart item with a zero price. It reuses the existing
+// cart and checkout, so a separate gift route is not necessary.
+const GIFT_PRODUCT = {
+  id: "gift-starter-kit",
+  title: "Max's Starter Kit",
+  description: "Free starter kit for new hedgehog owners",
+  price: 0,
+  image_url: hedgehogCareKit,
+  category: "gift",
+  is_subscription: false,
+};
 
 const GiftLanding = () => {
   const navigate = useNavigate();
+  const { addToCart } = useCart();
 
   useEffect(() => {
     trackEvent("gift_page_viewed", {
@@ -21,11 +36,11 @@ const GiftLanding = () => {
   const handleClaimGift = () => {
     trackEvent("gift_order_attempted", {
       product_name: "Max's Starter Kit",
-      intended_destination: "/checkout/gift",
       retail_value: 45,
       timestamp: new Date().toISOString(),
     });
-    navigate("/checkout/gift");
+    addToCart(GIFT_PRODUCT, "gift_landing");
+    navigate("/", { state: { openCart: true } });
   };
 
   return (

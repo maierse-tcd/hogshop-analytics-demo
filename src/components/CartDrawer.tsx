@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Trash2, Plus, Minus } from "lucide-react";
@@ -12,6 +14,19 @@ export const CartDrawer = () => {
   const { items, removeFromCart, updateQuantity, totalItems, totalPrice } = useCart();
   const { startCheckout, isCheckingOut } = useCheckout();
   const { flashSaleActive, discountPct, getDiscountedPrice } = useFlashSale();
+  const [open, setOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Open the cart when another page routes here to show a new item, for example
+  // after the user claims the free gift. Clear the flag so the cart opens once.
+  useEffect(() => {
+    const state = location.state as { openCart?: boolean } | null;
+    if (state?.openCart) {
+      setOpen(true);
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location, navigate]);
   const discountAmount = flashSaleActive ? +(totalPrice * (discountPct / 100)).toFixed(2) : 0;
   const discountedTotal = +(totalPrice - discountAmount).toFixed(2);
 
@@ -23,7 +38,9 @@ export const CartDrawer = () => {
 
   return (
     <Sheet
+      open={open}
       onOpenChange={(open) => {
+        setOpen(open);
         if (open) {
           trackEvent("cart_viewed", {
             items_count: totalItems,
