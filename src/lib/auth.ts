@@ -15,6 +15,20 @@ const USER_COMPANY_KEY = "user_company_name";
 const LEGACY_KEY = "hedgehog_user";
 
 /**
+ * Event that tells the app the login state changed.
+ * Components read the new state from storage when they receive it, so the
+ * header updates immediately after a login instead of only on navigation.
+ */
+export const AUTH_CHANGED_EVENT = "hogshop:auth-changed";
+
+/**
+ * Tell listeners that the login state changed.
+ */
+export const notifyAuthChanged = (): void => {
+  window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
+};
+
+/**
  * Save user authentication data to localStorage
  * Uses user_email and user_name keys consistently
  */

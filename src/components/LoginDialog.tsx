@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { identifyUser, setUserProperties, trackEvent, initializeCLTV, applyCompanyGroup, slugifyCompany, posthog } from "@/lib/posthog";
-import { saveUser, getUser } from "@/lib/auth";
+import { saveUser, getUser, notifyAuthChanged } from "@/lib/auth";
 
 interface LoginDialogProps {
   open: boolean;
@@ -28,30 +28,35 @@ export const LoginDialog = ({ open, onOpenChange, onLoginSuccess, discountPercen
   };
 
   const handleLogin = () => {
-    if (email && name) {
-      // Preserve any previously stored companyName for this device so we can
-      // re-apply the company group after saveUser. Do NOT write icp_type on
-      // login — the login tab has no company field, so overwriting would
-      // downgrade a returning B2B user to "B2C".
-      const priorCompany = getUser()?.companyName;
-      saveUser(email, name, priorCompany);
+    if (!email) return;
 
-      identifyUser(email, { name, email });
-      if (priorCompany) {
-        applyCompanyGroup(priorCompany);
-      }
-      initializeCLTV();
+    // An email is enough to identify a returning user. Reuse the stored name
+    // when one exists, and fall back to the email so the account still resolves.
+    const prior = getUser();
+    const resolvedName = prior?.name || email;
+    // Preserve any previously stored companyName for this device so we can
+    // re-apply the company group after saveUser. Do NOT write icp_type on
+    // login — the login tab has no company field, so overwriting would
+    // downgrade a returning B2B user to "B2C".
+    const priorCompany = prior?.companyName;
+    saveUser(email, resolvedName, priorCompany);
 
-      trackEvent('user_logged_in', {
-        login_method: 'email',
-        timestamp: new Date().toISOString(),
-      });
-
-      onLoginSuccess(email, name);
-      onOpenChange(false);
-      setEmail("");
-      setName("");
+    identifyUser(email, { name: resolvedName, email });
+    if (priorCompany) {
+      applyCompanyGroup(priorCompany);
     }
+    initializeCLTV();
+
+    trackEvent('user_logged_in', {
+      login_method: 'email',
+      timestamp: new Date().toISOString(),
+    });
+
+    notifyAuthChanged();
+    onLoginSuccess(email, resolvedName);
+    onOpenChange(false);
+    setEmail("");
+    setName("");
   };
 
   const handleSignup = () => {
@@ -91,6 +96,7 @@ export const LoginDialog = ({ open, onOpenChange, onLoginSuccess, discountPercen
 
     initializeCLTV();
 
+    notifyAuthChanged();
     onLoginSuccess(email, name);
     onOpenChange(false);
     setEmail("");
@@ -126,15 +132,6 @@ export const LoginDialog = ({ open, onOpenChange, onLoginSuccess, discountPercen
 
           <TabsContent value="login" className="space-y-4 mt-4">
             <div className="space-y-2">
-              <Label htmlFor="login-name">Name</Label>
-              <Input
-                id="login-name"
-                placeholder="Your name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="login-email">Email</Label>
               <Input
                 id="login-email"
@@ -144,7 +141,7 @@ export const LoginDialog = ({ open, onOpenChange, onLoginSuccess, discountPercen
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
-            <Button onClick={handleLogin} className="w-full" disabled={!email || !name}>
+            <Button onClick={handleLogin} className="w-full" disabled={!email}>
               Login
             </Button>
           </TabsContent>
