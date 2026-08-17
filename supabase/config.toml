@@ -12,3 +12,6 @@ verify_jwt = false
 [functions.posthog-identity-hash]
 verify_jwt = false
 
+
+[functions.live-stats]
+verify_jwt = false
