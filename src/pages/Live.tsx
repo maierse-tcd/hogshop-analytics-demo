@@ -23,7 +23,7 @@ const ChartCard = ({ title, src, height, lazy, minScrollWidth }: ChartCardProps)
         <h2 className="text-lg font-semibold text-card-foreground">{title}</h2>
       </div>
       <div className="overflow-x-auto">
-        <div className="relative" style={{ height, minWidth: minScrollWidth }}>
+        <div className="relative" style={{ minHeight: height, minWidth: minScrollWidth }}>
           <div
             className={cn(
               "absolute inset-0 animate-pulse bg-muted",
