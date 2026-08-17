@@ -56,10 +56,11 @@ serve(async (req) => {
   }
 
   try {
-    const apiKey = Deno.env.get("POSTHOG_PERSONAL_API_KEY");
-    if (!apiKey) {
+    // Read-only PostHog personal API key scoped to endpoint:read on project 97205.
+    const POSTHOG_ENDPOINTS_KEY = Deno.env.get("POSTHOG_ENDPOINTS_LIVE");
+    if (!POSTHOG_ENDPOINTS_KEY) {
       requestStatus = "error";
-      log.error("POSTHOG_PERSONAL_API_KEY is not configured");
+      log.error("POSTHOG_ENDPOINTS_LIVE is not configured");
       await log.flush();
       return new Response(
         JSON.stringify({ error: "Live stats are not configured on the server." }),
