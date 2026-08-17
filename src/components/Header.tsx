@@ -32,6 +32,7 @@ export const Header = () => {
   const [subCheckLoading, setSubCheckLoading] = useState(false);
   const signupVariant = useFeatureFlagVariantKey('increase_sales_cta');
   const halloweenMode = useFeatureFlagEnabled('hero_banner_halloween');
+  const showLiveNav = useFeatureFlagEnabled('show_live_navbar');
 
 
 
