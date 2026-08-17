@@ -6,14 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { trackEvent } from "@/lib/posthog";
 import { useCheckout } from "@/contexts/CheckoutContext";
 import { useFeatureFlagVariantKey } from "posthog-js/react";
-import { useFlashSale } from "@/hooks/useFlashSale";
 
 export const CartDrawer = () => {
   const { items, removeFromCart, updateQuantity, totalItems, totalPrice } = useCart();
   const { startCheckout, isCheckingOut } = useCheckout();
-  const { flashSaleActive, discountPct, getDiscountedPrice } = useFlashSale();
-  const discountAmount = flashSaleActive ? +(totalPrice * (discountPct / 100)).toFixed(2) : 0;
-  const discountedTotal = +(totalPrice - discountAmount).toFixed(2);
+  // totalPrice already holds the charged (discounted) total. Derive the savings
+  // for display from each item's stored list price, so mixed baskets stay correct.
+  const listSubtotal = items.reduce((sum, item) => sum + (item.list_price ?? item.price) * item.quantity, 0);
+  const savings = +(listSubtotal - totalPrice).toFixed(2);
 
   const freeShippingVariant = useFeatureFlagVariantKey("exp-free-shipping-nudge");
   const showFreeShipping = freeShippingVariant === "test";
@@ -128,10 +128,10 @@ export const CartDrawer = () => {
                             </Button>
                           </div>
                         )}
-                        {flashSaleActive ? (
+                        {item.list_price && item.list_price > item.price ? (
                           <div className="ml-auto text-right">
-                            <p className="font-bold text-primary leading-tight">${getDiscountedPrice(item.price).toFixed(2)}</p>
-                            <p className="text-xs text-muted-foreground line-through leading-tight">${item.price.toFixed(2)}</p>
+                            <p className="font-bold text-primary leading-tight">${item.price.toFixed(2)}</p>
+                            <p className="text-xs text-muted-foreground line-through leading-tight">${item.list_price.toFixed(2)}</p>
                           </div>
                         ) : (
                           <p className="font-bold ml-auto">${item.price.toFixed(2)}</p>
@@ -162,21 +162,21 @@ export const CartDrawer = () => {
 
           {items.length > 0 && (
             <div className="border-t pt-4 space-y-4 shrink-0">
-              {flashSaleActive && (
+              {savings > 0 && (
                 <>
                   <div className="flex justify-between text-sm text-muted-foreground">
                     <span>Subtotal</span>
-                    <span>${totalPrice.toFixed(2)}</span>
+                    <span>${listSubtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm font-semibold text-primary">
-                    <span>⚡ Flash Sale −{discountPct}%</span>
-                    <span>−${discountAmount.toFixed(2)}</span>
+                    <span>⚡ Flash Sale</span>
+                    <span>−${savings.toFixed(2)}</span>
                   </div>
                 </>
               )}
               <div className="flex justify-between text-lg font-bold">
                 <span>Total</span>
-                <span>${(flashSaleActive ? discountedTotal : totalPrice).toFixed(2)}</span>
+                <span>${totalPrice.toFixed(2)}</span>
               </div>
               <Button className="w-full" size="lg" data-attr="proceed-to-checkout" onClick={startCheckout} disabled={isCheckingOut}>
                 {isCheckingOut ? "Processing..." : "Proceed to Checkout"}
