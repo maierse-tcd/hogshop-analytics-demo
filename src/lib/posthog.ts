@@ -60,6 +60,10 @@ export const initPostHog = () => {
         disable_session_recording: false,
         disable_web_experiments: false,
         enable_recording_console_log: true,
+        metrics: {
+          serviceName: 'hogshop-web',
+          environment: import.meta.env.DEV ? 'development' : 'production',
+        },
         session_recording: {
           recordCrossOriginIframes: false,
         },
