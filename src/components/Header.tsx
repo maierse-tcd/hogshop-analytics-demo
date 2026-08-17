@@ -10,7 +10,7 @@ import { SubscriptionChoiceDialog } from "./SubscriptionChoiceDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { posthog, trackEvent, identifyUser, applyCompanyGroup } from "@/lib/posthog";
 import { useFeatureFlagEnabled, useFeatureFlagVariantKey } from "posthog-js/react";
-import { getUser, clearUser } from "@/lib/auth";
+import { getUser, clearUser, AUTH_CHANGED_EVENT } from "@/lib/auth";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -70,6 +70,19 @@ export const Header = () => {
       setUserName("");
     }
   }, [location, isLoggedIn]);
+
+  // A login can happen through a dialog that another component renders (for
+  // example the loyalty prompt), which never calls this header's callback.
+  // Listen for the shared auth event so the header reflects the login at once.
+  useEffect(() => {
+    const syncFromStorage = () => {
+      const user = getUser();
+      setIsLoggedIn(!!user);
+      setUserName(user?.name ?? "");
+    };
+    window.addEventListener(AUTH_CHANGED_EVENT, syncFromStorage);
+    return () => window.removeEventListener(AUTH_CHANGED_EVENT, syncFromStorage);
+  }, []);
 
   const handleLogout = () => {
     if (import.meta.env.DEV) console.log("Header: handleLogout called");
