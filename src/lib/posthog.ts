@@ -137,7 +137,18 @@ export const trackMetric = (
 ) => {
   if (typeof window === "undefined") return;
   try {
-    const metrics = (posthog as any)?.metrics;
+    const ph = posthog as any;
+    const metrics = ph?.metrics;
+    // Defensive guard: posthog-js builds the metrics client lazily on the first
+    // metric call and caches the config at that moment. If init has not run yet,
+    // the cached client falls back to "unknown_service". Drop early calls rather
+    // than emit mislabelled metrics.
+    if (!ph?.config?.metrics?.serviceName) {
+      if (import.meta.env.DEV) {
+        console.warn("PostHog metric dropped (not initialised yet):", kind, name);
+      }
+      return;
+    }
     if (!metrics || typeof metrics[kind] !== "function") {
       if (import.meta.env.DEV) console.warn("PostHog metrics unavailable:", kind, name);
       return;
@@ -152,6 +163,7 @@ export const trackMetric = (
     console.error("PostHog metric error:", error);
   }
 };
+
 
 
 export const identifyUser = (userId: string, properties?: Record<string, any>) => {
