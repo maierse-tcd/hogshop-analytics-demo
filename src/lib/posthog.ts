@@ -406,4 +406,47 @@ export const applyCompanyGroup = (companyName: string) => {
   }
 };
 
+// --- Newsletter modal / hosted-survey coordination -----------------------
+// The hosted NPS popover renders into a light-DOM host element whose class
+// starts with "PostHogSurvey-". It has no display conditions, so on the home
+// page it lands on top of the newsletter modal. These helpers give the page
+// one owner for overlay order: hide the popover while the modal is open, and
+// let the page skip the modal when a survey is already on screen.
+//
+// This mirrors the suppression technique in PR #46 (cart drawer + product
+// grid). When both land, fold the shared selector and stylesheet together.
+const SURVEY_HOST_SELECTOR = '[class*="PostHogSurvey-"]';
+const NEWSLETTER_MODAL_OPEN_CLASS = "ph-newsletter-modal-open";
+const NEWSLETTER_SURVEY_GUARD_STYLE_ID = "ph-newsletter-survey-guard";
+
+const installNewsletterSurveyGuard = () => {
+  if (typeof document === "undefined") return;
+  if (document.getElementById(NEWSLETTER_SURVEY_GUARD_STYLE_ID)) return;
+  const style = document.createElement("style");
+  style.id = NEWSLETTER_SURVEY_GUARD_STYLE_ID;
+  style.textContent =
+    `html.${NEWSLETTER_MODAL_OPEN_CLASS} ${SURVEY_HOST_SELECTOR} { display: none !important; }`;
+  document.head.appendChild(style);
+};
+
+/**
+ * True when a hosted survey popover is on screen right now. A present but
+ * hidden host (display:none) has no client rects, so it does not count.
+ */
+export const isSurveyOnScreen = () => {
+  if (typeof document === "undefined") return false;
+  const host = document.querySelector(SURVEY_HOST_SELECTOR);
+  return host !== null && host.getClientRects().length > 0;
+};
+
+/**
+ * Marks the newsletter modal open or closed. While open, the hosted survey
+ * popover is hidden so the two overlays cannot land on top of each other.
+ */
+export const setNewsletterModalOpen = (open: boolean) => {
+  if (typeof document === "undefined") return;
+  installNewsletterSurveyGuard();
+  document.documentElement.classList.toggle(NEWSLETTER_MODAL_OPEN_CLASS, open);
+};
+
 export { posthog, initializeCLTV };
