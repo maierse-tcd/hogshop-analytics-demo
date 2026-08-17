@@ -467,4 +467,47 @@ export const applyCompanyGroup = (companyName: string) => {
   }
 };
 
+/**
+ * Campaign context for server-side events. Marketing Analytics conversion
+ * goals read utm_source / utm_campaign off `purchase_completed`, which is
+ * captured by the track-success edge function and therefore has no browser
+ * context of its own. Prefer the current session's entry attribution, then
+ * fall back to the person's first-touch values (the Stripe redirect means the
+ * Success page is a fresh load, so session-entry props may be absent).
+ * Undefined values are omitted so we never send empty "unknown" attribution.
+ */
+export const getCampaignContext = (): {
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+} => {
+  if (typeof window === "undefined") return {};
+  const read = (sessionKey: string, personKey: string): string | undefined => {
+    try {
+      const sessionValue =
+        typeof (posthog as any)?.get_session_property === "function"
+          ? (posthog as any).get_session_property(sessionKey)
+          : undefined;
+      if (sessionValue) return String(sessionValue);
+      const personValue =
+        typeof (posthog as any)?.get_property === "function"
+          ? (posthog as any).get_property(personKey)
+          : undefined;
+      return personValue ? String(personValue) : undefined;
+    } catch {
+      return undefined;
+    }
+  };
+
+  const context: Record<string, string> = {};
+  const source = read("$session_entry_utm_source", "$initial_utm_source");
+  const medium = read("$session_entry_utm_medium", "$initial_utm_medium");
+  const campaign = read("$session_entry_utm_campaign", "$initial_utm_campaign");
+  if (source) context.utm_source = source;
+  if (medium) context.utm_medium = medium;
+  if (campaign) context.utm_campaign = campaign;
+  if (import.meta.env.DEV) console.log("PostHog: campaign context", context);
+  return context;
+};
+
 export { posthog, initializeCLTV };

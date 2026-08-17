@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/hooks/use-toast";
 import { RegistrationDialog } from "@/components/RegistrationDialog";
-import { posthog, trackEvent, trackMetric, deviceType, setUserProperties, initializeCLTV, ensureIdentified, applyCompanyGroup, slugifyCompany } from "@/lib/posthog";
+import { posthog, trackEvent, trackMetric, deviceType, setUserProperties, initializeCLTV, ensureIdentified, applyCompanyGroup, slugifyCompany, getCampaignContext } from "@/lib/posthog";
 import { getUser, saveUser } from "@/lib/auth";
 import { startSpan, traceparent, SpanKind, SpanStatus } from "@/lib/otel";
 
@@ -149,6 +149,7 @@ export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
           company_name: trimmedCompany,
           company_key: companyKey,
           icp_type: icpType,
+          ...getCampaignContext(),
         },
         headers: { traceparent: traceparent(checkoutSpan) },
       });
