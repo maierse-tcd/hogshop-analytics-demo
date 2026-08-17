@@ -467,14 +467,43 @@ export const applyCompanyGroup = (companyName: string) => {
   }
 };
 
+type CampaignContext = {
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+};
+
+const CAMPAIGN_STORAGE_KEY = "hogshop_campaign";
+const CAMPAIGN_ATTRIBUTION_WINDOW_MS = 90 * 24 * 60 * 60 * 1000;
+
+/** Persist last-touch campaign attribution before client-side navigation. */
+export const captureCampaignFromUrl = () => {
+  if (typeof window === "undefined") return;
+
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const source = params.get("utm_source")?.trim();
+    if (!source) return;
+
+    const campaign: CampaignContext & { ts: number } = {
+      utm_source: source,
+      ts: Date.now(),
+    };
+    const medium = params.get("utm_medium")?.trim();
+    const campaignName = params.get("utm_campaign")?.trim();
+    if (medium) campaign.utm_medium = medium;
+    if (campaignName) campaign.utm_campaign = campaignName;
+
+    window.localStorage.setItem(CAMPAIGN_STORAGE_KEY, JSON.stringify(campaign));
+  } catch {
+    // Campaign capture must never prevent the app from loading.
+  }
+};
+
 /**
- * Campaign context for server-side events. Marketing Analytics conversion
- * goals read utm_source / utm_campaign off `purchase_completed`, which is
- * captured by the track-success edge function and therefore has no browser
- * context of its own. Prefer the current session's entry attribution, then
- * fall back to the person's first-touch values (the Stripe redirect means the
- * Success page is a fresh load, so session-entry props may be absent).
- * Undefined values are omitted so we never send empty "unknown" attribution.
+ * Campaign context for server-side purchase events. Prefer campaign data
+ * captured on landing, then fall back to the current URL before startup
+ * capture has run. Undefined values are omitted.
  */
 export const getCampaignContext = (): {
   utm_source?: string;
@@ -483,37 +512,43 @@ export const getCampaignContext = (): {
 } => {
   if (typeof window === "undefined") return {};
 
-  const candidateUrls: string[] = [];
   try {
-    const sessionProps = (posthog as any)?.persistence?.props?.["$client_session_props"]?.props?.u;
-    if (sessionProps) candidateUrls.push(String(sessionProps));
-  } catch { /* ignore */ }
+    const storedValue = window.localStorage.getItem(CAMPAIGN_STORAGE_KEY);
+    if (storedValue) {
+      const stored = JSON.parse(storedValue) as Record<string, unknown>;
+      const source = typeof stored.utm_source === "string" ? stored.utm_source.trim() : "";
+      const timestamp = typeof stored.ts === "number" ? stored.ts : NaN;
+      const isWithinAttributionWindow =
+        Number.isFinite(timestamp) && Date.now() - timestamp <= CAMPAIGN_ATTRIBUTION_WINDOW_MS;
+
+      if (source && isWithinAttributionWindow) {
+        const context: CampaignContext = { utm_source: source };
+        const medium = typeof stored.utm_medium === "string" ? stored.utm_medium.trim() : "";
+        const campaign = typeof stored.utm_campaign === "string" ? stored.utm_campaign.trim() : "";
+        if (medium) context.utm_medium = medium;
+        if (campaign) context.utm_campaign = campaign;
+        if (import.meta.env.DEV) console.log("PostHog: campaign context", context);
+        return context;
+      }
+    }
+  } catch {
+    // Invalid JSON or unavailable storage — fall back to the current URL.
+  }
 
   try {
-    const initialInfo = (posthog as any)?.persistence?.props?.["$initial_person_info"]?.u;
-    if (initialInfo) candidateUrls.push(String(initialInfo));
-  } catch { /* ignore */ }
-
-  candidateUrls.push(window.location.href);
-
-  for (const rawUrl of candidateUrls) {
-    try {
-      const url = new URL(rawUrl);
-      const source = url.searchParams.get("utm_source");
-      if (!source) continue;
-
-      const context: Record<string, string> = {};
-      context.utm_source = source;
-      const medium = url.searchParams.get("utm_medium");
+    const params = new URL(window.location.href).searchParams;
+    const source = params.get("utm_source")?.trim();
+    if (source) {
+      const context: CampaignContext = { utm_source: source };
+      const medium = params.get("utm_medium")?.trim();
+      const campaign = params.get("utm_campaign")?.trim();
       if (medium) context.utm_medium = medium;
-      const campaign = url.searchParams.get("utm_campaign");
       if (campaign) context.utm_campaign = campaign;
-
       if (import.meta.env.DEV) console.log("PostHog: campaign context", context);
       return context;
-    } catch {
-      // Malformed or non-URL value (e.g. "$direct") — try next candidate.
     }
+  } catch {
+    // A malformed URL must not interfere with checkout.
   }
 
   if (import.meta.env.DEV) console.log("PostHog: campaign context", {});
