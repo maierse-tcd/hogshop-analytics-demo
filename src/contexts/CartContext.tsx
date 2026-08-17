@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
-import { trackEvent } from "@/lib/posthog";
+import { trackEvent, trackMetric, deviceType } from "@/lib/posthog";
 
 interface Product {
   id: string;
@@ -66,6 +66,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       product_category: product.category,
       source: source || "unknown",
       hashed_example_property: "posthog",
+    });
+
+    trackMetric("count", "hogshop.cart.add", 1, {
+      attributes: { device_type: deviceType() },
     });
 
     trackEvent("cart_updated", {

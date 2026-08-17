@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { posthog } from "@/lib/posthog";
+import { posthog, trackMetric, deviceType } from "@/lib/posthog";
 import { startSpan, SpanKind, SpanStatus } from "@/lib/otel";
 
 export const RouteTracker = () => {
@@ -18,6 +18,10 @@ export const RouteTracker = () => {
         path: location.pathname,
         search: location.search,
         title: document.title,
+      });
+
+      trackMetric("count", "hogshop.pageviews", 1, {
+        attributes: { device_type: deviceType() },
       });
 
       // Emit a short navigation span so PostHog Traces always has fresh

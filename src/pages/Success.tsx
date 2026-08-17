@@ -4,7 +4,7 @@ import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
-import { trackEvent, setUserProperties, updateCLTV, updateSubscriptionStatus, setCustomerGroups, applyCompanyGroup } from "@/lib/posthog";
+import { trackEvent, trackMetric, setUserProperties, updateCLTV, updateSubscriptionStatus, setCustomerGroups, applyCompanyGroup } from "@/lib/posthog";
 import { posthog } from "@/lib/posthog";
 import { supabase } from "@/integrations/supabase/client";
 import { saveUser } from "@/lib/auth";
@@ -226,6 +226,14 @@ const Success = () => {
         subscription_id: hasSubscriptionItem ? sessionId : null,
         customer_email: userEmail,
         items: basketItems,
+      });
+
+      trackMetric("count", "hogshop.purchase.completed", 1, {
+        attributes: { currency: "USD" },
+      });
+      trackMetric("count", "hogshop.purchase.revenue", basketValue, {
+        attributes: { currency: "USD" },
+        unit: "USD",
       });
 
       // Fire subscription_created without revenue to avoid double-counting
