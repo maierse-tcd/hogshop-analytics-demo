@@ -56,10 +56,11 @@ serve(async (req) => {
   }
 
   try {
-    const apiKey = Deno.env.get("POSTHOG_PERSONAL_API_KEY");
-    if (!apiKey) {
+    // Read-only PostHog personal API key scoped to endpoint:read on project 97205.
+    const POSTHOG_ENDPOINTS_KEY = Deno.env.get("POSTHOG_ENDPOINTS_LIVE");
+    if (!POSTHOG_ENDPOINTS_KEY) {
       requestStatus = "error";
-      log.error("POSTHOG_PERSONAL_API_KEY is not configured");
+      log.error("POSTHOG_ENDPOINTS_LIVE is not configured");
       await log.flush();
       return new Response(
         JSON.stringify({ error: "Live stats are not configured on the server." }),
@@ -71,8 +72,8 @@ serve(async (req) => {
     let funnelRaw: EndpointResponse;
     try {
       [trafficRaw, funnelRaw] = await Promise.all([
-        runEndpoint("hogshop-live-traffic", apiKey),
-        runEndpoint("hogshop-live-funnel", apiKey),
+        runEndpoint("hogshop-live-traffic", POSTHOG_ENDPOINTS_KEY),
+        runEndpoint("hogshop-live-funnel", POSTHOG_ENDPOINTS_KEY),
       ]);
     } catch (err) {
       requestStatus = "error";
