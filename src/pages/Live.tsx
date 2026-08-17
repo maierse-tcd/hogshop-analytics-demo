@@ -22,6 +22,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface TrafficRow {
   day: string;
@@ -79,6 +80,8 @@ const ChartError = ({ message }: { message: string }) => (
 );
 
 const Live = () => {
+  const isMobile = useIsMobile();
+
   useEffect(() => {
     trackEvent("live_stats_viewed");
     trackMetric("count", "hogshop.live_stats.viewed", 1, {
@@ -195,7 +198,7 @@ const Live = () => {
                 <BarChart
                   data={funnelData}
                   layout="vertical"
-                  margin={{ left: 4, right: 64, top: 8, bottom: 8 }}
+                  margin={{ left: 4, right: isMobile ? 96 : 88, top: 8, bottom: 8 }}
                 >
                   <CartesianGrid horizontal={false} />
                   <XAxis type="number" hide />
@@ -204,7 +207,7 @@ const Live = () => {
                     dataKey="step"
                     tickLine={false}
                     axisLine={false}
-                    width={110}
+                    width={isMobile ? 84 : 110}
                     tickMargin={4}
                   />
                   <ChartTooltip content={<ChartTooltipContent hideLabel={false} />} />
@@ -213,7 +216,7 @@ const Live = () => {
                       dataKey="label"
                       position="right"
                       className="fill-foreground"
-                      fontSize={12}
+                      fontSize={isMobile ? 11 : 12}
                     />
                   </Bar>
                 </BarChart>
