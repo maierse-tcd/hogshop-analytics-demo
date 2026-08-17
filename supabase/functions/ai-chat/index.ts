@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createTracer, parseTraceparent, SpanKind } from "../_shared/otel.ts";
+import { createMetrics } from "../_shared/metrics.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -73,6 +74,9 @@ serve(async (req) => {
 
   const incoming = parseTraceparent(req.headers.get("traceparent"));
   const tracer = createTracer("hogshop-edge", incoming);
+  const metrics = createMetrics("hogshop-edge");
+  const requestStartedAt = Date.now();
+  let requestStatus: "ok" | "error" = "ok";
 
   try {
     return await tracer.withSpan(
@@ -136,12 +140,21 @@ serve(async (req) => {
       { kind: SpanKind.SERVER },
     );
   } catch (error) {
+    requestStatus = "error";
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } finally {
     // Flush spans to PostHog before the function returns.
+    metrics.count("hogshop.edge.requests", 1, {
+      attributes: { function: "ai-chat", status: requestStatus },
+    });
+    metrics.histogram("hogshop.edge.duration", Date.now() - requestStartedAt, {
+      unit: "ms",
+      attributes: { function: "ai-chat" },
+    });
     await tracer.flush();
+    await metrics.flush();
   }
 });
