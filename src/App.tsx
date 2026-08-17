@@ -75,7 +75,6 @@ const AppContent = () => {
 
 const App = () => {
   useEffect(() => {
-    initPostHog();
     initOtel();
     // If a user is already logged in (returning visitor), apply identity hash
     const existing = getUser();
@@ -86,6 +85,7 @@ const App = () => {
       }
     }
   }, []);
+
 
   return (
     <PostHogProvider client={posthog}>
