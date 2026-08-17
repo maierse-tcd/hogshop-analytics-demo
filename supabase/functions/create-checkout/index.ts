@@ -138,6 +138,7 @@ serve(async (req) => {
         log.info("Building checkout session", { mode, origin, successUrl });
 
         // ---------- Stripe checkout session ----------
+        const stripeStartedAt = Date.now();
         const session = await tracer.withSpan(
           "stripe.checkout.session.create",
           async (span) => {
@@ -183,6 +184,11 @@ serve(async (req) => {
           },
           { kind: SpanKind.CLIENT },
         );
+
+        metrics.histogram("hogshop.stripe.checkout.duration", Date.now() - stripeStartedAt, {
+          unit: "ms",
+          attributes: { function: "create-checkout" },
+        });
 
         log.info("Stripe session created", { sessionId: session.id, checkoutUrl: session.url, mode: session.mode });
         await log.flush();

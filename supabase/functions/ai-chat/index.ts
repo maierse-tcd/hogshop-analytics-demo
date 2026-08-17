@@ -114,6 +114,8 @@ serve(async (req) => {
               "gen_ai.request.model": "google/gemini-2.5-flash",
               "gen_ai.operation.name": "chat",
             });
+            const model = "google/gemini-2.5-flash";
+            const genStartedAt = Date.now();
             const r = findResponse(lastUserMessage.content);
             // Simulate slight delay for realism
             await new Promise((res) => setTimeout(res, 300 + Math.random() * 700));
@@ -124,6 +126,16 @@ serve(async (req) => {
             genSpan.setAttributes({
               "gen_ai.usage.input_tokens": inputTokens,
               "gen_ai.usage.output_tokens": outputTokens,
+            });
+            metrics.count("hogshop.ai.tokens", inputTokens, {
+              attributes: { model, kind: "input" },
+            });
+            metrics.count("hogshop.ai.tokens", outputTokens, {
+              attributes: { model, kind: "output" },
+            });
+            metrics.histogram("hogshop.ai.latency", Date.now() - genStartedAt, {
+              unit: "ms",
+              attributes: { model },
             });
             return r;
           },
