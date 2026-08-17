@@ -1,29 +1,47 @@
 import { Header } from "@/components/Header";
 import { useEffect, useState } from "react";
+import { useTheme } from "next-themes";
 import { trackEvent, trackMetric, deviceType } from "@/lib/posthog";
 import { cn } from "@/lib/utils";
 
-const HERO_EMBED = "https://eu.posthog.com/embedded/O17xbEkZf3RIAZmRNONvIP9Wlje-tg";
-const FUNNEL_EMBED = "https://eu.posthog.com/embedded/qI__JJtawuiROAsB4BCBS60tL8Uguw";
+const HERO_EMBEDS = {
+  dark: "https://eu.posthog.com/embedded/O17xbEkZf3RIAZmRNONvIP9Wlje-tg",
+  light: "https://eu.posthog.com/embedded/5phlJDObiZQ1csf_TxBqlKOq3H0Cxg",
+};
+
+const FUNNEL_EMBEDS = {
+  dark: "https://eu.posthog.com/embedded/qI__JJtawuiROAsB4BCBS60tL8Uguw",
+  light: "https://eu.posthog.com/embedded/WgSuIm6CmK85zamKrfNU4JVQ_Rqqkg",
+};
 
 interface ChartCardProps {
   title: string;
   src: string;
   height: number;
   lazy?: boolean;
-  minScrollWidth?: number;
+  scrollOnNarrow?: boolean;
 }
 
-const ChartCard = ({ title, src, height, lazy, minScrollWidth }: ChartCardProps) => {
+const ChartCard = ({ title, src, height, lazy, scrollOnNarrow }: ChartCardProps) => {
   const [loaded, setLoaded] = useState(false);
 
+  useEffect(() => {
+    setLoaded(false);
+  }, [src]);
+
   return (
-    <div className="dark bg-card border rounded-lg shadow-sm overflow-hidden">
+    <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
       <div className="p-4 border-b border-border/60">
         <h2 className="text-lg font-semibold text-card-foreground">{title}</h2>
       </div>
       <div className="overflow-x-auto">
-        <div className="relative" style={{ minHeight: height, minWidth: minScrollWidth }}>
+        <div
+          className={cn(
+            "relative w-full",
+            scrollOnNarrow && "min-w-[600px] md:min-w-full"
+          )}
+          style={{ minHeight: height }}
+        >
           <div
             className={cn(
               "absolute inset-0 animate-pulse bg-muted",
@@ -32,6 +50,7 @@ const ChartCard = ({ title, src, height, lazy, minScrollWidth }: ChartCardProps)
             aria-hidden="true"
           />
           <iframe
+            key={src}
             src={src}
             width="100%"
             height={height}
@@ -49,6 +68,9 @@ const ChartCard = ({ title, src, height, lazy, minScrollWidth }: ChartCardProps)
 };
 
 const Live = () => {
+  const { resolvedTheme } = useTheme();
+  const theme = resolvedTheme === "light" ? "light" : "dark";
+
   useEffect(() => {
     trackEvent("live_stats_viewed");
     trackMetric("count", "hogshop.live_stats.viewed", 1, {
@@ -60,7 +82,7 @@ const Live = () => {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <main className="container mx-auto px-4 py-12 max-w-6xl">
+      <main className="mx-auto px-4 py-12 max-w-[1400px]">
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-4">Live stats</h1>
           <p className="text-lg text-muted-foreground">
@@ -71,15 +93,15 @@ const Live = () => {
         <div className="space-y-8">
           <ChartCard
             title="Visitors & product views — last 14 days"
-            src={HERO_EMBED}
+            src={HERO_EMBEDS[theme]}
             height={450}
           />
           <ChartCard
             title="Purchase funnel — last 30 days"
-            src={FUNNEL_EMBED}
-            height={520}
+            src={FUNNEL_EMBEDS[theme]}
+            height={600}
             lazy
-            minScrollWidth={1000}
+            scrollOnNarrow
           />
         </div>
       </main>
