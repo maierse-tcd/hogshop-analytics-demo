@@ -123,6 +123,7 @@ export const Header = () => {
               { to: "/about", label: "About", emoji: "🦔" },
               { to: "/faq", label: "FAQ", emoji: "❓" },
               { to: "/shipping", label: "Shipping", emoji: "📦" },
+              ...(showLiveNav === true ? [{ to: "/live", label: "Live stats", emoji: "📈" }] : []),
             ].map(({ to, label, emoji }) => (
               <Link
                 key={to}
