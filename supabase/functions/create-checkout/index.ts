@@ -47,7 +47,7 @@ serve(async (req) => {
         });
         log.info("Function invoked");
 
-        const { items, customer_email, customer_name, ph_session_id, company_name, company_key, icp_type } = await req.json();
+        const { items, customer_email, customer_name, ph_session_id, company_name, company_key, icp_type, utm_source, utm_medium, utm_campaign } = await req.json();
 
         rootSpan.setAttributes({
           "cart.item_count": items?.length ?? 0,
@@ -153,6 +153,12 @@ serve(async (req) => {
             if (company_name) metadata.company_name = String(company_name);
             if (company_key) metadata.company_key = String(company_key);
             if (ph_session_id) metadata.ph_session_id = String(ph_session_id);
+            // Marketing attribution captured in the browser, carried through
+            // Stripe so the server-side purchase_completed event keeps campaign
+            // context. Only set when present — no empty "unknown" values.
+            if (utm_source) metadata.utm_source = String(utm_source);
+            if (utm_medium) metadata.utm_medium = String(utm_medium);
+            if (utm_campaign) metadata.utm_campaign = String(utm_campaign);
 
             const s = await stripe.checkout.sessions.create({
               line_items: sessionLineItems,

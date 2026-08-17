@@ -45,10 +45,14 @@ serve(async (req) => {
         const phSessionId = url.searchParams.get("ph_session_id") || undefined;
         log.info("URL params", { sessionId, redirect });
 
+        const bodyUtm: Record<string, string> = {};
         if (!sessionId) {
           try {
             const body = await req.json();
             sessionId = body?.session_id;
+            for (const key of ["utm_source", "utm_medium", "utm_campaign"] as const) {
+              if (body?.[key]) bodyUtm[key] = String(body[key]);
+            }
           } catch (err) {
             log.warn("Failed to parse body", { error: String(err) });
           }
@@ -119,6 +123,15 @@ serve(async (req) => {
         const companyName = meta.company_name || "";
         const companyKey = meta.company_key || "";
         const icpType = meta.icp_type === "B2B" ? "B2B" : "B2C";
+
+        // Marketing attribution: request body / query params (direct invocation)
+        // win, then Stripe metadata set by create-checkout. Only non-empty
+        // values are attached so absent attribution stays absent.
+        const utm: Record<string, string> = {};
+        for (const key of ["utm_source", "utm_medium", "utm_campaign"] as const) {
+          const value = bodyUtm[key] || url.searchParams.get(key) || meta[key] || "";
+          if (value) utm[key] = String(value);
+        }
         const isB2B = icpType === "B2B" && !!companyKey;
 
         rootSpan.setAttributes({
@@ -244,6 +257,7 @@ serve(async (req) => {
             hashed_example_property: "posthog",
             icp_type: icpType,
             ...(isB2B ? { company_name: companyName, company_key: companyKey } : {}),
+            ...utm,
             $groups: eventGroups,
           },
         };
