@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createLogger } from "../_shared/posthog-logger.ts";
 import { createTracer, parseTraceparent, SpanKind, type Span } from "../_shared/otel.ts";
+import { createMetrics } from "../_shared/metrics.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,6 +19,9 @@ serve(async (req) => {
 
   const incoming = parseTraceparent(req.headers.get("traceparent"));
   const tracer = createTracer("hogshop-edge", incoming);
+  const metrics = createMetrics("hogshop-edge");
+  const requestStartedAt = Date.now();
+  let requestStatus: "ok" | "error" = "ok";
 
   try {
     return await tracer.withSpan(
@@ -389,6 +393,7 @@ serve(async (req) => {
       { kind: SpanKind.SERVER },
     );
   } catch (error) {
+    requestStatus = "error";
     const message = error instanceof Error ? error.message : String(error);
     console.error("[track-success] error:", message);
     return new Response(JSON.stringify({ error: message }), {
@@ -396,6 +401,14 @@ serve(async (req) => {
       status: 500,
     });
   } finally {
+    metrics.count("hogshop.edge.requests", 1, {
+      attributes: { function: "track-success", status: requestStatus },
+    });
+    metrics.histogram("hogshop.edge.duration", Date.now() - requestStartedAt, {
+      unit: "ms",
+      attributes: { function: "track-success" },
+    });
     await tracer.flush();
+    await metrics.flush();
   }
 });

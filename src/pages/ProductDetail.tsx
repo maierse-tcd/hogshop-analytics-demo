@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useCart } from "@/contexts/CartContext";
 import { ShoppingCart, ArrowLeft, Zap } from "lucide-react";
 import { RelatedProductsCarousel } from "@/components/RelatedProductsCarousel";
-import { trackEvent } from "@/lib/posthog";
+import { trackEvent, trackMetric, deviceType } from "@/lib/posthog";
 import { useFlashSale } from "@/hooks/useFlashSale";
 import { useTour } from "@/hooks/useTour";
 import { TourTooltip } from "@/components/TourTooltip";
@@ -103,6 +103,10 @@ const ProductDetail = () => {
           category: data.category,
           is_subscription: data.is_subscription,
           source: "product_detail_page"
+        });
+
+        trackMetric("count", "hogshop.product.viewed", 1, {
+          attributes: { device_type: deviceType() },
         });
       }
       

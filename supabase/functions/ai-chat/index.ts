@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createTracer, parseTraceparent, SpanKind } from "../_shared/otel.ts";
+import { createMetrics } from "../_shared/metrics.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -73,6 +74,9 @@ serve(async (req) => {
 
   const incoming = parseTraceparent(req.headers.get("traceparent"));
   const tracer = createTracer("hogshop-edge", incoming);
+  const metrics = createMetrics("hogshop-edge");
+  const requestStartedAt = Date.now();
+  let requestStatus: "ok" | "error" = "ok";
 
   try {
     return await tracer.withSpan(
@@ -110,6 +114,8 @@ serve(async (req) => {
               "gen_ai.request.model": "google/gemini-2.5-flash",
               "gen_ai.operation.name": "chat",
             });
+            const model = "google/gemini-2.5-flash";
+            const genStartedAt = Date.now();
             const r = findResponse(lastUserMessage.content);
             // Simulate slight delay for realism
             await new Promise((res) => setTimeout(res, 300 + Math.random() * 700));
@@ -120,6 +126,16 @@ serve(async (req) => {
             genSpan.setAttributes({
               "gen_ai.usage.input_tokens": inputTokens,
               "gen_ai.usage.output_tokens": outputTokens,
+            });
+            metrics.count("hogshop.ai.tokens", inputTokens, {
+              attributes: { model, kind: "input" },
+            });
+            metrics.count("hogshop.ai.tokens", outputTokens, {
+              attributes: { model, kind: "output" },
+            });
+            metrics.histogram("hogshop.ai.latency", Date.now() - genStartedAt, {
+              unit: "ms",
+              attributes: { model },
             });
             return r;
           },
@@ -136,12 +152,21 @@ serve(async (req) => {
       { kind: SpanKind.SERVER },
     );
   } catch (error) {
+    requestStatus = "error";
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } finally {
     // Flush spans to PostHog before the function returns.
+    metrics.count("hogshop.edge.requests", 1, {
+      attributes: { function: "ai-chat", status: requestStatus },
+    });
+    metrics.histogram("hogshop.edge.duration", Date.now() - requestStartedAt, {
+      unit: "ms",
+      attributes: { function: "ai-chat" },
+    });
     await tracer.flush();
+    await metrics.flush();
   }
 });

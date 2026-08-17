@@ -60,6 +60,10 @@ export const initPostHog = () => {
         disable_session_recording: false,
         disable_web_experiments: false,
         enable_recording_console_log: true,
+        metrics: {
+          serviceName: 'hogshop-web',
+          environment: import.meta.env.DEV ? 'development' : 'production',
+        },
         session_recording: {
           recordCrossOriginIframes: false,
         },
@@ -104,6 +108,51 @@ export const trackEvent = (eventName: string, properties?: Record<string, any>) 
     }
   }
 };
+
+/**
+ * Coarse device bucket for metric attributes.
+ * Values intentionally match PostHog's `$device_type` casing so metrics and
+ * events can be compared side by side.
+ */
+export const deviceType = (): "Desktop" | "Mobile" | "Tablet" => {
+  if (typeof window === "undefined") return "Desktop";
+  const w = window.innerWidth;
+  if (w < 768) return "Mobile";
+  if (w < 1024) return "Tablet";
+  return "Desktop";
+};
+
+type MetricKind = "count" | "gauge" | "histogram";
+
+/**
+ * Defensive wrapper around posthog.metrics.* (OTLP metrics).
+ * Metric attributes MUST stay low cardinality — never pass ids, emails or
+ * session/trace identifiers here.
+ */
+export const trackMetric = (
+  kind: MetricKind,
+  name: string,
+  value?: number,
+  opts?: { attributes?: Record<string, string | number | boolean>; unit?: string },
+) => {
+  if (typeof window === "undefined") return;
+  try {
+    const metrics = (posthog as any)?.metrics;
+    if (!metrics || typeof metrics[kind] !== "function") {
+      if (import.meta.env.DEV) console.warn("PostHog metrics unavailable:", kind, name);
+      return;
+    }
+    if (kind === "count") {
+      metrics.count(name, value ?? 1, opts);
+    } else {
+      metrics[kind](name, value ?? 0, opts);
+    }
+    if (import.meta.env.DEV) console.log("PostHog metric:", kind, name, value, opts);
+  } catch (error) {
+    console.error("PostHog metric error:", error);
+  }
+};
+
 
 export const identifyUser = (userId: string, properties?: Record<string, any>) => {
   if (typeof window !== "undefined") {
