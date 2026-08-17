@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState, useRef } from "react";
-import { trackEvent, posthog } from "@/lib/posthog";
+import { trackEvent, posthog, isSurveyOnScreen, setNewsletterModalOpen } from "@/lib/posthog";
 import { useFeatureFlagEnabled, useFeatureFlagVariantKey } from "posthog-js/react";
 import { ArrowRight, X, Gift } from "lucide-react";
 import { Newsletter } from "@/components/Newsletter";
@@ -151,18 +151,38 @@ const Index = () => {
 
   // Feature flag tracking is handled automatically by the PostHog SDK
 
-  // Known issue: the newsletter modal can reappear on later visits for users who
-  // dismissed it without subscribing — we persist "subscribed" but not
-  // "dismissed". Repeat visitors have reported this as nagging.
+  // Persist a dismissal so a decline sticks and the modal does not nag repeat
+  // visitors. Closes first, so a storage error never blocks the close.
+  const dismissNewsletterModal = (event: "newsletter_modal_dismissed" | "newsletter_modal_closed") => {
+    setShowNewsletterModal(false);
+    try {
+      localStorage.setItem("newsletter_dismissed", "true");
+    } catch {
+      // Ignore storage quota errors — the modal still closes.
+    }
+    trackEvent(event);
+  };
+
+  // Hide the hosted NPS survey while the modal is open so the two overlays
+  // cannot land on top of each other. The second effect clears the guard if
+  // the page unmounts while the modal is still open.
   useEffect(() => {
-    // Check localStorage for subscription status
+    setNewsletterModalOpen(showNewsletterModal);
+  }, [showNewsletterModal]);
+  useEffect(() => () => setNewsletterModalOpen(false), []);
+
+  useEffect(() => {
     const subscribed = localStorage.getItem("newsletter_subscribed") === "true";
+    const dismissed = localStorage.getItem("newsletter_dismissed") === "true";
     setHasSubscribed(subscribed);
 
-    // Show modal when feature flag is enabled and user hasn't subscribed
-    if (showNewsletterFlag && !subscribed) {
-      // Delay modal slightly for better UX
+    // Show the modal when the flag is on and the visitor has neither subscribed
+    // nor dismissed it before.
+    if (showNewsletterFlag && !subscribed && !dismissed) {
       const timer = setTimeout(() => {
+        // Do not stack on the hosted survey: if one is already on screen, hold
+        // the modal back rather than covering it.
+        if (isSurveyOnScreen()) return;
         setShowNewsletterModal(true);
       }, 1500);
       return () => clearTimeout(timer);
@@ -410,22 +430,17 @@ const Index = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
           <div
             className="absolute inset-0 bg-background/80 backdrop-blur-sm"
-            onClick={() => {
-              setShowNewsletterModal(false);
-              trackEvent("newsletter_modal_dismissed");
-            }} />
-          
-          <div className="relative animate-in zoom-in-95 duration-300">
+            onClick={() => dismissNewsletterModal("newsletter_modal_dismissed")} />
+
+          <div className="relative w-full max-w-2xl animate-in zoom-in-95 duration-300">
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon"
-              className="absolute -top-2 -right-2 z-10 rounded-full bg-background shadow-lg hover:bg-accent"
-              onClick={() => {
-                setShowNewsletterModal(false);
-                trackEvent("newsletter_modal_closed");
-              }}>
-              
-              <X className="h-4 w-4" />
+              aria-label="Close newsletter signup"
+              className="absolute right-2 top-2 z-10 h-11 w-11 rounded-full bg-background shadow-lg hover:bg-accent focus-visible:ring-2 focus-visible:ring-primary sm:-right-3 sm:-top-3"
+              onClick={() => dismissNewsletterModal("newsletter_modal_closed")}>
+
+              <X className="h-5 w-5" />
             </Button>
             <Newsletter
               variant="card"

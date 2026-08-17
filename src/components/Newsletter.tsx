@@ -61,17 +61,17 @@ export const Newsletter = ({ variant = "card", onSubscribed }: NewsletterProps) 
   }
 
   return (
-    <div className="bg-primary/5 border border-primary/20 rounded-lg p-8 max-w-2xl mx-auto">
-      <div className="inline-block bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-semibold mb-3">
+    <div className="bg-primary/5 border border-primary/20 rounded-lg p-5 sm:p-8 max-w-2xl mx-auto">
+      <div className="inline-block bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs sm:text-sm font-semibold mb-3">
         🎉 15% OFF Your First Order
       </div>
-      <h3 className="text-2xl font-bold text-center mb-2">
+      <h3 className="text-xl sm:text-2xl font-bold text-center mb-2">
         Join Our Hedgehog Community
       </h3>
-      <p className="text-muted-foreground text-center mb-6">
+      <p className="text-sm sm:text-base text-muted-foreground text-center mb-6">
         Get exclusive tips, discounts, and hedgehog care advice delivered to your inbox
       </p>
-      <form onSubmit={handleSubmit} className="flex gap-2 max-w-md mx-auto">
+      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto">
         <Input
           type="email"
           placeholder="your@email.com"
@@ -81,7 +81,7 @@ export const Newsletter = ({ variant = "card", onSubscribed }: NewsletterProps) 
           required
           className="flex-1"
         />
-        <Button type="submit">Subscribe</Button>
+        <Button type="submit" className="w-full sm:w-auto">Subscribe</Button>
       </form>
     </div>
   );
