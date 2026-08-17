@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import { trackEvent, trackMetric, deviceType } from "@/lib/posthog";
 import { cn } from "@/lib/utils";
 
-const HERO_EMBED = "https://eu.posthog.com/embedded/O17xbEkZf3RIAZmRNONvIP9Wlje-tg?refresh=true";
-const FUNNEL_EMBED = "https://eu.posthog.com/embedded/qI__JJtawuiROAsB4BCBS60tL8Uguw?refresh=true";
+const HERO_EMBED = "https://eu.posthog.com/embedded/O17xbEkZf3RIAZmRNONvIP9Wlje-tg";
+const FUNNEL_EMBED = "https://eu.posthog.com/embedded/qI__JJtawuiROAsB4BCBS60tL8Uguw";
 
 interface ChartCardProps {
   title: string;
@@ -60,11 +60,11 @@ const Live = () => {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <main className="container mx-auto px-4 py-12 max-w-4xl">
+      <main className="container mx-auto px-4 py-12 max-w-6xl">
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-4">Live stats</h1>
           <p className="text-lg text-muted-foreground">
-            HogShop is a demo store. The traffic here is synthetic, but the analytics are real — these charts are live PostHog insights, embedded straight from our project and refreshed on every load. Browse a product, come back, and watch yourself appear in the numbers.
+            HogShop is a demo store. The traffic here is synthetic, but the analytics are real — these charts are live PostHog insights, embedded straight from our project. Browse a product, come back later, and watch yourself appear in the numbers.
           </p>
         </div>
 
