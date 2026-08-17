@@ -133,15 +133,14 @@ const Live = () => {
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-4">Live stats</h1>
           <p className="text-lg text-muted-foreground">
-            HogShop is a demo store. The traffic here is synthetic, but the analytics are real — these
-            charts are rendered from PostHog Endpoints, saved queries on our own project served
-            straight to this page. The numbers refresh every 15 minutes, so browse a product, come
-            back a little later, and watch yourself appear in them.
+            HogShop is a demo store. The traffic here is synthetic, but the analytics are real and
+            these charts are rendered from PostHog Endpoints, saved queries on our own project
+            served to this page. The numbers refresh every 15 minutes.
           </p>
         </div>
 
         <div className="space-y-8">
-          <ChartCard title="Visitors & product views — last 14 days">
+          <ChartCard title="Visitors & product views in the last 14 days">
             {isLoading ? (
               <Skeleton className="h-[320px] w-full" />
             ) : isError ? (
@@ -186,7 +185,7 @@ const Live = () => {
             )}
           </ChartCard>
 
-          <ChartCard title="Purchase funnel — last 30 days">
+          <ChartCard title="Purchase funnel in the last 30 days">
             {isLoading ? (
               <Skeleton className="h-[320px] w-full" />
             ) : isError ? (
