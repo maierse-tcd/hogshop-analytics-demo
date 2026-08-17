@@ -72,8 +72,8 @@ serve(async (req) => {
     let funnelRaw: EndpointResponse;
     try {
       [trafficRaw, funnelRaw] = await Promise.all([
-        runEndpoint("hogshop-live-traffic", apiKey),
-        runEndpoint("hogshop-live-funnel", apiKey),
+        runEndpoint("hogshop-live-traffic", POSTHOG_ENDPOINTS_KEY),
+        runEndpoint("hogshop-live-funnel", POSTHOG_ENDPOINTS_KEY),
       ]);
     } catch (err) {
       requestStatus = "error";
