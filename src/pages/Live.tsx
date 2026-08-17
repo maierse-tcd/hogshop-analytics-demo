@@ -43,12 +43,12 @@ interface LiveStats {
 }
 
 const trafficConfig = {
-  product_views: { label: "Product views", color: "hsl(var(--chart-1))" },
-  visitors: { label: "Visitors", color: "hsl(var(--chart-2))" },
+  product_views: { label: "Product views", color: "hsl(var(--primary))" },
+  visitors: { label: "Visitors", color: "hsl(var(--blue))" },
 } satisfies ChartConfig;
 
 const funnelConfig = {
-  value: { label: "Users", color: "hsl(var(--chart-1))" },
+  value: { label: "Users", color: "hsl(var(--primary))" },
 } satisfies ChartConfig;
 
 const formatDay = (value: string) => {
