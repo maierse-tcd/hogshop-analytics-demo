@@ -482,32 +482,42 @@ export const getCampaignContext = (): {
   utm_campaign?: string;
 } => {
   if (typeof window === "undefined") return {};
-  const read = (sessionKey: string, personKey: string): string | undefined => {
-    try {
-      const sessionValue =
-        typeof (posthog as any)?.get_session_property === "function"
-          ? (posthog as any).get_session_property(sessionKey)
-          : undefined;
-      if (sessionValue) return String(sessionValue);
-      const personValue =
-        typeof (posthog as any)?.get_property === "function"
-          ? (posthog as any).get_property(personKey)
-          : undefined;
-      return personValue ? String(personValue) : undefined;
-    } catch {
-      return undefined;
-    }
-  };
 
-  const context: Record<string, string> = {};
-  const source = read("$session_entry_utm_source", "$initial_utm_source");
-  const medium = read("$session_entry_utm_medium", "$initial_utm_medium");
-  const campaign = read("$session_entry_utm_campaign", "$initial_utm_campaign");
-  if (source) context.utm_source = source;
-  if (medium) context.utm_medium = medium;
-  if (campaign) context.utm_campaign = campaign;
-  if (import.meta.env.DEV) console.log("PostHog: campaign context", context);
-  return context;
+  const candidateUrls: string[] = [];
+  try {
+    const sessionProps = (posthog as any)?.persistence?.props?.["$client_session_props"]?.props?.u;
+    if (sessionProps) candidateUrls.push(String(sessionProps));
+  } catch { /* ignore */ }
+
+  try {
+    const initialInfo = (posthog as any)?.persistence?.props?.["$initial_person_info"]?.u;
+    if (initialInfo) candidateUrls.push(String(initialInfo));
+  } catch { /* ignore */ }
+
+  candidateUrls.push(window.location.href);
+
+  for (const rawUrl of candidateUrls) {
+    try {
+      const url = new URL(rawUrl);
+      const source = url.searchParams.get("utm_source");
+      if (!source) continue;
+
+      const context: Record<string, string> = {};
+      context.utm_source = source;
+      const medium = url.searchParams.get("utm_medium");
+      if (medium) context.utm_medium = medium;
+      const campaign = url.searchParams.get("utm_campaign");
+      if (campaign) context.utm_campaign = campaign;
+
+      if (import.meta.env.DEV) console.log("PostHog: campaign context", context);
+      return context;
+    } catch {
+      // Malformed or non-URL value (e.g. "$direct") — try next candidate.
+    }
+  }
+
+  if (import.meta.env.DEV) console.log("PostHog: campaign context", {});
+  return {};
 };
 
 export { posthog, initializeCLTV };
