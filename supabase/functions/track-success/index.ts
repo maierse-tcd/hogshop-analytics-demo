@@ -201,6 +201,16 @@ serve(async (req) => {
           ? "Active Subscriber"
           : (lastCancel > 0 ? "Churned Subscriber" : "One-Time Buyer");
 
+        // Client context — the shopper's browser reaches this function through
+        // Stripe's success_url redirect, so the request carries the real user
+        // agent and client IP. Forward both to PostHog so it can derive
+        // $browser, $device_type, and $os and classify human vs bot traffic.
+        const userAgent = req.headers.get("user-agent") || "";
+        const clientIp = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim();
+        const clientContext: Record<string, string> = { $lib: "hogshop-edge" };
+        if (userAgent) clientContext.$raw_user_agent = userAgent;
+        if (clientIp) clientContext.$ip = clientIp;
+
         const postJson = async (span: Span, event: string, payload: unknown) => {
           span.setAttribute("posthog.event", event);
           const res = await fetch(`${POSTHOG_HOST}/capture/`, {
@@ -222,7 +232,7 @@ serve(async (req) => {
             api_key: POSTHOG_KEY,
             event: "$identify",
             distinct_id: customerEmail || sessionId,
-            properties: { $session_id: phSessionId, $set: { email: customerEmail, name: customerName } },
+            properties: { ...clientContext, $session_id: phSessionId, $set: { email: customerEmail, name: customerName } },
           }),
           { kind: SpanKind.CLIENT },
         );
@@ -240,6 +250,7 @@ serve(async (req) => {
           event: "purchase_completed",
           distinct_id: customerEmail || sessionId,
           properties: {
+            ...clientContext,
             $session_id: phSessionId,
             session_id: sessionId,
             total_amount: totalAmount,
@@ -333,6 +344,7 @@ serve(async (req) => {
               event: "subscription_created",
               distinct_id: customerEmail || sessionId,
               properties: {
+                ...clientContext,
                 $session_id: phSessionId,
                 subscription_id: subscriptionId,
                 plan_name: subscriptionItems.map((item: any) => item.name).join(", "),
@@ -379,6 +391,7 @@ serve(async (req) => {
               event: "$set",
               distinct_id: customerEmail,
               properties: {
+                ...clientContext,
                 $session_id: phSessionId,
                 $set: setProps,
               },
