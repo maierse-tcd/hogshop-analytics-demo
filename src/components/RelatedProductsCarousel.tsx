@@ -3,6 +3,7 @@ import { useFeatureFlagVariantKey } from "posthog-js/react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { ShoppingCart } from "lucide-react";
 import { productImageMap } from "@/lib/productImages";
 
@@ -50,15 +51,26 @@ export const RelatedProductsCarousel = ({ currentProductId }: RelatedProductsCar
               key={p.id}
               className="snap-start shrink-0 w-56 rounded-lg border bg-card overflow-hidden flex flex-col"
             >
-              <div className="aspect-square bg-accent/5 overflow-hidden">
+              <div className="relative aspect-square bg-accent/5 overflow-hidden">
                 <img src={img} alt={p.title} className="w-full h-full object-cover" />
+                {p.stock < 10 && p.stock > 0 && (
+                  <Badge className="absolute top-2 right-2 bg-yellow text-yellow-foreground">
+                    Only {p.stock} left
+                  </Badge>
+                )}
+                {p.stock === 0 && (
+                  <Badge className="absolute top-2 right-2" variant="destructive">
+                    Out of Stock
+                  </Badge>
+                )}
               </div>
               <div className="p-3 flex flex-col gap-2 flex-1">
                 <h3 className="font-semibold text-sm line-clamp-2">{p.title}</h3>
                 <p className="font-bold text-primary">${Number(p.price).toFixed(2)}</p>
                 <Button
                   size="sm"
-                  className="mt-auto gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+                  className="mt-auto gap-2"
+                  disabled={p.stock === 0}
                   onClick={() =>
                     addToCart(
                       {
@@ -77,7 +89,7 @@ export const RelatedProductsCarousel = ({ currentProductId }: RelatedProductsCar
                   }
                 >
                   <ShoppingCart className="h-4 w-4" />
-                  Add to Cart
+                  {p.stock === 0 ? "Out of Stock" : "Add to Cart"}
                 </Button>
               </div>
             </div>
