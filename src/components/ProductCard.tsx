@@ -160,7 +160,10 @@ export const ProductCard = ({
               </Badge>
             )}
             {stock < 10 && stock > 0 && (
-              <Badge className="absolute top-3 right-3">Only {stock} left</Badge>
+              <Badge className="absolute top-3 right-3 bg-yellow text-yellow-foreground">Only {stock} left</Badge>
+            )}
+            {stock === 0 && (
+              <Badge className="absolute top-3 right-3" variant="destructive">Out of Stock</Badge>
             )}
             {is_subscription && (
               <Badge className="absolute top-3 left-3">
@@ -238,8 +241,7 @@ export const ProductCard = ({
           </Badge>
         )}
         {stock < 10 && stock > 0 && (
-          <Badge className="absolute top-3 right-3 text-white"
-                 style={seasonalMode && themeConfig ? { backgroundColor: themeConfig.colors.primary } : {}}>
+          <Badge className="absolute top-3 right-3 bg-yellow text-yellow-foreground">
             Only {stock} left
           </Badge>
         )}

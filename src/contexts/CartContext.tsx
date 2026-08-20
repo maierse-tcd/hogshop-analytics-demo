@@ -35,6 +35,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const addToCart = (product: Product, source?: string) => {
     const existing = items.find((item) => item.id === product.id);
+    const currentQuantity = existing ? existing.quantity : 0;
+
+    // Never add more units than the product has in stock.
+    if (product.stock !== undefined && currentQuantity >= product.stock) {
+      return;
+    }
+
     const newItems = existing
       ? items.map((item) =>
           item.id === product.id
@@ -43,12 +50,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         )
       : [...items, { ...product, quantity: 1 }];
 
-    setItems((prev) => {
-      const prevExisting = prev.find((item) => item.id === product.id);
-      return prevExisting
-        ? prev.map((item) => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item)
-        : [...prev, { ...product, quantity: 1 }];
-    });
+    setItems(newItems);
 
     const totalItems = newItems.reduce((sum, item) => sum + item.quantity, 0);
     const totalValue = newItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -102,13 +104,19 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     const item = items.find((i) => i.id === productId);
-    setItems((prev) => prev.map((i) => i.id === productId ? { ...i, quantity } : i));
-    if (item && item.quantity !== quantity) {
+    // Never let the quantity exceed available stock.
+    const clamped = item?.stock !== undefined ? Math.min(quantity, item.stock) : quantity;
+    if (clamped <= 0) {
+      removeFromCart(productId);
+      return;
+    }
+    setItems((prev) => prev.map((i) => i.id === productId ? { ...i, quantity: clamped } : i));
+    if (item && item.quantity !== clamped) {
       trackEvent("update_cart_quantity", {
         product_id: item.id,
         product_name: item.title,
         old_quantity: item.quantity,
-        new_quantity: quantity,
+        new_quantity: clamped,
         price: item.price,
         hashed_example_property: "posthog",
       });
