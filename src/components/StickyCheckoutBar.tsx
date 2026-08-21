@@ -5,6 +5,8 @@ import { useCheckout } from "@/contexts/CheckoutContext";
 
 export const StickyCheckoutBar = () => {
   const variant = useFeatureFlagVariantKey("exp-sticky-checkout");
+  const checkoutButtonVariant = useFeatureFlagVariantKey("new-checkout-button");
+  const pulseCheckout = checkoutButtonVariant === "test";
   const { items, totalItems, totalPrice } = useCart();
   const { startCheckout, isCheckingOut } = useCheckout();
   const location = useLocation();
@@ -29,7 +31,7 @@ export const StickyCheckoutBar = () => {
         <button
           onClick={startCheckout}
           disabled={isCheckingOut}
-          className="rounded-md px-4 sm:px-6 py-2 font-semibold bg-background text-primary transition active:scale-[0.98] hover:-translate-y-0.5 disabled:opacity-60"
+          className={`rounded-md px-4 sm:px-6 py-2 font-semibold bg-background text-primary transition active:scale-[0.98] hover:-translate-y-0.5 disabled:opacity-60 ${pulseCheckout ? "animate-pulse" : ""}`}
         >
           {isCheckingOut ? "Processing..." : "Checkout now →"}
         </button>

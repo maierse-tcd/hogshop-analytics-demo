@@ -17,6 +17,9 @@ export const CartDrawer = () => {
 
   const freeShippingVariant = useFeatureFlagVariantKey("exp-free-shipping-nudge");
   const showFreeShipping = freeShippingVariant === "test";
+
+  const checkoutButtonVariant = useFeatureFlagVariantKey("new-checkout-button");
+  const pulseCheckout = checkoutButtonVariant === "test";
   const FREE_SHIPPING_THRESHOLD = 50;
   const remaining = Math.max(0, FREE_SHIPPING_THRESHOLD - totalPrice);
   const progressPct = Math.min(100, (totalPrice / FREE_SHIPPING_THRESHOLD) * 100);
@@ -178,7 +181,7 @@ export const CartDrawer = () => {
                 <span>Total</span>
                 <span>${(flashSaleActive ? discountedTotal : totalPrice).toFixed(2)}</span>
               </div>
-              <Button className="w-full" size="lg" data-attr="proceed-to-checkout" onClick={startCheckout} disabled={isCheckingOut}>
+              <Button className={`w-full ${pulseCheckout ? "animate-pulse" : ""}`} size="lg" data-attr="proceed-to-checkout" onClick={startCheckout} disabled={isCheckingOut}>
                 {isCheckingOut ? "Processing..." : "Proceed to Checkout"}
               </Button>
             </div>
