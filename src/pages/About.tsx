@@ -42,7 +42,23 @@ const About = () => {
           <section>
             <h2 className="text-3xl font-semibold mb-4">Meet Posthoggy</h2>
             <div className="flex gap-6 items-start p-6 rounded-lg border bg-card">
-              <div className="text-6xl flex-shrink-0">🦔</div>
+              <div className="flex-shrink-0 w-24 h-24 flex items-center justify-center rounded-lg bg-primary/5">
+                <img
+                  src="/posthoggy.svg"
+                  alt="Posthoggy the hedgehog mascot"
+                  width={96}
+                  height={96}
+                  className="w-24 h-24 object-contain"
+                  onError={(e) => {
+                    e.currentTarget.replaceWith(
+                      Object.assign(document.createElement("span"), {
+                        className: "text-6xl",
+                        textContent: "🦔",
+                      })
+                    );
+                  }}
+                />
+              </div>
               <div>
                 <h3 className="text-xl font-semibold mb-2">Posthoggy - Chief Hedgehog Officer</h3>
                 <p className="text-muted-foreground">
