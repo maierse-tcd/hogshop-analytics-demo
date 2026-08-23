@@ -31,7 +31,9 @@ function formatRemaining(ms: number) {
 export const FlashSaleBanner = () => {
   const { flashSaleActive, discountPct } = useFlashSale();
   const [target, setTarget] = useState<number>(() => (typeof window !== "undefined" ? getOrCreateTarget() : 0));
-  const [remaining, setRemaining] = useState<string>("00:00:00");
+  const [remaining, setRemaining] = useState<string>(() =>
+    typeof window !== "undefined" ? formatRemaining(target - Date.now()) : "00:00:00"
+  );
   const shownRef = useRef(false);
 
   useEffect(() => {
