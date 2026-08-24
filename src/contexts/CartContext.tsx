@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, useRef, ReactNode } from "react";
+import { toast } from "sonner";
 import { trackEvent, trackMetric, deviceType } from "@/lib/posthog";
 
 interface Product {
@@ -30,10 +31,21 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+// Rapid repeat clicks on the same product collapse into one add.
+const REPEAT_ADD_WINDOW_MS = 1000;
+
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
+  const lastAddAtRef = useRef<Record<string, number>>({});
 
   const addToCart = (product: Product, source?: string) => {
+    const now = Date.now();
+    const lastAddAt = lastAddAtRef.current[product.id] ?? 0;
+    if (now - lastAddAt < REPEAT_ADD_WINDOW_MS) {
+      return;
+    }
+    lastAddAtRef.current[product.id] = now;
+
     const existing = items.find((item) => item.id === product.id);
     const newItems = existing
       ? items.map((item) =>
@@ -79,6 +91,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       product_id: product.id,
       hashed_example_property: "posthog",
     });
+
+    toast.success(`Added ${product.title} to your cart`);
   };
 
   const removeFromCart = (productId: string) => {
