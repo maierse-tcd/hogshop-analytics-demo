@@ -143,12 +143,12 @@ export const ProductCard = ({
   // Horizontal card variant (experiment)
   if (cardDesignV2) {
     return (
-      <Card 
-        className="overflow-hidden group transition-all duration-300 border-2 cursor-pointer hover:shadow-lg"
-        onClick={handleCardClick}
-      >
+      <Card className="overflow-hidden group transition-all duration-300 border-2 hover:shadow-lg">
         <div className="flex">
-          <div className="relative w-1/2 overflow-hidden">
+          <div
+            className="relative w-1/2 overflow-hidden cursor-pointer"
+            onClick={handleCardClick}
+          >
             <img
               src={imageSrc}
               alt={title}
@@ -170,7 +170,7 @@ export const ProductCard = ({
           </div>
           <div className="w-1/2 p-5 flex flex-col">
             <Badge variant="secondary" className="text-xs font-medium w-fit mb-2">{category}</Badge>
-            <h3 className="font-bold text-lg mb-2">{title}</h3>
+            <h3 className="font-bold text-lg mb-2 cursor-pointer w-fit" onClick={handleCardClick}>{title}</h3>
             <p className="text-sm line-clamp-2 mb-3 text-muted-foreground">{description}</p>
             <div className="flex items-baseline gap-2 mt-auto mb-3 flex-wrap">
               {flashSaleActive ? (
@@ -201,10 +201,10 @@ export const ProductCard = ({
 
   // Default vertical card
   return (
-    <Card 
-      className={`overflow-hidden group transition-all duration-300 border-2 cursor-pointer hover:-translate-y-1 ${
-        seasonalMode 
-          ? '' 
+    <Card
+      className={`overflow-hidden group transition-all duration-300 border-2 hover:-translate-y-1 ${
+        seasonalMode
+          ? ''
           : 'hover:shadow-xl'
       }`}
       style={seasonalMode && themeConfig ? {
@@ -212,12 +212,12 @@ export const ProductCard = ({
         borderColor: themeConfig.colors.secondary + '4d',
         background: `linear-gradient(135deg, ${themeConfig.colors.dark}80 0%, hsl(var(--background)) 100%)`
       } : {}}
-      onClick={handleCardClick}
     >
-      <div className={`relative aspect-square overflow-hidden ${
+      <div className={`relative aspect-square overflow-hidden cursor-pointer ${
         seasonalMode && themeConfig ? '' : 'bg-accent/5'
       }`}
-           style={seasonalMode && themeConfig ? { backgroundColor: themeConfig.colors.dark + '4d' } : {}}>
+           style={seasonalMode && themeConfig ? { backgroundColor: themeConfig.colors.dark + '4d' } : {}}
+           onClick={handleCardClick}>
         <img
           src={imageSrc}
           alt={title}
@@ -270,8 +270,9 @@ export const ProductCard = ({
             {category}
           </Badge>
         </div>
-        <h3 className="font-bold text-lg mb-2 line-clamp-1"
-            style={seasonalMode && themeConfig ? { color: themeConfig.colors.primary } : {}}>
+        <h3 className="font-bold text-lg mb-2 line-clamp-1 cursor-pointer"
+            style={seasonalMode && themeConfig ? { color: themeConfig.colors.primary } : {}}
+            onClick={handleCardClick}>
           {title}
         </h3>
         <p className="text-sm line-clamp-2 mb-3 text-muted-foreground"
