@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { trackEvent } from "@/lib/posthog";
-import { Gift, Package, Heart, ShieldCheck } from "lucide-react";
+import { Gift, Package, Heart, ShieldCheck, Star } from "lucide-react";
 
 const GiftLanding = () => {
   const navigate = useNavigate();
@@ -126,9 +126,9 @@ const GiftLanding = () => {
           {/* Social Proof */}
           <div className="text-center space-y-4 pt-6">
             <p className="text-muted-foreground">Join 2,847 happy hedgehog owners who started with Max's Starter Kit</p>
-            <div className="flex justify-center gap-1">
+            <div className="flex justify-center gap-1" aria-label="Rated 5 out of 5 stars">
               {[...Array(5)].map((_, i) => (
-                <span key={i} className="text-2xl">⭐</span>
+                <Star key={i} className="h-6 w-6 fill-yellow-400 text-yellow-400" aria-hidden="true" />
               ))}
             </div>
           </div>
