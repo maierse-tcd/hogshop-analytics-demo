@@ -130,11 +130,19 @@ export const CartDrawer = () => {
                         )}
                         {flashSaleActive ? (
                           <div className="ml-auto text-right">
-                            <p className="font-bold text-primary leading-tight">${getDiscountedPrice(item.price).toFixed(2)}</p>
-                            <p className="text-xs text-muted-foreground line-through leading-tight">${item.price.toFixed(2)}</p>
+                            <p className="font-bold text-primary leading-tight">${(getDiscountedPrice(item.price) * item.quantity).toFixed(2)}</p>
+                            <p className="text-xs text-muted-foreground line-through leading-tight">${(item.price * item.quantity).toFixed(2)}</p>
+                            {item.quantity > 1 && (
+                              <p className="text-xs text-muted-foreground leading-tight">${getDiscountedPrice(item.price).toFixed(2)} each</p>
+                            )}
                           </div>
                         ) : (
-                          <p className="font-bold ml-auto">${item.price.toFixed(2)}</p>
+                          <div className="ml-auto text-right">
+                            <p className="font-bold leading-tight">${(item.price * item.quantity).toFixed(2)}</p>
+                            {item.quantity > 1 && (
+                              <p className="text-xs text-muted-foreground leading-tight">${item.price.toFixed(2)} each</p>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>

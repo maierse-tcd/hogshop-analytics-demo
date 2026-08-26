@@ -1,4 +1,4 @@
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Home, ArrowLeft } from "lucide-react";
@@ -58,10 +58,10 @@ const NotFound = () => {
             onClick={() => handleRecovery("home")}
             className="gap-2"
           >
-            <a href="/">
+            <Link to="/">
               <Home className="h-5 w-5" />
               Return to Home
-            </a>
+            </Link>
           </Button>
           <Button 
             size="lg" 
