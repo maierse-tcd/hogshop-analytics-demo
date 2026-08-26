@@ -114,8 +114,11 @@ serve(async (req) => {
         const currency = session.currency?.toUpperCase() || "USD";
         const itemCount = lineItems.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
         const hasSubscription = lineItems.some((item: any) => item.is_subscription);
+        // item.price is Stripe's line-item amount_total (already unit price x
+        // quantity), so sum the line prices directly. Do not multiply by
+        // quantity again or the value becomes unit price x quantity squared.
         const subscriptionValue = hasSubscription
-          ? lineItems.filter((item: any) => item.is_subscription).reduce((sum: number, item: any) => sum + item.price * item.quantity, 0)
+          ? lineItems.filter((item: any) => item.is_subscription).reduce((sum: number, item: any) => sum + item.price, 0)
           : 0;
 
         // B2B attribution — metadata was set by create-checkout.
