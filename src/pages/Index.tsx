@@ -13,7 +13,7 @@ import { Newsletter } from "@/components/Newsletter";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { simulateDemoErrors } from "@/utils/demoErrorSimulator";
 import { getThemeConfig, type SeasonalTheme } from "@/utils/seasonalThemes";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useTour } from "@/hooks/useTour";
 import { TourTooltip } from "@/components/TourTooltip";
 import { shopGettingStartedSteps } from "@/lib/tours";
@@ -585,11 +585,11 @@ const Index = () => {
             <div>
               <h4 className="font-bold mb-4 text-lg">Support</h4>
               <ul className="space-y-3 text-sm">
-                <li><a href="/faq" className="text-muted-foreground hover:text-primary transition-colors">FAQ</a></li>
-                <li><a href="/shipping" className="text-muted-foreground hover:text-primary transition-colors">Shipping Info</a></li>
-                <li><a href="/terms" className="text-muted-foreground hover:text-primary transition-colors">Terms & Conditions</a></li>
-                <li><a href="/about" className="text-muted-foreground hover:text-primary transition-colors">About Us</a></li>
-                <li><a href="/readme" className="text-muted-foreground hover:text-primary transition-colors">Demo Info</a></li>
+                <li><Link to="/faq" className="text-muted-foreground hover:text-primary transition-colors">FAQ</Link></li>
+                <li><Link to="/shipping" className="text-muted-foreground hover:text-primary transition-colors">Shipping Info</Link></li>
+                <li><Link to="/terms" className="text-muted-foreground hover:text-primary transition-colors">Terms & Conditions</Link></li>
+                <li><Link to="/about" className="text-muted-foreground hover:text-primary transition-colors">About Us</Link></li>
+                <li><Link to="/readme" className="text-muted-foreground hover:text-primary transition-colors">Demo Info</Link></li>
               </ul>
             </div>
           </div>

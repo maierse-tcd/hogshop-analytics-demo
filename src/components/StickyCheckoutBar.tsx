@@ -2,12 +2,18 @@ import { useFeatureFlagVariantKey } from "posthog-js/react";
 import { useLocation } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import { useCheckout } from "@/contexts/CheckoutContext";
+import { useFlashSale } from "@/hooks/useFlashSale";
 
 export const StickyCheckoutBar = () => {
   const variant = useFeatureFlagVariantKey("exp-sticky-checkout");
   const { items, totalItems, totalPrice } = useCart();
   const { startCheckout, isCheckingOut } = useCheckout();
+  const { flashSaleActive, discountPct } = useFlashSale();
   const location = useLocation();
+
+  const displayTotal = flashSaleActive
+    ? +(totalPrice - totalPrice * (discountPct / 100)).toFixed(2)
+    : totalPrice;
 
   if (variant !== "test") return null;
   if (items.length === 0) return null;
@@ -24,7 +30,7 @@ export const StickyCheckoutBar = () => {
             {totalItems} {totalItems === 1 ? "item" : "items"}
           </span>
           <span className="opacity-80">·</span>
-          <span className="font-bold">${totalPrice.toFixed(2)}</span>
+          <span className="font-bold">${displayTotal.toFixed(2)}</span>
         </div>
         <button
           onClick={startCheckout}

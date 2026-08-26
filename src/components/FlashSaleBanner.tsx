@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFlashSale } from "@/hooks/useFlashSale";
@@ -30,6 +31,7 @@ function formatRemaining(ms: number) {
 
 export const FlashSaleBanner = () => {
   const { flashSaleActive, discountPct } = useFlashSale();
+  const navigate = useNavigate();
   const [target, setTarget] = useState<number>(() => (typeof window !== "undefined" ? getOrCreateTarget() : 0));
   const [remaining, setRemaining] = useState<string>("00:00:00");
   const shownRef = useRef(false);
@@ -77,8 +79,8 @@ export const FlashSaleBanner = () => {
     const el = document.getElementById("products");
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "start" });
-    } else if (typeof window !== "undefined") {
-      window.location.href = "/#products";
+    } else {
+      navigate("/#products");
     }
   };
 
