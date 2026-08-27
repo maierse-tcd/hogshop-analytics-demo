@@ -401,7 +401,13 @@ const Index = () => {
                 </Button>
                 }
             </div>
+            <ul className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-4 text-sm text-muted-foreground">
+              <li className="flex items-center gap-2"><span aria-hidden="true">🚚</span> Free shipping over $50</li>
+              <li className="flex items-center gap-2"><span aria-hidden="true">↩️</span> 30-day returns</li>
+              <li className="flex items-center gap-2"><span aria-hidden="true">🦔</span> Vet-approved supplies</li>
+            </ul>
           </div>
+
         </div>
       </section>
 
