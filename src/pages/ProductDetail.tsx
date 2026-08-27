@@ -316,7 +316,8 @@ const ProductDetail = () => {
 
         <RelatedProductsCarousel currentProductId={id!} />
       </div>
-    </div>
+
+
 
       <div id="tour-slot" data-slot="product-tour">
         {tour.active && tour.step && (
