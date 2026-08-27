@@ -200,20 +200,19 @@ const Index = () => {
         }
 
       {/* Free Gift CTA Banner */}
-      <div className="bg-background/60 backdrop-blur-md border-b">
-        <div className="container py-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 max-w-5xl mx-auto bg-primary/5 border border-primary/10 rounded-xl px-6 py-4">
+      <div className="border-b bg-surface-2/60">
+        <div className="container py-5">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 max-w-5xl mx-auto rounded-xl border border-primary/15 bg-card px-5 py-4 shadow-soft">
             <div className="flex items-center gap-4">
-              <div className="bg-primary/10 p-3 rounded-full">
-                <Gift className="h-8 w-8 text-primary" />
+              <div className="bg-primary/10 p-2.5 rounded-xl">
+                <Gift className="h-6 w-6 text-primary" />
               </div>
               <div className="text-center md:text-left">
-                <p className="font-bold text-lg">Get Max's Starter Kit FREE</p>
+                <p className="font-display font-bold text-base">Get Max's Starter Kit FREE</p>
                 <p className="text-sm text-muted-foreground">Everything your new hedgehog needs • $45 value</p>
               </div>
             </div>
             <Button
-                size="lg"
                 onClick={() => {
                   trackEvent("gift_cta_clicked", {
                     location: "homepage_banner",
@@ -222,14 +221,15 @@ const Index = () => {
                   });
                   navigate("/gift");
                 }}
-                className="gap-2 whitespace-nowrap">
+                className="gap-2 whitespace-nowrap rounded-full px-5">
                 
               Claim Free Gift
-              <ArrowRight className="h-5 w-5" />
+              <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
       </div>
+
       
       {/* Hero Section */}
       <section className={`relative border-b overflow-hidden ${
