@@ -9,35 +9,51 @@ All colors MUST be HSL.
 @layer base {
   :root {
     /* PostHog Design System - Light Mode */
-    --background: 60 11% 93%;
-    --foreground: 0 0% 8%;
+    --background: 45 20% 97%;
+    --foreground: 30 8% 12%;
 
-    --card: 60 11% 93%;
-    --card-foreground: 0 0% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 30 8% 12%;
 
-    --popover: 60 11% 93%;
-    --popover-foreground: 0 0% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 30 8% 12%;
 
     --primary: 17 100% 48%;
-    --primary-foreground: 60 11% 93%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 60 11% 89%;
-    --secondary-foreground: 0 0% 8%;
+    --secondary: 42 16% 93%;
+    --secondary-foreground: 30 8% 12%;
 
-    --muted: 60 11% 89%;
-    --muted-foreground: 0 0% 8%;
+    --muted: 42 16% 93%;
+    --muted-foreground: 30 6% 42%;
 
-    --accent: 60 11% 89%;
-    --accent-foreground: 0 0% 8%;
+    --accent: 42 16% 91%;
+    --accent-foreground: 30 8% 12%;
 
-    --destructive: 17 100% 48%;
-    --destructive-foreground: 60 11% 93%;
+    --destructive: 0 72% 48%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 60 8% 80%;
-    --input: 60 8% 80%;
+    --border: 38 12% 87%;
+    --input: 38 12% 87%;
     --ring: 17 100% 48%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+
+    /* Layered surfaces */
+    --surface: 0 0% 100%;
+    --surface-2: 42 18% 95%;
+    --surface-3: 40 14% 91%;
+    --border-strong: 36 10% 78%;
+
+    /* Elevation + accents */
+    --shadow-xs: 0 1px 2px 0 hsl(30 10% 20% / 0.06);
+    --shadow-sm: 0 1px 3px 0 hsl(30 10% 20% / 0.08), 0 1px 2px -1px hsl(30 10% 20% / 0.06);
+    --shadow-md: 0 8px 24px -12px hsl(30 12% 18% / 0.16), 0 2px 6px -2px hsl(30 12% 18% / 0.08);
+    --shadow-lg: 0 24px 48px -20px hsl(30 12% 18% / 0.22), 0 8px 16px -8px hsl(30 12% 18% / 0.1);
+    --shadow-glow: 0 12px 32px -12px hsl(var(--primary) / 0.45);
+    --gradient-hero: radial-gradient(120% 90% at 50% 0%, hsl(var(--primary) / 0.14) 0%, hsl(var(--background)) 62%);
+    --gradient-primary: linear-gradient(135deg, hsl(17 100% 52%), hsl(28 100% 55%));
+
     
     /* PostHog Yellow */
     --yellow: 41 100% 43%;
