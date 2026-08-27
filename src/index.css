@@ -102,33 +102,49 @@ All colors MUST be HSL.
 
   .dark {
     /* PostHog Design System - Dark Mode */
-    --background: 0 0% 8%;
-    --foreground: 60 11% 93%;
+    --background: 30 6% 7%;
+    --foreground: 45 18% 95%;
 
-    --card: 0 0% 17%;
-    --card-foreground: 60 11% 93%;
+    --card: 28 5% 11%;
+    --card-foreground: 45 18% 95%;
 
-    --popover: 0 0% 8%;
-    --popover-foreground: 60 11% 93%;
+    --popover: 28 5% 11%;
+    --popover-foreground: 45 18% 95%;
 
-    --primary: 17 100% 48%;
-    --primary-foreground: 60 11% 93%;
+    --primary: 17 100% 52%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 17%;
-    --secondary-foreground: 60 11% 93%;
+    --secondary: 28 5% 15%;
+    --secondary-foreground: 45 18% 95%;
 
-    --muted: 0 0% 17%;
-    --muted-foreground: 60 11% 93%;
+    --muted: 28 5% 15%;
+    --muted-foreground: 40 8% 66%;
 
-    --accent: 0 0% 17%;
-    --accent-foreground: 60 11% 93%;
+    --accent: 28 5% 17%;
+    --accent-foreground: 45 18% 95%;
 
-    --destructive: 17 100% 48%;
-    --destructive-foreground: 60 11% 93%;
+    --destructive: 0 70% 52%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 29%;
-    --input: 0 0% 29%;
-    --ring: 17 100% 48%;
+    --border: 28 5% 19%;
+    --input: 28 5% 21%;
+    --ring: 17 100% 52%;
+
+    /* Layered surfaces - Dark Mode */
+    --surface: 28 5% 11%;
+    --surface-2: 28 5% 14%;
+    --surface-3: 28 5% 18%;
+    --border-strong: 28 5% 26%;
+
+    /* Elevation + accents - Dark Mode */
+    --shadow-xs: 0 1px 2px 0 hsl(0 0% 0% / 0.4);
+    --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.5);
+    --shadow-md: 0 8px 24px -12px hsl(0 0% 0% / 0.7), 0 2px 6px -2px hsl(0 0% 0% / 0.5);
+    --shadow-lg: 0 24px 48px -20px hsl(0 0% 0% / 0.8), 0 8px 16px -8px hsl(0 0% 0% / 0.6);
+    --shadow-glow: 0 12px 36px -12px hsl(var(--primary) / 0.55);
+    --gradient-hero: radial-gradient(120% 90% at 50% 0%, hsl(var(--primary) / 0.2) 0%, hsl(var(--background)) 62%);
+    --gradient-primary: linear-gradient(135deg, hsl(17 100% 52%), hsl(28 100% 55%));
+
     
     /* PostHog Yellow - Dark Mode */
     --yellow: 39 87% 56%;
