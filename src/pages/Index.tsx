@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { useEffect, useState, useRef } from "react";
 import { trackEvent, posthog } from "@/lib/posthog";
 import { useFeatureFlagEnabled, useFeatureFlagVariantKey } from "posthog-js/react";
-import { ArrowRight, X, Gift } from "lucide-react";
+import { ArrowRight, X, Gift, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Newsletter } from "@/components/Newsletter";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { simulateDemoErrors } from "@/utils/demoErrorSimulator";
@@ -32,9 +33,20 @@ interface Product {
   subscription_interval_count?: number;
 }
 
+// Match a product against a free-text query. Each token must appear in the
+// product name, description, or category, so partial and out-of-order terms
+// both work. An empty query matches every product.
+const matchesSearch = (product: Product, query: string): boolean => {
+  const tokens = query.toLowerCase().split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return true;
+  const haystack = `${product.title} ${product.description} ${product.category}`.toLowerCase();
+  return tokens.every((token) => haystack.includes(token));
+};
+
 const Index = () => {
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const productsViewedRef = useRef(false);
   const loadStartRef = useRef(typeof performance !== "undefined" ? performance.now() : 0);
   const cacheHitRef = useRef<boolean | null>(null);
@@ -118,9 +130,30 @@ const Index = () => {
 
   const categories = ["All", "Food & Nutrition", "Housing", "Toys & Exercise", "Care & Grooming", "Bedding & Comfort", "Merchandise"];
 
-  const filteredProducts = selectedCategory === "All" ?
-  products :
-  products?.filter((p) => p.category === selectedCategory);
+  const trimmedQuery = searchQuery.trim();
+
+  const filteredProducts = products?.filter(
+    (p) => (selectedCategory === "All" || p.category === selectedCategory) && matchesSearch(p, trimmedQuery)
+  );
+
+  // Report a search once typing settles, so we can see what shoppers look for
+  // and when they find nothing.
+  useEffect(() => {
+    if (!products || trimmedQuery === "") return;
+    const timer = setTimeout(() => {
+      const resultCount = products.filter(
+        (p) => (selectedCategory === "All" || p.category === selectedCategory) && matchesSearch(p, trimmedQuery)
+      ).length;
+      trackEvent("product_searched", {
+        query: trimmedQuery,
+        query_length: trimmedQuery.length,
+        category: selectedCategory,
+        result_count: resultCount,
+        zero_results: resultCount === 0
+      });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [trimmedQuery, selectedCategory, products]);
 
   // Use PostHog React hook for feature flags
   const showNewsletterFlag = useFeatureFlagEnabled('show_newsletter');
@@ -483,6 +516,29 @@ const Index = () => {
               {seasonalTheme ? getThemeConfig(seasonalTheme)?.shopDescription : 'Find everything your hedgehog needs'}
             </p>
           </div>
+          <div className="max-w-md mx-auto mb-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+              <Input
+                type="text"
+                data-attr="product-search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search products…"
+                aria-label="Search products"
+                className="pl-9 pr-9 rounded-full bg-card" />
+
+              {searchQuery &&
+              <button
+                type="button"
+                aria-label="Clear search"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  <X className="h-4 w-4" />
+                </button>
+              }
+            </div>
+          </div>
           <div data-attr="category-filter" className="flex gap-2 flex-wrap justify-center">
             {categories.map((category) =>
               <Button
@@ -523,7 +579,11 @@ const Index = () => {
           </div> :
 
           <div className="text-center py-16 rounded-xl border border-dashed bg-surface-2/50">
-            <p className="text-muted-foreground">No products found in this category.</p>
+            <p className="text-muted-foreground">
+              {trimmedQuery ?
+              `No products match "${trimmedQuery}".` :
+              "No products found in this category."}
+            </p>
           </div>
           }
 
