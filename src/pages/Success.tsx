@@ -327,16 +327,29 @@ const Success = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <div className="container py-16">
+      <div className="container py-16 md:py-20">
         <LoyaltyPrompt />
-        <div className="max-w-md mx-auto text-center space-y-6">
-          <CheckCircle2 className="w-20 h-20 mx-auto text-primary" />
-          <h1 className="text-4xl font-bold">Order Successful!</h1>
-          <p className="text-lg text-muted-foreground">
+        <div className="max-w-lg mx-auto rounded-2xl border bg-card p-8 md:p-10 text-center shadow-elevated animate-fade-in-up">
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+            <CheckCircle2 className="w-9 h-9 text-primary" />
+          </div>
+          <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight mb-3">Order Successful!</h1>
+          <p className="text-base text-muted-foreground leading-relaxed">
             Thank you for your purchase. Your order has been confirmed and you'll receive an email shortly.
           </p>
-          <div className="pt-4">
-            <Button onClick={() => navigate("/")} size="lg">
+          <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3 text-left">
+            {[
+              { icon: "📧", label: "Confirmation emailed" },
+              { icon: "📦", label: "Packed within 24h" },
+              { icon: "🚚", label: "Tracked delivery" },
+            ].map((f) => (
+              <div key={f.label} className="rounded-xl border bg-surface-2/60 px-3 py-2.5 text-sm text-muted-foreground">
+                <span aria-hidden="true" className="mr-1.5">{f.icon}</span>{f.label}
+              </div>
+            ))}
+          </div>
+          <div className="pt-8">
+            <Button onClick={() => navigate("/")} size="lg" className="rounded-full px-8 font-semibold">
               Continue Shopping
             </Button>
           </div>
@@ -344,6 +357,7 @@ const Success = () => {
       </div>
     </div>
   );
+
 };
 
 export default Success;
