@@ -470,25 +470,26 @@ const Index = () => {
             </div>);
 
           })}
-        <div className="mb-12 relative">
-          <div className="text-center mb-8">
-            <h2 className={`text-4xl md:text-5xl font-bold mb-4`}
+        <div className="mb-10 relative">
+          <div className="text-center mb-7">
+            <h2 className="font-display text-3xl md:text-4xl font-bold tracking-tight mb-3"
               style={seasonalTheme ? { color: getThemeConfig(seasonalTheme)?.colors.primary, textShadow: `0 0 20px ${getThemeConfig(seasonalTheme)?.colors.primary}` } : {}}>
               {seasonalTheme ? getThemeConfig(seasonalTheme)?.shopTitle : 'Shop by Category'}
             </h2>
-            <p className={`text-lg ${
+            <p className={`text-base md:text-lg ${
               seasonalTheme ? '' : 'text-muted-foreground'}`
               }
               style={seasonalTheme ? { color: getThemeConfig(seasonalTheme)?.colors.secondary } : {}}>
               {seasonalTheme ? getThemeConfig(seasonalTheme)?.shopDescription : 'Find everything your hedgehog needs'}
             </p>
           </div>
-          <div data-attr="category-filter" className="flex gap-2 flex-wrap justify-center mb-8">
+          <div data-attr="category-filter" className="flex gap-2 flex-wrap justify-center">
             {categories.map((category) =>
               <Button
                 key={category}
+                size="sm"
                 variant={selectedCategory === category ? "default" : "outline"}
-                className={`font-semibold ${selectedCategory === category ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
+                className={`rounded-full px-4 font-medium ${selectedCategory === category ? 'shadow-soft' : 'bg-card text-muted-foreground hover:text-foreground'}`}
                 onClick={() => {
                   setSelectedCategory(category);
                   trackEvent("category_filtered", { category });
@@ -501,26 +502,31 @@ const Index = () => {
         </div>
 
         {isLoading ?
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) =>
-            <div key={i} className="space-y-4">
-                <Skeleton className="aspect-square w-full" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
+            <div key={i} className="rounded-xl border bg-card p-0 overflow-hidden shadow-soft">
+                <Skeleton className="aspect-[4/3] w-full rounded-none" />
+                <div className="p-5 space-y-3">
+                  <Skeleton className="h-4 w-1/3 rounded-full" />
+                  <Skeleton className="h-5 w-3/4" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-10 w-full rounded-md" />
+                </div>
               </div>
             )}
           </div> :
           filteredProducts && filteredProducts.length > 0 ?
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProducts.map((product) =>
             <ProductCard key={product.id} {...product} />
             )}
           </div> :
 
-          <div className="text-center py-12">
+          <div className="text-center py-16 rounded-xl border border-dashed bg-surface-2/50">
             <p className="text-muted-foreground">No products found in this category.</p>
           </div>
           }
+
       </section>
 
       {/* Footer */}
