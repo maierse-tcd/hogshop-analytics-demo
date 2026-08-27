@@ -297,30 +297,22 @@ const ProductDetail = () => {
 
         {/* Product Features */}
         <div data-attr="why-choose" className="border-t pt-12">
-          <h2 className="text-2xl font-bold mb-6">Why Choose This Product?</h2>
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="space-y-2">
-              <div className="text-primary text-3xl">🦔</div>
-              <h3 className="font-semibold">Hedgehog Approved</h3>
-              <p className="text-sm text-muted-foreground">
-                Tested and loved by hedgehogs worldwide
-              </p>
-            </div>
-            <div className="space-y-2">
-              <div className="text-primary text-3xl">✓</div>
-              <h3 className="font-semibold">Premium Quality</h3>
-              <p className="text-sm text-muted-foreground">
-                Only the best materials and ingredients
-              </p>
-            </div>
-            <div className="space-y-2">
-              <div className="text-primary text-3xl">🚚</div>
-              <h3 className="font-semibold">Fast Shipping</h3>
-              <p className="text-sm text-muted-foreground">
-                Get it delivered to your door quickly
-              </p>
+          <h2 className="font-display text-2xl font-bold mb-6">Why Choose This Product?</h2>
+          <div className="grid md:grid-cols-3 gap-4">
+            {[
+              { icon: "🦔", title: "Hedgehog Approved", body: "Tested and loved by hedgehogs worldwide" },
+              { icon: "✓", title: "Premium Quality", body: "Only the best materials and ingredients" },
+              { icon: "🚚", title: "Fast Shipping", body: "Get it delivered to your door quickly" },
+            ].map((f) => (
+              <div key={f.title} className="rounded-2xl border bg-card p-5 space-y-2 shadow-soft">
+                <div className="text-primary text-2xl">{f.icon}</div>
+                <h3 className="font-display font-semibold">{f.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{f.body}</p>
+              </div>
+            ))}
           </div>
         </div>
+
 
         <RelatedProductsCarousel currentProductId={id!} />
       </div>
