@@ -165,7 +165,7 @@ export const CartDrawer = () => {
           </div>
 
           {items.length > 0 && (
-            <div className="border-t pt-4 space-y-4 shrink-0">
+            <div className="border-t pt-4 space-y-3 shrink-0">
               {flashSaleActive && (
                 <>
                   <div className="flex justify-between text-sm text-muted-foreground">
@@ -178,15 +178,17 @@ export const CartDrawer = () => {
                   </div>
                 </>
               )}
-              <div className="flex justify-between text-lg font-bold">
-                <span>Total</span>
-                <span>${(flashSaleActive ? discountedTotal : totalPrice).toFixed(2)}</span>
+              <div className="flex justify-between items-baseline">
+                <span className="text-sm text-muted-foreground">Total</span>
+                <span className="font-display text-2xl font-bold">${(flashSaleActive ? discountedTotal : totalPrice).toFixed(2)}</span>
               </div>
-              <Button className="w-full" size="lg" data-attr="proceed-to-checkout" onClick={startCheckout} disabled={isCheckingOut}>
+              <Button className="w-full rounded-full font-semibold" size="lg" data-attr="proceed-to-checkout" onClick={startCheckout} disabled={isCheckingOut}>
                 {isCheckingOut ? "Processing..." : "Proceed to Checkout"}
               </Button>
+              <p className="text-center text-xs text-muted-foreground">Secure checkout · 30-day returns</p>
             </div>
           )}
+
         </div>
       </SheetContent>
     </Sheet>
