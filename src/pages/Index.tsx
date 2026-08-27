@@ -342,8 +342,9 @@ const Index = () => {
                 'From premium nutrition to cozy habitats. Everything your spiky friend needs to thrive, delivered with love.'}
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-6">
-              <Button size="lg" className="gap-2 h-12 px-8 text-base font-semibold" onClick={() => {
+            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+              <Button size="lg" className="gap-2 h-12 px-7 text-base font-semibold rounded-full shadow-glow" onClick={() => {
+
                   document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' });
                   trackEvent("hero_cta_clicked", {
                     cta: "shop_now",
