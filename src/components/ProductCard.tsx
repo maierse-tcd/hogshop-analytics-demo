@@ -114,17 +114,17 @@ export const ProductCard = ({
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
     const imageSrc = imageMap[image_url] || image_url;
-    addToCart({ 
-      id, 
-      title, 
+    addToCart({
+      id,
+      title,
       description,
-      price, 
-      image_url: imageSrc, 
+      price: displayPrice,
+      image_url: imageSrc,
       stock,
       category,
       quantity: 1,
-      is_subscription, 
-      subscription_interval 
+      is_subscription,
+      subscription_interval
     }, "product_card");
   };
 
