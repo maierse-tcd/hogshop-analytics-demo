@@ -1,4 +1,4 @@
-import { Moon, Sun, LogIn, LogOut, ChevronDown } from "lucide-react";
+import { Moon, Sun, LogIn, LogOut, ChevronDown, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import { CartDrawer } from "./CartDrawer";
@@ -18,6 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 export const Header = () => {
   const { theme, setTheme } = useTheme();
@@ -30,6 +31,7 @@ export const Header = () => {
   const [showSubscriptionChoice, setShowSubscriptionChoice] = useState(false);
   const [isSubscriber, setIsSubscriber] = useState<boolean | null>(null);
   const [subCheckLoading, setSubCheckLoading] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const signupVariant = useFeatureFlagVariantKey('increase_sales_cta');
   const halloweenMode = useFeatureFlagEnabled('hero_banner_halloween');
   const showLiveNav = useFeatureFlagEnabled('show_live_navbar');
@@ -90,14 +92,19 @@ export const Header = () => {
     setUserName(name);
   };
 
-
-
+  const navItems = [
+    { to: "/", label: "Shop", emoji: "🛒" },
+    { to: "/about", label: "About", emoji: "🦔" },
+    { to: "/faq", label: "FAQ", emoji: "❓" },
+    { to: "/shipping", label: "Shipping", emoji: "📦" },
+    ...(showLiveNav === true ? [{ to: "/live", label: "Live stats", emoji: "📈" }] : []),
+  ];
 
   return (
-    <header className={`sticky top-0 z-50 w-full border-b backdrop-blur supports-[backdrop-filter]:bg-background/60 ${
+    <header className={`sticky top-0 z-50 w-full border-b backdrop-blur-xl supports-[backdrop-filter]:bg-background/70 ${
       halloweenMode 
         ? 'bg-gradient-to-r from-[hsl(var(--halloween-dark))] via-[hsl(var(--halloween-purple))]/40 to-[hsl(var(--halloween-dark))]/95 border-[hsl(var(--halloween-orange))]/30' 
-        : 'bg-background/95 shadow-[0_1px_3px_0_hsl(var(--foreground)/0.04)]'
+        : 'bg-background/85 shadow-xs'
     }`}>
       {halloweenMode && (
         <>
@@ -106,10 +113,45 @@ export const Header = () => {
           <div className="absolute top-0 right-[30%] text-2xl animate-bounce" style={{ animationDuration: '3s', animationDelay: '1s' }}>🎃</div>
         </>
       )}
-      <div className="container flex h-16 items-center justify-between relative">
-        <div className="flex items-center gap-8">
-          <Link to="/" data-attr="brand-logo" className="flex items-center space-x-2">
-            <span className={`text-2xl font-bold ${
+      <div className="container flex h-16 items-center justify-between gap-3 relative">
+        <div className="flex items-center gap-6 lg:gap-10 min-w-0">
+          {/* Mobile nav */}
+          <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden rounded-full -ml-2"
+                aria-label="Open menu"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-72 p-0">
+              <div className="px-6 py-5 border-b">
+                <span className="font-display text-xl font-bold text-primary">HogShop</span>
+              </div>
+              <nav className="flex flex-col p-3">
+                {navItems.map(({ to, label }) => (
+                  <Link
+                    key={to}
+                    to={to}
+                    onClick={() => setMobileNavOpen(false)}
+                    className={`rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                      location.pathname === to
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    }`}
+                  >
+                    {label}
+                  </Link>
+                ))}
+              </nav>
+            </SheetContent>
+          </Sheet>
+
+          <Link to="/" data-attr="brand-logo" className="flex items-center gap-2 shrink-0">
+            <span className={`font-display text-xl sm:text-2xl font-bold tracking-tight ${
               halloweenMode 
                 ? 'bg-gradient-to-r from-[hsl(var(--halloween-orange))] to-[hsl(var(--halloween-purple))] bg-clip-text text-transparent drop-shadow-[0_0_10px_hsl(var(--halloween-orange))]' 
                 : 'text-primary'
@@ -117,33 +159,32 @@ export const Header = () => {
               {halloweenMode ? '👻 HogShop 🎃' : 'HogShop'}
             </span>
           </Link>
-          <nav className="hidden md:flex gap-6">
-            {[
-              { to: "/", label: "Shop", emoji: "🛒" },
-              { to: "/about", label: "About", emoji: "🦔" },
-              { to: "/faq", label: "FAQ", emoji: "❓" },
-              { to: "/shipping", label: "Shipping", emoji: "📦" },
-              ...(showLiveNav === true ? [{ to: "/live", label: "Live stats", emoji: "📈" }] : []),
-            ].map(({ to, label, emoji }) => (
-              <Link
-                key={to}
-                to={to}
-                className={`text-sm font-medium transition-all duration-200 relative py-1 hover:-translate-y-[1px] ${
-                  halloweenMode 
-                    ? 'text-[hsl(var(--halloween-orange))]/80 hover:text-[hsl(var(--halloween-orange))]' 
-                    : 'text-muted-foreground hover:text-foreground'
-                } ${location.pathname === to ? (halloweenMode ? 'text-[hsl(var(--halloween-orange))]' : '!text-foreground') : ''}`}
-              >
-                {halloweenMode ? `${emoji} ${label}` : label}
-                {location.pathname === to && (
-                  <span className="absolute -bottom-[1px] left-0 right-0 h-[2px] bg-primary rounded-full" />
-                )}
-              </Link>
-            ))}
+
+          <nav className="hidden md:flex items-center gap-1">
+            {navItems.map(({ to, label, emoji }) => {
+              const isActive = location.pathname === to;
+              return (
+                <Link
+                  key={to}
+                  to={to}
+                  className={`relative rounded-full px-3 py-2 text-sm font-medium transition-colors ${
+                    halloweenMode
+                      ? isActive
+                        ? 'text-[hsl(var(--halloween-orange))]'
+                        : 'text-[hsl(var(--halloween-orange))]/80 hover:text-[hsl(var(--halloween-orange))]'
+                      : isActive
+                        ? 'text-foreground bg-muted'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+                  }`}
+                >
+                  {halloweenMode ? `${emoji} ${label}` : label}
+                </Link>
+              );
+            })}
           </nav>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           {isLoggedIn ? (
             <div className="flex items-center gap-2">
               <DropdownMenu
@@ -175,16 +216,19 @@ export const Header = () => {
                 }}
               >
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" data-attr="account-menu-trigger" className="gap-1">
-                    <span className={`text-sm hidden md:inline ${
+                  <Button variant="ghost" size="sm" data-attr="account-menu-trigger" className="gap-1.5 rounded-full px-3">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/12 text-[11px] font-semibold text-primary">
+                      {(userName || "?").slice(0, 1).toUpperCase()}
+                    </span>
+                    <span className={`text-sm hidden md:inline max-w-[10rem] truncate ${
                       halloweenMode ? 'text-[hsl(var(--halloween-orange))]' : 'text-muted-foreground'
                     }`}>
                       {userName}
                     </span>
-                    <ChevronDown className="h-3 w-3" />
+                    <ChevronDown className="h-3 w-3 opacity-70" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="w-56">
                   {isSubscriber === null ? (
                     <DropdownMenuItem disabled>
                       {subCheckLoading ? "Checking subscription…" : "Checking subscription…"}
@@ -208,25 +252,8 @@ export const Header = () => {
             </div>
           ) : (
             <>
-              <Button
-                variant="ghost"
-                size="sm"
-                data-attr="header-login"
-                onClick={() => {
-                  posthog.capture('login_signup_clicked', {
-                    source: 'header',
-                    discount_variant: signupVariant || 'control',
-                    has_discount_badge: signupVariant === '10percent' || signupVariant === '15percent'
-                  });
-                  setShowLoginDialog(true);
-                }}
-                className="gap-2"
-              >
-                <LogIn className="h-4 w-4" />
-                <span className="hidden md:inline">Login/Signup</span>
-              </Button>
               {(signupVariant === '10percent' || signupVariant === '15percent') && (
-                <div className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full border animate-pulse ${
+                <div className={`hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full border ${
                   halloweenMode 
                     ? 'bg-[hsl(var(--halloween-orange))]/20 border-[hsl(var(--halloween-orange))]/40' 
                     : 'bg-primary/10 border-primary/20'
@@ -238,11 +265,29 @@ export const Header = () => {
                   </span>
                 </div>
               )}
+              <Button
+                variant="outline"
+                size="sm"
+                data-attr="header-login"
+                onClick={() => {
+                  posthog.capture('login_signup_clicked', {
+                    source: 'header',
+                    discount_variant: signupVariant || 'control',
+                    has_discount_badge: signupVariant === '10percent' || signupVariant === '15percent'
+                  });
+                  setShowLoginDialog(true);
+                }}
+                className="gap-2 rounded-full"
+              >
+                <LogIn className="h-4 w-4" />
+                <span className="hidden md:inline">Login/Signup</span>
+              </Button>
             </>
           )}
           <Button
             variant="ghost"
             size="icon"
+            aria-label="Toggle theme"
             onClick={() => {
               const newTheme = theme === "dark" ? "light" : "dark";
               setTheme(newTheme);
