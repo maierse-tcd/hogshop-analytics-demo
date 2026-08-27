@@ -200,20 +200,19 @@ const Index = () => {
         }
 
       {/* Free Gift CTA Banner */}
-      <div className="bg-background/60 backdrop-blur-md border-b">
-        <div className="container py-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 max-w-5xl mx-auto bg-primary/5 border border-primary/10 rounded-xl px-6 py-4">
+      <div className="border-b bg-surface-2/60">
+        <div className="container py-5">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 max-w-5xl mx-auto rounded-xl border border-primary/15 bg-card px-5 py-4 shadow-soft">
             <div className="flex items-center gap-4">
-              <div className="bg-primary/10 p-3 rounded-full">
-                <Gift className="h-8 w-8 text-primary" />
+              <div className="bg-primary/10 p-2.5 rounded-xl">
+                <Gift className="h-6 w-6 text-primary" />
               </div>
               <div className="text-center md:text-left">
-                <p className="font-bold text-lg">Get Max's Starter Kit FREE</p>
+                <p className="font-display font-bold text-base">Get Max's Starter Kit FREE</p>
                 <p className="text-sm text-muted-foreground">Everything your new hedgehog needs • $45 value</p>
               </div>
             </div>
             <Button
-                size="lg"
                 onClick={() => {
                   trackEvent("gift_cta_clicked", {
                     location: "homepage_banner",
@@ -222,14 +221,15 @@ const Index = () => {
                   });
                   navigate("/gift");
                 }}
-                className="gap-2 whitespace-nowrap">
+                className="gap-2 whitespace-nowrap rounded-full px-5">
                 
               Claim Free Gift
-              <ArrowRight className="h-5 w-5" />
+              <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
       </div>
+
       
       {/* Hero Section */}
       <section className={`relative border-b overflow-hidden ${
@@ -307,21 +307,19 @@ const Index = () => {
 
           <>
             {/* Regular Theme */}
-            <div className="absolute inset-0 opacity-[0.08]">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,hsl(var(--primary))_1px,transparent_1px)] bg-[length:32px_32px]" />
+            <div className="absolute inset-0 bg-gradient-hero" />
+            <div className="absolute inset-0 opacity-[0.06]">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,hsl(var(--primary))_1px,transparent_1px)] bg-[length:28px_28px]" />
             </div>
-            <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
-            <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] animate-pulse" />
-            <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-accent/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[100px]" />
+            <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[720px] h-[420px] bg-primary/15 rounded-full blur-[140px]" />
           </>
           }
-        <div className="container py-24 md:py-36 relative">
-          <div className="max-w-4xl mx-auto text-center space-y-8">
-            <Badge className="text-sm px-4 py-1.5 font-semibold" variant="secondary">
+        <div className="container py-16 md:py-24 relative">
+          <div className="max-w-3xl mx-auto text-center space-y-6 animate-fade-in-up">
+            <Badge className="text-xs px-3.5 py-1.5 font-semibold rounded-full" variant="secondary">
               {seasonalTheme ? getThemeConfig(seasonalTheme)?.badge : '🦔 Everything for your Hedgehog'}
             </Badge>
-            <h1 className="text-5xl md:text-8xl font-bold tracking-tight leading-[1.1]">
+            <h1 className="font-display text-4xl md:text-6xl font-bold tracking-tight leading-[1.05] text-balance">
               {seasonalTheme ?
                 <>
                   {getThemeConfig(seasonalTheme)?.title.line1}
@@ -338,13 +336,15 @@ const Index = () => {
                 </>
                 }
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+            <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
               {seasonalTheme ?
                 getThemeConfig(seasonalTheme)?.description :
                 'From premium nutrition to cozy habitats. Everything your spiky friend needs to thrive, delivered with love.'}
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-6">
-              <Button size="lg" className="gap-2 h-12 px-8 text-base font-semibold" onClick={() => {
+
+            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+              <Button size="lg" className="gap-2 h-12 px-7 text-base font-semibold rounded-full shadow-glow" onClick={() => {
+
                   document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' });
                   trackEvent("hero_cta_clicked", {
                     cta: "shop_now",
@@ -360,7 +360,7 @@ const Index = () => {
                 // Test Variant: Blinking Orange Newsletter Button
                 <Button
                   size="lg"
-                  className="h-12 px-8 text-base font-semibold animate-blink-orange hover:animate-none hover:scale-105 transition-transform"
+                  className="h-12 px-7 text-base font-semibold rounded-full animate-blink-orange hover:animate-none hover:scale-105 transition-transform"
                   onClick={() => {
                     setShowNewsletterModal(true);
                     // Track feature interaction with person property
@@ -382,7 +382,7 @@ const Index = () => {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="h-12 px-8 text-base font-semibold border-primary/30 hover:border-primary"
+                  className="h-12 px-7 text-base font-semibold rounded-full border-border-strong bg-card hover:border-primary"
                   onClick={() => {
                     setShowNewsletterModal(true);
                     // Track feature interaction with person property
@@ -401,7 +401,13 @@ const Index = () => {
                 </Button>
                 }
             </div>
+            <ul className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-4 text-sm text-muted-foreground">
+              <li className="flex items-center gap-2"><span aria-hidden="true">🚚</span> Free shipping over $50</li>
+              <li className="flex items-center gap-2"><span aria-hidden="true">↩️</span> 30-day returns</li>
+              <li className="flex items-center gap-2"><span aria-hidden="true">🦔</span> Vet-approved supplies</li>
+            </ul>
           </div>
+
         </div>
       </section>
 
@@ -464,25 +470,26 @@ const Index = () => {
             </div>);
 
           })}
-        <div className="mb-12 relative">
-          <div className="text-center mb-8">
-            <h2 className={`text-4xl md:text-5xl font-bold mb-4`}
+        <div className="mb-10 relative">
+          <div className="text-center mb-7">
+            <h2 className="font-display text-3xl md:text-4xl font-bold tracking-tight mb-3"
               style={seasonalTheme ? { color: getThemeConfig(seasonalTheme)?.colors.primary, textShadow: `0 0 20px ${getThemeConfig(seasonalTheme)?.colors.primary}` } : {}}>
               {seasonalTheme ? getThemeConfig(seasonalTheme)?.shopTitle : 'Shop by Category'}
             </h2>
-            <p className={`text-lg ${
+            <p className={`text-base md:text-lg ${
               seasonalTheme ? '' : 'text-muted-foreground'}`
               }
               style={seasonalTheme ? { color: getThemeConfig(seasonalTheme)?.colors.secondary } : {}}>
               {seasonalTheme ? getThemeConfig(seasonalTheme)?.shopDescription : 'Find everything your hedgehog needs'}
             </p>
           </div>
-          <div data-attr="category-filter" className="flex gap-2 flex-wrap justify-center mb-8">
+          <div data-attr="category-filter" className="flex gap-2 flex-wrap justify-center">
             {categories.map((category) =>
               <Button
                 key={category}
+                size="sm"
                 variant={selectedCategory === category ? "default" : "outline"}
-                className={`font-semibold ${selectedCategory === category ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
+                className={`rounded-full px-4 font-medium ${selectedCategory === category ? 'shadow-soft' : 'bg-card text-muted-foreground hover:text-foreground'}`}
                 onClick={() => {
                   setSelectedCategory(category);
                   trackEvent("category_filtered", { category });
@@ -495,34 +502,40 @@ const Index = () => {
         </div>
 
         {isLoading ?
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) =>
-            <div key={i} className="space-y-4">
-                <Skeleton className="aspect-square w-full" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
+            <div key={i} className="rounded-xl border bg-card p-0 overflow-hidden shadow-soft">
+                <Skeleton className="aspect-[4/3] w-full rounded-none" />
+                <div className="p-5 space-y-3">
+                  <Skeleton className="h-4 w-1/3 rounded-full" />
+                  <Skeleton className="h-5 w-3/4" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-10 w-full rounded-md" />
+                </div>
               </div>
             )}
           </div> :
           filteredProducts && filteredProducts.length > 0 ?
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProducts.map((product) =>
             <ProductCard key={product.id} {...product} />
             )}
           </div> :
 
-          <div className="text-center py-12">
+          <div className="text-center py-16 rounded-xl border border-dashed bg-surface-2/50">
             <p className="text-muted-foreground">No products found in this category.</p>
           </div>
           }
+
       </section>
 
       {/* Footer */}
-      <footer className={`border-t mt-12 relative overflow-hidden ${
+      <footer className={`border-t mt-16 relative overflow-hidden ${
         seasonalTheme ?
         `bg-gradient-to-br from-[${getThemeConfig(seasonalTheme)?.colors.dark}] via-[${getThemeConfig(seasonalTheme)?.colors.secondary}]/20 to-[${getThemeConfig(seasonalTheme)?.colors.dark}]` :
-        'bg-accent/5'}`
+        'bg-surface-2/70'}`
         }
+
         style={seasonalTheme ? { borderColor: `${getThemeConfig(seasonalTheme)?.colors.primary}40` } : {}}>
         {seasonalTheme && getThemeConfig(seasonalTheme)?.emoji.decorative.slice(0, 4).map((emoji, i) => {
             const positions = [

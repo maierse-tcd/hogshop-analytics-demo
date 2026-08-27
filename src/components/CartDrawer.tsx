@@ -58,10 +58,11 @@ export const CartDrawer = () => {
           <span className="sr-only">Shopping cart</span>
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-lg">
+      <SheetContent className="w-full sm:max-w-lg flex flex-col">
         <SheetHeader>
-          <SheetTitle>Shopping Cart ({totalItems})</SheetTitle>
+          <SheetTitle className="font-display text-xl">Shopping Cart ({totalItems})</SheetTitle>
         </SheetHeader>
+
 
         <div className="flex flex-col h-[calc(100vh-8rem)]">
           <div className="flex-1 overflow-y-auto py-4 -mx-6 px-6">
@@ -89,39 +90,41 @@ export const CartDrawer = () => {
             )}
 
             {items.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center">
-                <ShoppingCart className="h-16 w-16 text-muted-foreground mb-4" />
-                <p className="text-lg font-medium">Your cart is empty</p>
-                <p className="text-sm text-muted-foreground">Add some hedgehog goodness!</p>
+              <div className="flex flex-col items-center justify-center h-full text-center px-6">
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-surface-2">
+                  <ShoppingCart className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <p className="font-display text-lg font-semibold">Your cart is empty</p>
+                <p className="text-sm text-muted-foreground mt-1">Add some hedgehog goodness!</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {items.map((item) => (
-                  <div key={item.id} className="flex gap-4">
-                    <img src={item.image_url} alt={item.title} className="w-20 h-20 object-cover rounded-lg" />
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-sm">{item.title}</h4>
+                  <div key={item.id} className="flex gap-4 rounded-xl border bg-card p-3 shadow-xs">
+                    <img src={item.image_url} alt={item.title} className="w-20 h-20 object-cover rounded-lg bg-surface-2 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-sm leading-snug line-clamp-2">{item.title}</h4>
                       {item.is_subscription && (
-                        <Badge variant="secondary" className="mt-1">
+                        <Badge variant="secondary" className="mt-1 rounded-full text-[10px]">
                           {item.subscription_interval}ly subscription
                         </Badge>
                       )}
                       <div className="flex items-center gap-2 mt-2">
                         {!item.is_subscription && (
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 rounded-full border bg-surface-2/60 p-0.5">
                             <Button
-                              variant="outline"
+                              variant="ghost"
                               size="icon"
-                              className="h-6 w-6"
+                              className="h-6 w-6 rounded-full"
                               onClick={() => updateQuantity(item.id, item.quantity - 1)}
                             >
                               <Minus className="h-3 w-3" />
                             </Button>
-                            <span className="w-8 text-center text-sm">{item.quantity}</span>
+                            <span className="w-6 text-center text-sm font-medium">{item.quantity}</span>
                             <Button
-                              variant="outline"
+                              variant="ghost"
                               size="icon"
-                              className="h-6 w-6"
+                              className="h-6 w-6 rounded-full"
                               onClick={() => updateQuantity(item.id, item.quantity + 1)}
                             >
                               <Plus className="h-3 w-3" />
@@ -141,7 +144,7 @@ export const CartDrawer = () => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8"
+                      className="h-8 w-8 rounded-full text-muted-foreground hover:text-destructive"
                       onClick={() => {
                         trackEvent("remove_from_cart", {
                           product_id: item.id,
@@ -158,10 +161,11 @@ export const CartDrawer = () => {
                 ))}
               </div>
             )}
+
           </div>
 
           {items.length > 0 && (
-            <div className="border-t pt-4 space-y-4 shrink-0">
+            <div className="border-t pt-4 space-y-3 shrink-0">
               {flashSaleActive && (
                 <>
                   <div className="flex justify-between text-sm text-muted-foreground">
@@ -174,15 +178,17 @@ export const CartDrawer = () => {
                   </div>
                 </>
               )}
-              <div className="flex justify-between text-lg font-bold">
-                <span>Total</span>
-                <span>${(flashSaleActive ? discountedTotal : totalPrice).toFixed(2)}</span>
+              <div className="flex justify-between items-baseline">
+                <span className="text-sm text-muted-foreground">Total</span>
+                <span className="font-display text-2xl font-bold">${(flashSaleActive ? discountedTotal : totalPrice).toFixed(2)}</span>
               </div>
-              <Button className="w-full" size="lg" data-attr="proceed-to-checkout" onClick={startCheckout} disabled={isCheckingOut}>
+              <Button className="w-full rounded-full font-semibold" size="lg" data-attr="proceed-to-checkout" onClick={startCheckout} disabled={isCheckingOut}>
                 {isCheckingOut ? "Processing..." : "Proceed to Checkout"}
               </Button>
+              <p className="text-center text-xs text-muted-foreground">Secure checkout · 30-day returns</p>
             </div>
           )}
+
         </div>
       </SheetContent>
     </Sheet>

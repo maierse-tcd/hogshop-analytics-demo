@@ -9,35 +9,51 @@ All colors MUST be HSL.
 @layer base {
   :root {
     /* PostHog Design System - Light Mode */
-    --background: 60 11% 93%;
-    --foreground: 0 0% 8%;
+    --background: 45 20% 97%;
+    --foreground: 30 8% 12%;
 
-    --card: 60 11% 93%;
-    --card-foreground: 0 0% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 30 8% 12%;
 
-    --popover: 60 11% 93%;
-    --popover-foreground: 0 0% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 30 8% 12%;
 
     --primary: 17 100% 48%;
-    --primary-foreground: 60 11% 93%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 60 11% 89%;
-    --secondary-foreground: 0 0% 8%;
+    --secondary: 42 16% 93%;
+    --secondary-foreground: 30 8% 12%;
 
-    --muted: 60 11% 89%;
-    --muted-foreground: 0 0% 8%;
+    --muted: 42 16% 93%;
+    --muted-foreground: 30 6% 42%;
 
-    --accent: 60 11% 89%;
-    --accent-foreground: 0 0% 8%;
+    --accent: 42 16% 91%;
+    --accent-foreground: 30 8% 12%;
 
-    --destructive: 17 100% 48%;
-    --destructive-foreground: 60 11% 93%;
+    --destructive: 0 72% 48%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 60 8% 80%;
-    --input: 60 8% 80%;
+    --border: 38 12% 87%;
+    --input: 38 12% 87%;
     --ring: 17 100% 48%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+
+    /* Layered surfaces */
+    --surface: 0 0% 100%;
+    --surface-2: 42 18% 95%;
+    --surface-3: 40 14% 91%;
+    --border-strong: 36 10% 78%;
+
+    /* Elevation + accents */
+    --shadow-xs: 0 1px 2px 0 hsl(30 10% 20% / 0.06);
+    --shadow-sm: 0 1px 3px 0 hsl(30 10% 20% / 0.08), 0 1px 2px -1px hsl(30 10% 20% / 0.06);
+    --shadow-md: 0 8px 24px -12px hsl(30 12% 18% / 0.16), 0 2px 6px -2px hsl(30 12% 18% / 0.08);
+    --shadow-lg: 0 24px 48px -20px hsl(30 12% 18% / 0.22), 0 8px 16px -8px hsl(30 12% 18% / 0.1);
+    --shadow-glow: 0 12px 32px -12px hsl(var(--primary) / 0.45);
+    --gradient-hero: radial-gradient(120% 90% at 50% 0%, hsl(var(--primary) / 0.14) 0%, hsl(var(--background)) 62%);
+    --gradient-primary: linear-gradient(135deg, hsl(17 100% 52%), hsl(28 100% 55%));
+
     
     /* PostHog Yellow */
     --yellow: 41 100% 43%;
@@ -86,33 +102,49 @@ All colors MUST be HSL.
 
   .dark {
     /* PostHog Design System - Dark Mode */
-    --background: 0 0% 8%;
-    --foreground: 60 11% 93%;
+    --background: 30 6% 7%;
+    --foreground: 45 18% 95%;
 
-    --card: 0 0% 17%;
-    --card-foreground: 60 11% 93%;
+    --card: 28 5% 11%;
+    --card-foreground: 45 18% 95%;
 
-    --popover: 0 0% 8%;
-    --popover-foreground: 60 11% 93%;
+    --popover: 28 5% 11%;
+    --popover-foreground: 45 18% 95%;
 
-    --primary: 17 100% 48%;
-    --primary-foreground: 60 11% 93%;
+    --primary: 17 100% 52%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 17%;
-    --secondary-foreground: 60 11% 93%;
+    --secondary: 28 5% 15%;
+    --secondary-foreground: 45 18% 95%;
 
-    --muted: 0 0% 17%;
-    --muted-foreground: 60 11% 93%;
+    --muted: 28 5% 15%;
+    --muted-foreground: 40 8% 66%;
 
-    --accent: 0 0% 17%;
-    --accent-foreground: 60 11% 93%;
+    --accent: 28 5% 17%;
+    --accent-foreground: 45 18% 95%;
 
-    --destructive: 17 100% 48%;
-    --destructive-foreground: 60 11% 93%;
+    --destructive: 0 70% 52%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 29%;
-    --input: 0 0% 29%;
-    --ring: 17 100% 48%;
+    --border: 28 5% 19%;
+    --input: 28 5% 21%;
+    --ring: 17 100% 52%;
+
+    /* Layered surfaces - Dark Mode */
+    --surface: 28 5% 11%;
+    --surface-2: 28 5% 14%;
+    --surface-3: 28 5% 18%;
+    --border-strong: 28 5% 26%;
+
+    /* Elevation + accents - Dark Mode */
+    --shadow-xs: 0 1px 2px 0 hsl(0 0% 0% / 0.4);
+    --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.5);
+    --shadow-md: 0 8px 24px -12px hsl(0 0% 0% / 0.7), 0 2px 6px -2px hsl(0 0% 0% / 0.5);
+    --shadow-lg: 0 24px 48px -20px hsl(0 0% 0% / 0.8), 0 8px 16px -8px hsl(0 0% 0% / 0.6);
+    --shadow-glow: 0 12px 36px -12px hsl(var(--primary) / 0.55);
+    --gradient-hero: radial-gradient(120% 90% at 50% 0%, hsl(var(--primary) / 0.2) 0%, hsl(var(--background)) 62%);
+    --gradient-primary: linear-gradient(135deg, hsl(17 100% 52%), hsl(28 100% 55%));
+
     
     /* PostHog Yellow - Dark Mode */
     --yellow: 39 87% 56%;
@@ -163,20 +195,43 @@ All colors MUST be HSL.
 @layer base {
   * {
     @apply border-border;
-    transition: background-color 0.3s ease, color 0.15s ease, border-color 0.3s ease, box-shadow 0.3s ease;
   }
 
-  /* Exclude elements where transition causes issues */
-  input, textarea, select, button, a, [class*="animate-"] {
-    transition: none;
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  h1, h2, h3, h4 {
+    font-family: "Space Grotesk", "DM Sans", ui-sans-serif, sans-serif;
+    letter-spacing: -0.02em;
+  }
+
+
+  /* Targeted theme transition instead of a global transition on every element */
+  body,
+  header,
+  footer,
+  section,
+  [class*="bg-card"],
+  [class*="bg-background"],
+  [class*="bg-muted"],
+  [class*="bg-secondary"] {
+    transition: background-color 0.25s ease, border-color 0.25s ease, color 0.2s ease;
+  }
+
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
   }
 
   ::selection {
-    background-color: hsl(var(--primary) / 0.2);
+    background-color: hsl(var(--primary) / 0.22);
     color: hsl(var(--foreground));
   }
 
@@ -185,14 +240,58 @@ All colors MUST be HSL.
     to { opacity: 1; }
   }
 
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
   .animate-fade-in {
     animation: fadeIn 0.4s ease-out;
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
   /* Highlight ring on the element a product tour is pointing at */
   [data-tour-active="true"] {
     outline: 2px solid hsl(var(--primary));
     outline-offset: 3px;
-    border-radius: 4px;
+    border-radius: 6px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
+
+@layer components {
+  /* Reusable elevated surface used across cards, panels and dialogs */
+  .surface-card {
+    @apply rounded-xl border bg-card shadow-[var(--shadow-sm)];
+  }
+
+  .surface-raised {
+    background-color: hsl(var(--surface-2));
+    @apply rounded-xl border;
+  }
+
+  .hover-lift {
+    @apply transition-[transform,box-shadow] duration-300 ease-out hover:-translate-y-1 hover:shadow-[var(--shadow-md)];
+  }
+
+  /* Hides scrollbar on horizontal chip rows */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+

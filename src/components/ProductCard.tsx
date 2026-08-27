@@ -144,43 +144,46 @@ export const ProductCard = ({
   if (cardDesignV2) {
     return (
       <Card 
-        className="overflow-hidden group transition-all duration-300 border-2 cursor-pointer hover:shadow-lg"
+        className="overflow-hidden group h-full rounded-xl border bg-card shadow-soft transition-[transform,box-shadow] duration-300 cursor-pointer hover:-translate-y-1 hover:shadow-elevated"
         onClick={handleCardClick}
       >
-        <div className="flex">
-          <div className="relative w-1/2 overflow-hidden">
+        <div className="flex h-full">
+          <div className="relative w-2/5 sm:w-1/2 shrink-0 overflow-hidden bg-surface-2">
             <img
               src={imageSrc}
               alt={title}
-              className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+              loading="lazy"
+              className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
             />
             {flashSaleActive && (
-              <Badge className="absolute bottom-3 left-3 bg-primary text-primary-foreground font-bold shadow-[0_0_12px_hsl(var(--primary)/0.7)] rounded-full px-2.5 py-0.5">
+              <Badge className="absolute bottom-3 left-3 bg-primary text-primary-foreground font-semibold shadow-glow rounded-full px-2.5 py-0.5">
                 ⚡ −{discountPct}% SALE
               </Badge>
             )}
-            {stock < 10 && stock > 0 && (
-              <Badge className="absolute top-3 right-3">Only {stock} left</Badge>
-            )}
-            {is_subscription && (
-              <Badge className="absolute top-3 left-3">
-                {subscriptionHighlight ? "⭐ Subscribe!" : "Subscription"}
-              </Badge>
-            )}
+            <div className="absolute top-3 left-3 right-3 flex flex-wrap items-start justify-between gap-1.5">
+              {is_subscription ? (
+                <Badge className="rounded-full">
+                  {subscriptionHighlight ? "⭐ Subscribe!" : "Subscription"}
+                </Badge>
+              ) : <span />}
+              {stock < 10 && stock > 0 && (
+                <Badge variant="secondary" className="rounded-full">Only {stock} left</Badge>
+              )}
+            </div>
           </div>
-          <div className="w-1/2 p-5 flex flex-col">
-            <Badge variant="secondary" className="text-xs font-medium w-fit mb-2">{category}</Badge>
-            <h3 className="font-bold text-lg mb-2">{title}</h3>
-            <p className="text-sm line-clamp-2 mb-3 text-muted-foreground">{description}</p>
+          <div className="w-3/5 sm:w-1/2 p-5 flex flex-col">
+            <Badge variant="secondary" className="text-[11px] font-medium w-fit mb-2 rounded-full">{category}</Badge>
+            <h3 className="font-display font-bold text-lg mb-1.5 leading-snug line-clamp-2">{title}</h3>
+            <p className="text-sm line-clamp-2 mb-3 text-muted-foreground leading-relaxed">{description}</p>
             <div className="flex items-baseline gap-2 mt-auto mb-3 flex-wrap">
               {flashSaleActive ? (
                 <>
-                  <p className="text-2xl font-bold text-primary">${displayPrice.toFixed(2)}</p>
+                  <p className="text-2xl font-display font-bold text-primary">${displayPrice.toFixed(2)}</p>
                   <p className="text-sm text-muted-foreground line-through">${price.toFixed(2)}</p>
-                  <Badge className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0">−{discountPct}%</Badge>
+                  <Badge className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0 rounded-full">−{discountPct}%</Badge>
                 </>
               ) : (
-                <p className="text-2xl font-bold">${price.toFixed(2)}</p>
+                <p className="text-2xl font-display font-bold">${price.toFixed(2)}</p>
               )}
               {is_subscription && <span className="text-sm text-muted-foreground">/{subscription_interval}</span>}
             </div>
@@ -199,31 +202,31 @@ export const ProductCard = ({
     );
   }
 
+
   // Default vertical card
   return (
     <Card 
-      className={`overflow-hidden group transition-all duration-300 border-2 cursor-pointer hover:-translate-y-1 ${
+      className={`overflow-hidden group h-full flex flex-col rounded-xl border bg-card cursor-pointer transition-[transform,box-shadow] duration-300 ease-out hover:-translate-y-1 ${
         seasonalMode 
-          ? '' 
-          : 'hover:shadow-xl'
+          ? 'shadow-soft' 
+          : 'shadow-soft hover:shadow-elevated'
       }`}
       style={seasonalMode && themeConfig ? {
-        boxShadow: 'hover: 0 0 30px ' + themeConfig.colors.primary,
         borderColor: themeConfig.colors.secondary + '4d',
-        background: `linear-gradient(135deg, ${themeConfig.colors.dark}80 0%, hsl(var(--background)) 100%)`
+        background: `linear-gradient(135deg, ${themeConfig.colors.dark}80 0%, hsl(var(--card)) 100%)`
       } : {}}
       onClick={handleCardClick}
     >
-      <div className={`relative aspect-square overflow-hidden ${
-        seasonalMode && themeConfig ? '' : 'bg-accent/5'
+      <div className={`relative aspect-[4/3] overflow-hidden ${
+        seasonalMode && themeConfig ? '' : 'bg-surface-2'
       }`}
            style={seasonalMode && themeConfig ? { backgroundColor: themeConfig.colors.dark + '4d' } : {}}>
         <img
           src={imageSrc}
           alt={title}
           loading="lazy"
-          className={`object-cover w-full h-full transition-all duration-300 animate-fade-in ${
-            seasonalMode ? 'group-hover:scale-110 group-hover:brightness-110' : 'group-hover:scale-105'
+          className={`object-cover w-full h-full transition-transform duration-500 ease-out animate-fade-in ${
+            seasonalMode ? 'group-hover:scale-110' : 'group-hover:scale-105'
           }`}
         />
         {seasonalMode && themeConfig && (
@@ -233,35 +236,42 @@ export const ProductCard = ({
           </>
         )}
         {flashSaleActive && (
-          <Badge className="absolute bottom-3 left-3 bg-primary text-primary-foreground font-bold shadow-[0_0_12px_hsl(var(--primary)/0.7)] rounded-full px-3 py-1">
+          <Badge className="absolute bottom-3 left-3 bg-primary text-primary-foreground font-semibold shadow-glow rounded-full px-3 py-1">
             ⚡ −{discountPct}% SALE
           </Badge>
         )}
-        {stock < 10 && stock > 0 && (
-          <Badge className="absolute top-3 right-3 text-white"
-                 style={seasonalMode && themeConfig ? { backgroundColor: themeConfig.colors.primary } : {}}>
-            Only {stock} left
-          </Badge>
-        )}
-        {stock === 0 && (
-          <Badge className="absolute top-3 right-3" variant="destructive">
-            Out of Stock
-          </Badge>
-        )}
-        {is_subscription && (
-          <Badge className="absolute top-3 left-3 text-white"
-                 style={seasonalMode && themeConfig ? { backgroundColor: themeConfig.colors.secondary } : {}}>
-            {subscriptionHighlight 
-              ? "⭐ Most Popular - Subscribe & Save!" 
-              : seasonalMode && themeConfig 
-                ? `${themeConfig.emoji.primary} Subscription` 
-                : 'Subscription'}
-          </Badge>
-        )}
+        {/* Badge stack: subscription on the left, stock state on the right */}
+        <div className="absolute top-3 left-3 right-3 flex items-start justify-between gap-2">
+          <div className="flex flex-col items-start gap-1.5">
+            {is_subscription && (
+              <Badge className="rounded-full max-w-[13rem] truncate"
+                     style={seasonalMode && themeConfig ? { backgroundColor: themeConfig.colors.secondary, color: '#fff' } : {}}>
+                {subscriptionHighlight 
+                  ? "⭐ Most Popular - Subscribe & Save!" 
+                  : seasonalMode && themeConfig 
+                    ? `${themeConfig.emoji.primary} Subscription` 
+                    : 'Subscription'}
+              </Badge>
+            )}
+          </div>
+          <div className="flex flex-col items-end gap-1.5">
+            {stock < 10 && stock > 0 && (
+              <Badge variant="secondary" className="rounded-full backdrop-blur-sm"
+                     style={seasonalMode && themeConfig ? { backgroundColor: themeConfig.colors.primary, color: '#fff' } : {}}>
+                Only {stock} left
+              </Badge>
+            )}
+            {stock === 0 && (
+              <Badge className="rounded-full" variant="destructive">
+                Out of Stock
+              </Badge>
+            )}
+          </div>
+        </div>
       </div>
-      <CardContent className="p-5">
-        <div className="mb-2">
-          <Badge variant="secondary" className="text-xs font-medium"
+      <CardContent className="p-5 flex-1 flex flex-col">
+        <div className="mb-2.5">
+          <Badge variant="secondary" className="text-[11px] font-medium rounded-full"
                  style={seasonalMode && themeConfig ? {
                    backgroundColor: themeConfig.colors.secondary + '33',
                    color: themeConfig.colors.primary,
@@ -270,29 +280,26 @@ export const ProductCard = ({
             {category}
           </Badge>
         </div>
-        <h3 className="font-bold text-lg mb-2 line-clamp-1"
+        <h3 className="font-display font-bold text-lg mb-1.5 leading-snug line-clamp-1"
             style={seasonalMode && themeConfig ? { color: themeConfig.colors.primary } : {}}>
           {title}
         </h3>
-        <p className="text-sm line-clamp-2 mb-3 text-muted-foreground"
+        <p className="text-sm line-clamp-2 mb-4 text-muted-foreground leading-relaxed"
            style={seasonalMode && themeConfig ? { color: themeConfig.colors.secondary + 'cc' } : {}}>
           {description}
         </p>
-        <div className="flex items-baseline gap-2 flex-wrap">
+        <div className="flex items-baseline gap-2 flex-wrap mt-auto">
           {flashSaleActive ? (
             <>
-              <p className="text-2xl font-bold bg-primary/10 px-2 py-0.5 rounded-md w-fit text-primary"
-                 style={seasonalMode && themeConfig ? { color: themeConfig.colors.primary, textShadow: `0 0 10px ${themeConfig.colors.primary}` } : {}}>
+              <p className="text-2xl font-display font-bold text-primary"
+                 style={seasonalMode && themeConfig ? { color: themeConfig.colors.primary } : {}}>
                 ${displayPrice.toFixed(2)}
               </p>
               <p className="text-base text-muted-foreground line-through">${price.toFixed(2)}</p>
             </>
           ) : (
-            <p className="text-2xl font-bold bg-primary/10 px-2 py-0.5 rounded-md w-fit"
-               style={seasonalMode && themeConfig ? {
-                 color: themeConfig.colors.primary,
-                 textShadow: `0 0 10px ${themeConfig.colors.primary}`
-               } : {}}>
+            <p className="text-2xl font-display font-bold"
+               style={seasonalMode && themeConfig ? { color: themeConfig.colors.primary } : {}}>
               ${price.toFixed(2)}
             </p>
           )}
@@ -309,8 +316,7 @@ export const ProductCard = ({
           className="w-full gap-2 font-semibold"
           data-attr="add-to-cart"
           style={seasonalMode && themeConfig ? {
-            background: `linear-gradient(to right, ${themeConfig.colors.primary}, ${themeConfig.colors.secondary})`,
-            boxShadow: `hover: 0 0 20px ${themeConfig.colors.primary}`
+            background: `linear-gradient(to right, ${themeConfig.colors.primary}, ${themeConfig.colors.secondary})`
           } : {}}
           onClick={handleAddToCart}
           disabled={stock === 0}
@@ -323,3 +329,4 @@ export const ProductCard = ({
     </Card>
   );
 };
+

@@ -171,31 +171,31 @@ const ProductDetail = () => {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <div className="container py-8">
+      <div className="container py-8 md:py-10">
         <Button
           variant="ghost"
           onClick={() => navigate("/")}
-          className="mb-6"
+          className="mb-6 -ml-2 rounded-full text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Shop
         </Button>
 
-        <div className="grid md:grid-cols-2 gap-12 mb-16">
+        <div className="grid md:grid-cols-2 gap-8 lg:gap-14 mb-16 items-start">
           {/* Product Image */}
-          <div className="relative aspect-square overflow-hidden rounded-lg border-2 bg-accent/5">
+          <div className="relative aspect-square overflow-hidden rounded-2xl border bg-surface-2 shadow-soft md:sticky md:top-24">
             <img
               src={imageSrc}
               alt={product.title}
               className="object-cover w-full h-full"
             />
             {product.is_subscription && (
-              <Badge className="absolute top-4 left-4 bg-primary text-lg px-4 py-2">
+              <Badge className="absolute top-4 left-4 rounded-full px-3.5 py-1.5 text-sm">
                 Subscription
               </Badge>
             )}
             {flashSaleActive && (
-              <Badge className="absolute top-4 right-4 bg-primary text-primary-foreground text-base px-4 py-2 rounded-full shadow-[0_0_20px_hsl(var(--primary)/0.7)] font-bold gap-1">
+              <Badge className="absolute top-4 right-4 bg-primary text-primary-foreground text-sm px-3.5 py-1.5 rounded-full shadow-glow font-semibold gap-1">
                 <Zap className="h-4 w-4 fill-current" /> −{discountPct}% FLASH SALE
               </Badge>
             )}
@@ -204,54 +204,52 @@ const ProductDetail = () => {
           {/* Product Info */}
           <div className="flex flex-col space-y-6">
             <div>
-              <Badge variant="secondary" className="mb-3">
+              <Badge variant="secondary" className="mb-3 rounded-full text-[11px]">
                 {product.category}
               </Badge>
-              <h1 className="text-4xl md:text-5xl font-bold mb-4">
+              <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-[1.08] mb-4 text-balance">
                 {product.title}
               </h1>
-              <div data-attr="product-price" className="flex items-baseline gap-3 mb-6 flex-wrap">
+              <div data-attr="product-price" className="flex items-baseline gap-3 mb-5 flex-wrap">
                 {flashSaleActive ? (
                   <>
-                    <p className="text-4xl font-bold text-primary">
+                    <p className="font-display text-4xl font-bold text-primary">
                       ${getDiscountedPrice(product.price).toFixed(2)}
                     </p>
-                    <p className="text-2xl text-muted-foreground line-through">
+                    <p className="text-xl text-muted-foreground line-through">
                       ${product.price.toFixed(2)}
                     </p>
-                    <Badge className="bg-primary text-primary-foreground font-bold">Save {discountPct}%</Badge>
+                    <Badge className="bg-primary text-primary-foreground font-semibold rounded-full">Save {discountPct}%</Badge>
                   </>
                 ) : (
-                  <p className="text-4xl font-bold text-primary">
+                  <p className="font-display text-4xl font-bold">
                     ${product.price.toFixed(2)}
                   </p>
                 )}
                 {product.is_subscription && (
-                  <span className="text-xl text-muted-foreground">
+                  <span className="text-lg text-muted-foreground">
                     /{product.subscription_interval}
                   </span>
                 )}
               </div>
             </div>
 
-            <div className="prose prose-lg max-w-none">
-              <p className="text-lg text-muted-foreground leading-relaxed">
-                {product.description}
-              </p>
-            </div>
+            <p className="text-base md:text-lg text-muted-foreground leading-relaxed max-w-prose">
+              {product.description}
+            </p>
 
             {/* Stock Info */}
             <div className="flex items-center gap-2">
               {product.stock > 10 ? (
-                <Badge variant="secondary" className="text-sm">
+                <Badge variant="secondary" className="text-sm rounded-full">
                   ✓ In Stock ({product.stock} available)
                 </Badge>
               ) : product.stock > 0 ? (
-                <Badge className="bg-yellow text-yellow-foreground text-sm">
+                <Badge className="bg-yellow text-yellow-foreground text-sm rounded-full">
                   Only {product.stock} left!
                 </Badge>
               ) : (
-                <Badge variant="destructive" className="text-sm">
+                <Badge variant="destructive" className="text-sm rounded-full">
                   Out of Stock
                 </Badge>
               )}
@@ -261,7 +259,7 @@ const ProductDetail = () => {
             <Button
               size="lg"
               data-attr="product-add-to-cart"
-              className="w-full md:w-auto gap-2 h-14 px-8 text-lg font-semibold"
+              className="w-full md:w-auto gap-2 h-14 px-8 text-base font-semibold rounded-full shadow-glow"
               onClick={handleAddToCart}
               disabled={product.stock === 0}
             >
@@ -269,11 +267,23 @@ const ProductDetail = () => {
               {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
             </Button>
 
+            <ul className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+              {[
+                { icon: "🚚", label: "Free shipping over $50" },
+                { icon: "↩️", label: "30-day returns" },
+                { icon: "🔒", label: "Secure checkout" },
+              ].map((f) => (
+                <li key={f.label} className="flex items-center gap-2 rounded-xl border bg-card px-3 py-2.5 text-sm text-muted-foreground shadow-xs">
+                  <span aria-hidden="true">{f.icon}</span> {f.label}
+                </li>
+              ))}
+            </ul>
+
             {/* Additional Details */}
             {product.is_subscription && (
-              <div className="border-t pt-6 space-y-3">
-                <h3 className="font-semibold text-lg">Subscription Details</h3>
-                <ul className="space-y-2 text-muted-foreground">
+              <div className="rounded-2xl border bg-surface-2/60 p-5 space-y-3">
+                <h3 className="font-display font-semibold text-lg">Subscription Details</h3>
+                <ul className="space-y-2 text-muted-foreground text-sm">
                   <li>• Automatic {product.subscription_interval}ly delivery</li>
                   <li>• Cancel anytime through your account</li>
                   <li>• Never run out of supplies</li>
@@ -284,36 +294,30 @@ const ProductDetail = () => {
           </div>
         </div>
 
+
         {/* Product Features */}
         <div data-attr="why-choose" className="border-t pt-12">
-          <h2 className="text-2xl font-bold mb-6">Why Choose This Product?</h2>
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="space-y-2">
-              <div className="text-primary text-3xl">🦔</div>
-              <h3 className="font-semibold">Hedgehog Approved</h3>
-              <p className="text-sm text-muted-foreground">
-                Tested and loved by hedgehogs worldwide
-              </p>
-            </div>
-            <div className="space-y-2">
-              <div className="text-primary text-3xl">✓</div>
-              <h3 className="font-semibold">Premium Quality</h3>
-              <p className="text-sm text-muted-foreground">
-                Only the best materials and ingredients
-              </p>
-            </div>
-            <div className="space-y-2">
-              <div className="text-primary text-3xl">🚚</div>
-              <h3 className="font-semibold">Fast Shipping</h3>
-              <p className="text-sm text-muted-foreground">
-                Get it delivered to your door quickly
-              </p>
+          <h2 className="font-display text-2xl font-bold mb-6">Why Choose This Product?</h2>
+          <div className="grid md:grid-cols-3 gap-4">
+            {[
+              { icon: "🦔", title: "Hedgehog Approved", body: "Tested and loved by hedgehogs worldwide" },
+              { icon: "✓", title: "Premium Quality", body: "Only the best materials and ingredients" },
+              { icon: "🚚", title: "Fast Shipping", body: "Get it delivered to your door quickly" },
+            ].map((f) => (
+              <div key={f.title} className="rounded-2xl border bg-card p-5 space-y-2 shadow-soft">
+                <div className="text-primary text-2xl">{f.icon}</div>
+                <h3 className="font-display font-semibold">{f.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{f.body}</p>
+              </div>
+            ))}
           </div>
         </div>
 
+
         <RelatedProductsCarousel currentProductId={id!} />
       </div>
-    </div>
+
+
 
       <div id="tour-slot" data-slot="product-tour">
         {tour.active && tour.step && (
