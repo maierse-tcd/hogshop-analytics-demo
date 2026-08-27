@@ -58,10 +58,11 @@ export const CartDrawer = () => {
           <span className="sr-only">Shopping cart</span>
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-lg">
+      <SheetContent className="w-full sm:max-w-lg flex flex-col">
         <SheetHeader>
-          <SheetTitle>Shopping Cart ({totalItems})</SheetTitle>
+          <SheetTitle className="font-display text-xl">Shopping Cart ({totalItems})</SheetTitle>
         </SheetHeader>
+
 
         <div className="flex flex-col h-[calc(100vh-8rem)]">
           <div className="flex-1 overflow-y-auto py-4 -mx-6 px-6">
