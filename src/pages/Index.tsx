@@ -530,11 +530,12 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className={`border-t mt-12 relative overflow-hidden ${
+      <footer className={`border-t mt-16 relative overflow-hidden ${
         seasonalTheme ?
         `bg-gradient-to-br from-[${getThemeConfig(seasonalTheme)?.colors.dark}] via-[${getThemeConfig(seasonalTheme)?.colors.secondary}]/20 to-[${getThemeConfig(seasonalTheme)?.colors.dark}]` :
-        'bg-accent/5'}`
+        'bg-surface-2/70'}`
         }
+
         style={seasonalTheme ? { borderColor: `${getThemeConfig(seasonalTheme)?.colors.primary}40` } : {}}>
         {seasonalTheme && getThemeConfig(seasonalTheme)?.emoji.decorative.slice(0, 4).map((emoji, i) => {
             const positions = [
