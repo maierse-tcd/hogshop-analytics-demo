@@ -360,7 +360,7 @@ const Index = () => {
                 // Test Variant: Blinking Orange Newsletter Button
                 <Button
                   size="lg"
-                  className="h-12 px-8 text-base font-semibold animate-blink-orange hover:animate-none hover:scale-105 transition-transform"
+                  className="h-12 px-7 text-base font-semibold rounded-full animate-blink-orange hover:animate-none hover:scale-105 transition-transform"
                   onClick={() => {
                     setShowNewsletterModal(true);
                     // Track feature interaction with person property
