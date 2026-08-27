@@ -307,21 +307,19 @@ const Index = () => {
 
           <>
             {/* Regular Theme */}
-            <div className="absolute inset-0 opacity-[0.08]">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,hsl(var(--primary))_1px,transparent_1px)] bg-[length:32px_32px]" />
+            <div className="absolute inset-0 bg-gradient-hero" />
+            <div className="absolute inset-0 opacity-[0.06]">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,hsl(var(--primary))_1px,transparent_1px)] bg-[length:28px_28px]" />
             </div>
-            <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
-            <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] animate-pulse" />
-            <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-accent/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[100px]" />
+            <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[720px] h-[420px] bg-primary/15 rounded-full blur-[140px]" />
           </>
           }
-        <div className="container py-24 md:py-36 relative">
-          <div className="max-w-4xl mx-auto text-center space-y-8">
-            <Badge className="text-sm px-4 py-1.5 font-semibold" variant="secondary">
+        <div className="container py-16 md:py-24 relative">
+          <div className="max-w-3xl mx-auto text-center space-y-6 animate-fade-in-up">
+            <Badge className="text-xs px-3.5 py-1.5 font-semibold rounded-full" variant="secondary">
               {seasonalTheme ? getThemeConfig(seasonalTheme)?.badge : '🦔 Everything for your Hedgehog'}
             </Badge>
-            <h1 className="text-5xl md:text-8xl font-bold tracking-tight leading-[1.1]">
+            <h1 className="font-display text-4xl md:text-6xl font-bold tracking-tight leading-[1.05] text-balance">
               {seasonalTheme ?
                 <>
                   {getThemeConfig(seasonalTheme)?.title.line1}
@@ -338,11 +336,12 @@ const Index = () => {
                 </>
                 }
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+            <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
               {seasonalTheme ?
                 getThemeConfig(seasonalTheme)?.description :
                 'From premium nutrition to cozy habitats. Everything your spiky friend needs to thrive, delivered with love.'}
             </p>
+
             <div className="flex flex-col sm:flex-row gap-3 justify-center pt-6">
               <Button size="lg" className="gap-2 h-12 px-8 text-base font-semibold" onClick={() => {
                   document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' });
