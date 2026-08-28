@@ -16,6 +16,8 @@ import { AIChatWidget } from "@/components/AIChatWidget";
 import { StickyCheckoutBar } from "@/components/StickyCheckoutBar";
 import { FlashSaleBanner } from "@/components/FlashSaleBanner";
 import { TracingDemoBadge } from "@/components/TracingDemoBadge";
+import { CustomSurvey } from "@/components/CustomSurvey";
+
 import Index from "./pages/Index";
 import Success from "./pages/Success";
 import ProductDetail from "./pages/ProductDetail";
@@ -47,6 +49,10 @@ const AppContent = () => {
       <div id="tracing-badge-slot" data-slot="tracing-badge">
         <TracingDemoBadge />
       </div>
+      <div id="custom-survey-slot" data-slot="custom-survey">
+        <CustomSurvey />
+      </div>
+
       <BrowserRouter>
         <RouteTracker />
         <div id="flash-sale-slot" data-slot="flash-sale">
