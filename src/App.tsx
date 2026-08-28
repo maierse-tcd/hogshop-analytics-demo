@@ -16,6 +16,8 @@ import { AIChatWidget } from "@/components/AIChatWidget";
 import { StickyCheckoutBar } from "@/components/StickyCheckoutBar";
 import { FlashSaleBanner } from "@/components/FlashSaleBanner";
 import { TracingDemoBadge } from "@/components/TracingDemoBadge";
+import { CustomSurvey } from "@/components/CustomSurvey";
+
 import Index from "./pages/Index";
 import Success from "./pages/Success";
 import ProductDetail from "./pages/ProductDetail";
