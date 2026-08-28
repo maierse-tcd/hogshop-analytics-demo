@@ -118,22 +118,6 @@ export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
         unit: "USD",
       });
 
-      // NOTE: a fraction of checkouts fail here before reaching Stripe with a
-      // "network timeout". Users hit a dead end unless they use the retry action on
-      // the toast below — this is a known conversion drag worth revisiting.
-      const CHECKOUT_FAILURE_RATE = 0.11;
-      if (Math.random() < CHECKOUT_FAILURE_RATE) {
-        const checkoutError = new Error("Failed to initialize payment session: network timeout");
-        checkoutError.name = "CheckoutError";
-        posthog.captureException(checkoutError, {
-          checkout_stage: "pre_stripe",
-          basket_value: totalPrice,
-          items_count: totalItems,
-          customer_email: email,
-        });
-        throw checkoutError;
-      }
-
       setUserProperties({
         items_basket: basketItems,
         basket_value: totalPrice,
@@ -175,7 +159,7 @@ export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
           "checkout.session.url_received": true,
         });
         checkoutSpan.end({ code: SpanStatus.OK });
-        window.open(data.url, "_blank");
+        window.location.href = data.url;
       } else {
         checkoutSpan.setAttribute("checkout.session.url_received", false);
         checkoutSpan.end({ code: SpanStatus.OK });
