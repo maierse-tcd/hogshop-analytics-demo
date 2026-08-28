@@ -66,6 +66,7 @@ export const initPostHog = () => {
         },
         session_recording: {
           recordCrossOriginIframes: false,
+          maskAllInputs: true,
         },
         loaded: (posthog) => {
           if (import.meta.env.DEV) {
