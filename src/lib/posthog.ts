@@ -30,6 +30,41 @@ export const applyPostHogIdentityHash = async (distinctId: string) => {
   }
 };
 
+// The hosted NPS popover renders into a light-DOM host element whose class
+// starts with "PostHogSurvey-". Hiding that host from the app's own stylesheet
+// removes the popover, shadow root and all.
+const SURVEY_HOST_SELECTOR = '[class*="PostHogSurvey-"]';
+// Set on <html> while the cart drawer is open (see setCartDrawerOpen).
+const CART_OPEN_CLASS = "ph-cart-open";
+const SURVEY_GUARD_STYLE_ID = "ph-survey-guard";
+
+/**
+ * Keeps the hosted survey popover off the transactional UI.
+ * The popover has no display conditions and a very high z-index, so it paints
+ * over the cart total and checkout button while the cart drawer is open, and
+ * over the product grid on small viewports. This stylesheet hides it in both
+ * cases so it stops covering the browse and checkout path.
+ */
+const installSurveyGuards = () => {
+  if (typeof document === "undefined" || document.getElementById(SURVEY_GUARD_STYLE_ID)) return;
+  const style = document.createElement("style");
+  style.id = SURVEY_GUARD_STYLE_ID;
+  style.textContent = `
+    html.${CART_OPEN_CLASS} ${SURVEY_HOST_SELECTOR} { display: none !important; }
+    @media (max-width: 640px) { ${SURVEY_HOST_SELECTOR} { display: none !important; } }
+  `;
+  document.head.appendChild(style);
+};
+
+/**
+ * Marks the cart drawer as open or closed so the survey guard can hide the
+ * popover while the drawer covers the total and checkout button.
+ */
+export const setCartDrawerOpen = (open: boolean) => {
+  if (typeof document === "undefined") return;
+  document.documentElement.classList.toggle(CART_OPEN_CLASS, open);
+};
+
 export const initPostHog = () => {
   if (typeof window !== "undefined") {
     const POSTHOG_KEY = 
@@ -92,6 +127,10 @@ export const initPostHog = () => {
 
       // Force reload feature flags to ensure they're loaded
       posthog.reloadFeatureFlags();
+
+      // Install the survey guards once the surveys API is ready so the NPS
+      // popover cannot cover the cart drawer or the product grid.
+      posthog.onSurveysLoaded(() => installSurveyGuards());
     } catch (error) {
       console.error("PostHog initialization failed:", error);
     }
