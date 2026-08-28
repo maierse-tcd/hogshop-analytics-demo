@@ -47,6 +47,10 @@ const AppContent = () => {
       <div id="tracing-badge-slot" data-slot="tracing-badge">
         <TracingDemoBadge />
       </div>
+      <div id="custom-survey-slot" data-slot="custom-survey">
+        <CustomSurvey />
+      </div>
+
       <BrowserRouter>
         <RouteTracker />
         <div id="flash-sale-slot" data-slot="flash-sale">
