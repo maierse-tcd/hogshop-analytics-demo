@@ -75,6 +75,15 @@ export const initPostHog = () => {
       
           // Expose globally for bot scripts and debugging
           (window as any).posthog = posthog;
+
+          // A returning visitor is already identified from an earlier login or
+          // checkout. The verified identity hash lives in super properties that
+          // this session has not set yet. Register it now. A support ticket
+          // opened before this session's login then carries a verified identity,
+          // not unverified traits.
+          if ((posthog as any)._isIdentified()) {
+            void applyPostHogIdentityHash(posthog.get_distinct_id());
+          }
         },
       });
       
