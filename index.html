@@ -3,6 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // Set the theme class before first paint to stop a light-to-dark flash.
+      // Mirrors next-themes: read the stored theme, fall back to the dark default.
+      (function () {
+        try {
+          var stored = localStorage.getItem("theme") || "dark";
+          var isDark =
+            stored === "dark" ||
+            (stored === "system" &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.classList.toggle("dark", isDark);
+        } catch (e) {}
+      })();
+    </script>
     <title>HogShop — Premium Hedgehog Supplies & Analytics Demo</title>
     <meta name="description" content="HogShop sells premium hedgehog food, habitats, toys and care kits — a live demo store powered by PostHog analytics, feature flags and experiments." />
     <meta name="author" content="HogShop" />
