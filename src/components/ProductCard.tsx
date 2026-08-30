@@ -3,10 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/contexts/CartContext";
 import { trackEvent, posthog } from "@/lib/posthog";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, Check } from "lucide-react";
+import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useFeatureFlagEnabled, useFeatureFlagVariantKey } from "posthog-js/react";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFlashSale } from "@/hooks/useFlashSale";
 import { getThemeConfig, type SeasonalTheme } from "@/utils/seasonalThemes";
 
@@ -79,6 +80,11 @@ export const ProductCard = ({
 }: ProductCardProps) => {
   const { addToCart } = useCart();
   const navigate = useNavigate();
+
+  // Confirm each add so shoppers do not click again for want of feedback
+  const [justAdded, setJustAdded] = useState(false);
+  const resetTimer = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => () => clearTimeout(resetTimer.current), []);
   const halloweenMode = useFeatureFlagEnabled('hero_banner_halloween');
   const christmasMode = useFeatureFlagEnabled('hero_banner_christmas');
   const easterMode = useFeatureFlagEnabled('hero_banner_easter');
@@ -123,9 +129,14 @@ export const ProductCard = ({
       stock,
       category,
       quantity: 1,
-      is_subscription, 
-      subscription_interval 
+      is_subscription,
+      subscription_interval
     }, "product_card");
+
+    toast.success(`Added ${title} to your cart`);
+    setJustAdded(true);
+    clearTimeout(resetTimer.current);
+    resetTimer.current = setTimeout(() => setJustAdded(false), 1500);
   };
 
   const handleCardClick = () => {
@@ -193,8 +204,8 @@ export const ProductCard = ({
               onClick={handleAddToCart}
               disabled={stock === 0}
             >
-              <ShoppingCart className="h-4 w-4" />
-              {stock === 0 ? "Out of Stock" : ctaText}
+              {justAdded ? <Check className="h-4 w-4" /> : <ShoppingCart className="h-4 w-4" />}
+              {stock === 0 ? "Out of Stock" : justAdded ? "Added" : ctaText}
             </Button>
           </div>
         </div>
@@ -322,8 +333,8 @@ export const ProductCard = ({
           disabled={stock === 0}
           size="lg"
         >
-          <ShoppingCart className="h-4 w-4" />
-          {stock === 0 ? "Out of Stock" : seasonalMode && themeConfig ? `${themeConfig.emoji.primary} ${ctaText}` : ctaText}
+          {justAdded ? <Check className="h-4 w-4" /> : <ShoppingCart className="h-4 w-4" />}
+          {stock === 0 ? "Out of Stock" : justAdded ? "Added" : seasonalMode && themeConfig ? `${themeConfig.emoji.primary} ${ctaText}` : ctaText}
         </Button>
       </CardFooter>
     </Card>
