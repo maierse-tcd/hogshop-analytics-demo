@@ -137,6 +137,7 @@ export const CustomSurvey = () => {
   const [visible, setVisible] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const shownRef = useRef(false);
+  const submittedRef = useRef(false);
 
   const questions = survey?.questions ?? [];
 
@@ -249,7 +250,8 @@ export const CustomSurvey = () => {
   }, [survey, markSeen]);
 
   const handleSubmit = useCallback(() => {
-    if (!survey) return;
+    if (!survey || submittedRef.current) return;
+    submittedRef.current = true;
     try {
       const props: Record<string, unknown> = {
         $survey_id: survey.id,
@@ -285,6 +287,7 @@ export const CustomSurvey = () => {
         setStepIdx(0);
         setSubmitted(false);
         shownRef.current = false;
+        submittedRef.current = false;
       },
       state: () => ({ answers, visibleIndexes, rules }),
     };
@@ -472,13 +475,20 @@ export const CustomSurvey = () => {
               >
                 Back
               </Button>
-              <Button
-                size="sm"
-                disabled={!canAdvance}
-                onClick={() => (isLast ? handleSubmit() : setStepIdx((s) => s + 1))}
-              >
-                {isLast ? "Submit" : "Next"}
-              </Button>
+              <div className="flex items-center gap-3">
+                {!canAdvance && (
+                  <p className="text-xs text-muted-foreground" role="status">
+                    Please answer to continue.
+                  </p>
+                )}
+                <Button
+                  size="sm"
+                  disabled={!canAdvance}
+                  onClick={() => (isLast ? handleSubmit() : setStepIdx((s) => s + 1))}
+                >
+                  {isLast ? "Submit" : "Next"}
+                </Button>
+              </div>
             </div>
 
             <div className="mt-4 pt-3 border-t space-y-1 text-xs text-muted-foreground">
