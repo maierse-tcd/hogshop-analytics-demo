@@ -1,5 +1,9 @@
 import { posthog } from "@/lib/posthog";
 
+// Prefix on every fake error message so scanners and error tracking can filter
+// them out. These errors are reported for demo purposes and never break the app.
+export const DEMO_ERROR_PREFIX = "[DEMO — not a real error]";
+
 const captureDemoException = (
   error: Error,
   context: string,
@@ -25,42 +29,42 @@ interface DemoError {
 const errorTypes: DemoError[] = [
   {
     create: () => ({
-      error: new Error("Failed to fetch user preferences from API"),
+      error: new Error(`${DEMO_ERROR_PREFIX} Failed to fetch user preferences from API`),
       context: "network_request",
       props: { endpoint: "/api/user/preferences", method: "GET", status_code: 503 },
     }),
   },
   {
     create: () => ({
-      error: new TypeError("Cannot read property 'price' of undefined"),
+      error: new TypeError(`${DEMO_ERROR_PREFIX} Cannot read property 'price' of undefined`),
       context: "data_processing",
       props: { operation: "product_transformation", affected_product_id: "prod_123" },
     }),
   },
   {
     create: () => ({
-      error: new Error("Stripe payment processing timeout"),
+      error: new Error(`${DEMO_ERROR_PREFIX} Stripe payment processing timeout`),
       context: "third_party_integration",
       props: { service: "stripe", operation: "create_payment_intent", timeout_ms: 30000 },
     }),
   },
   {
     create: () => ({
-      error: new Error("Payment declined by card issuer"),
+      error: new Error(`${DEMO_ERROR_PREFIX} Payment declined by card issuer`),
       context: "payment_failed",
       props: { payment_method: "card", decline_code: "insufficient_funds", amount: 89.99, currency: "USD" },
     }),
   },
   {
     create: () => ({
-      error: new Error("WebSocket connection closed unexpectedly"),
+      error: new Error(`${DEMO_ERROR_PREFIX} WebSocket connection closed unexpectedly`),
       context: "websocket_disconnect",
       props: { url: "wss://realtime.hogflix.dev", close_code: 1006, reconnect_attempts: 3 },
     }),
   },
   {
     create: () => ({
-      error: new DOMException("Failed to execute 'setItem' on 'Storage': Setting the value exceeded the quota"),
+      error: new DOMException(`${DEMO_ERROR_PREFIX} Failed to execute 'setItem' on 'Storage': Setting the value exceeded the quota`),
       context: "storage_quota_exceeded",
       props: { storage_type: "localStorage", key: "cart_cache", estimated_size_kb: 5120 },
     }),

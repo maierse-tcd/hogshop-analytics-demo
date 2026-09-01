@@ -79,14 +79,16 @@ const Index = () => {
         is_cached: cacheHitRef.current === true,
       });
     }
+  }, [products]);
 
-    // Simulate demo errors in background (safe, non-blocking)
+  // Simulate demo errors once per page load, not on every products change.
+  useEffect(() => {
     const errorTimer = setTimeout(() => {
       simulateDemoErrors();
     }, 2000);
 
     return () => clearTimeout(errorTimer);
-  }, [products]);
+  }, []);
 
 
   // Event seeding is only needed in development
