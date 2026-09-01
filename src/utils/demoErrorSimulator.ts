@@ -72,6 +72,13 @@ const errorTypes: DemoError[] = [
  * Picks 1-2 random error types per session, staggered over 5-30 seconds.
  */
 export const simulateDemoErrors = () => {
+  // On by default so the shop can show off PostHog error tracking.
+  // Set VITE_ENABLE_DEMO_ERRORS=false to switch the simulation off.
+  if (import.meta.env.VITE_ENABLE_DEMO_ERRORS === "false") {
+    console.log("[Demo Errors] Simulation disabled via VITE_ENABLE_DEMO_ERRORS.");
+    return;
+  }
+
   const count = 1 + Math.floor(Math.random() * 2); // 1-2 errors
   const selected = [...errorTypes].sort(() => 0.5 - Math.random()).slice(0, count);
 
