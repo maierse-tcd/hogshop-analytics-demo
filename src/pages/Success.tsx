@@ -239,10 +239,13 @@ const Success = () => {
       // Fire subscription_created without revenue to avoid double-counting
       if (hasSubscriptionItem) {
         const subscriptionItem = basketItems.find((item: any) => item.is_subscription);
+        const monthlyValue = subscriptionItem
+          ? subscriptionItem.price * (subscriptionItem.quantity || 1)
+          : basketValue;
         trackEvent("subscription_created", {
           subscription_id: sessionId,
           plan_name: subscriptionItem?.title || subscriptionItem?.name || "Subscription",
-          monthly_value: subscriptionItem?.price || basketValue,
+          monthly_value: monthlyValue,
           customer_email: userEmail,
           session_id: sessionId,
           source: "client_fallback",
@@ -270,12 +273,15 @@ const Success = () => {
       
       if (hasSubscription) {
         const subscriptionItem = basketItems.find((item: any) => item.is_subscription);
+        const monthlyValue = subscriptionItem
+          ? subscriptionItem.price * (subscriptionItem.quantity || 1)
+          : basketValue;
         setTimeout(() => {
           if (isDev) console.log("PostHog: Setting subscription_active to true and customer groups");
           updateSubscriptionStatus({
             active: true,
             start_date: new Date().toISOString(),
-            monthly_value: subscriptionItem?.price || basketValue,
+            monthly_value: monthlyValue,
           });
           
           const currentCLTV = parseFloat(localStorage.getItem("user_cltv") || "0");
