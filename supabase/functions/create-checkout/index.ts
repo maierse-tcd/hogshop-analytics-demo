@@ -20,6 +20,46 @@ const PRICE_MAP: Record<string, string> = {
   "Hedgehog Lover T-Shirt": "price_1TEsUvLVW76jxQhlUX20Txyz",
 };
 
+// The flash sale lives behind this flag. The browser also reads it, but the
+// discount it applies never reaches this function, so the server evaluates the
+// flag itself and is the single source of truth for the charged amount.
+const FLASH_SALE_FLAG = "promo-flash-sale";
+const FLASH_SALE_DISCOUNT = 0.2;
+
+const POSTHOG_HOST = Deno.env.get("POSTHOG_HOST") || "https://ph.hogflix.dev";
+const POSTHOG_KEY = Deno.env.get("POSTHOG_KEY") || Deno.env.get("POSTHOG_PROJECT_API_KEY") || "";
+
+// Sale price in cents, rounded per unit to match the price the shopper saw.
+const discountedUnitAmount = (price: number) =>
+  Math.round(+(price * (1 - FLASH_SALE_DISCOUNT)).toFixed(2) * 100);
+
+// Evaluate the flash-sale flag for this shopper. `hint` is the flag state the
+// browser rendered; it is used only when the server cannot reach PostHog, so an
+// outage never charges more than the displayed price.
+async function evaluateFlashSale(
+  distinctId: string | undefined,
+  hint: boolean,
+): Promise<{ active: boolean; source: string }> {
+  if (!distinctId || !POSTHOG_KEY) return { active: hint, source: "client_hint_no_id" };
+  try {
+    const res = await fetch(`${POSTHOG_HOST}/flags/?v=2`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ api_key: POSTHOG_KEY, distinct_id: distinctId }),
+    });
+    if (!res.ok) throw new Error(`flags api returned ${res.status}`);
+    const data = await res.json();
+    const flag = data?.flags?.[FLASH_SALE_FLAG];
+    const active =
+      flag && typeof flag === "object"
+        ? flag.enabled === true
+        : data?.featureFlags?.[FLASH_SALE_FLAG] === true;
+    return { active, source: "flag_evaluation" };
+  } catch (_err) {
+    return { active: hint, source: "client_hint_error" };
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -47,7 +87,7 @@ serve(async (req) => {
         });
         log.info("Function invoked");
 
-        const { items, customer_email, customer_name, ph_session_id, company_name, company_key, icp_type, utm_source, utm_medium, utm_campaign } = await req.json();
+        const { items, customer_email, customer_name, ph_session_id, ph_distinct_id, flash_sale_shown, company_name, company_key, icp_type, utm_source, utm_medium, utm_campaign } = await req.json();
 
         rootSpan.setAttributes({
           "cart.item_count": items?.length ?? 0,
@@ -96,18 +136,56 @@ serve(async (req) => {
           );
         }
 
+        // ---------- Flash sale (server is the source of truth) ----------
+        const distinctId = ph_distinct_id || ph_session_id || customer_email || undefined;
+        const flashSale = await tracer.withSpan(
+          "posthog.flags.evaluate_flash_sale",
+          async (span) => {
+            const result = await evaluateFlashSale(distinctId, flash_sale_shown === true);
+            span.setAttributes({
+              "posthog.flag.key": FLASH_SALE_FLAG,
+              "posthog.flag.active": result.active,
+              "posthog.flag.source": result.source,
+            });
+            return result;
+          },
+          { kind: SpanKind.CLIENT },
+        );
+        const flashSaleActive = flashSale.active;
+        rootSpan.setAttribute("checkout.flash_sale_active", flashSaleActive);
+        log.info("Flash sale evaluated", { active: flashSaleActive, source: flashSale.source });
+
         const lineItems = items.map((item: any) => {
+          const quantity = item.quantity || 1;
+          const recurring = item.is_subscription
+            ? { interval: item.subscription_interval || "month" }
+            : undefined;
+
+          // During a sale every item ships as price_data at the discounted amount,
+          // so the fixed price identifiers and stored list prices never bill full.
+          if (flashSaleActive) {
+            return {
+              price_data: {
+                currency: "usd",
+                unit_amount: discountedUnitAmount(item.price),
+                product_data: { name: item.title, description: item.description || "" },
+                recurring,
+              },
+              quantity,
+            };
+          }
+
           const priceId = PRICE_MAP[item.title];
-          if (priceId) return { price: priceId, quantity: item.quantity || 1 };
+          if (priceId) return { price: priceId, quantity };
           log.warn("No price mapping found, using price_data", { title: item.title });
           return {
             price_data: {
               currency: "usd",
               unit_amount: Math.round(item.price * 100),
               product_data: { name: item.title, description: item.description || "" },
-              recurring: item.is_subscription ? { interval: item.subscription_interval || "month" } : undefined,
+              recurring,
             },
-            quantity: item.quantity || 1,
+            quantity,
           };
         });
 
