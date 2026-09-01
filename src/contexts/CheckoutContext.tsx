@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/hooks/use-toast";
 import { RegistrationDialog } from "@/components/RegistrationDialog";
+import { useFlashSale } from "@/hooks/useFlashSale";
 import { posthog, trackEvent, trackMetric, deviceType, setUserProperties, initializeCLTV, ensureIdentified, applyCompanyGroup, slugifyCompany, getCampaignContext } from "@/lib/posthog";
 import { getUser, saveUser } from "@/lib/auth";
 import { startSpan, traceparent, SpanKind, SpanStatus } from "@/lib/otel";
@@ -17,6 +18,7 @@ const CheckoutContext = createContext<CheckoutContextType | undefined>(undefined
 
 export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
   const { items, totalItems, totalPrice } = useCart();
+  const { flashSaleActive } = useFlashSale();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [showRegistration, setShowRegistration] = useState(false);
   const { toast } = useToast();
@@ -146,6 +148,11 @@ export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
           customer_email: email,
           customer_name: name,
           ph_session_id: posthog.get_session_id(),
+          // The edge function re-evaluates the flash-sale flag itself; the
+          // distinct id lets it resolve the same value, and flash_sale_shown is
+          // only a fallback for when it cannot reach PostHog.
+          ph_distinct_id: posthog.get_distinct_id(),
+          flash_sale_shown: flashSaleActive,
           company_name: trimmedCompany,
           company_key: companyKey,
           icp_type: icpType,
