@@ -54,6 +54,7 @@ export const initPostHog = () => {
         capture_pageview: false,
         capture_pageleave: true,
         capture_performance: true,
+        capture_dead_clicks: true,
         enable_heatmaps: true,
         persistence: "localStorage+cookie",
         cross_subdomain_cookie: false,
