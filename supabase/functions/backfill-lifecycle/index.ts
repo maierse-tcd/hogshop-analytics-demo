@@ -41,28 +41,33 @@ serve(async (req) => {
     }
 
     // HogQL: derive lifecycle from real event history per email.
+    // Genuine purchases carry `source`. The external experiment seeder posts
+    // source-less events for `%-shopper-%` personas. The distinct_id exclusion
+    // and the per-purchase source guard keep that synthetic traffic from
+    // flipping a person's lifecycle.
     const hogql = `
       SELECT
         distinct_id AS email,
         multiIf(
           greatest(
             maxIf(toUnixTimestamp(timestamp), event = 'subscription_created'),
-            maxIf(toUnixTimestamp(timestamp), event = 'purchase_completed' AND properties.has_subscription = true)
+            maxIf(toUnixTimestamp(timestamp), event = 'purchase_completed' AND properties.has_subscription = true AND properties.source IN ('edge_function', 'client_fallback'))
           ) > 0
           AND greatest(
             maxIf(toUnixTimestamp(timestamp), event = 'subscription_created'),
-            maxIf(toUnixTimestamp(timestamp), event = 'purchase_completed' AND properties.has_subscription = true)
+            maxIf(toUnixTimestamp(timestamp), event = 'purchase_completed' AND properties.has_subscription = true AND properties.source IN ('edge_function', 'client_fallback'))
           ) >= maxIf(toUnixTimestamp(timestamp), event = 'subscription_cancelled'),
             'Active Subscriber',
           maxIf(toUnixTimestamp(timestamp), event = 'subscription_cancelled') > 0,
             'Churned Subscriber',
-          countIf(event = 'purchase_completed' AND ifNull(toString(properties.backfilled), '') != 'true') > 0,
+          countIf(event = 'purchase_completed' AND properties.source IN ('edge_function', 'client_fallback') AND ifNull(toString(properties.backfilled), '') != 'true') > 0,
             'One-Time Buyer',
           'Prospect'
         ) AS lifecycle
       FROM events
       WHERE event IN ('subscription_created', 'subscription_cancelled', 'purchase_completed')
         AND distinct_id LIKE '%@%'
+        AND distinct_id NOT LIKE '%-shopper-%'
       GROUP BY distinct_id
       LIMIT 100000
     `;
