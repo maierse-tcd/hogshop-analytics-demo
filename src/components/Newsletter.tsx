@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { trackEvent } from "@/lib/posthog";
+import { useSignupDiscount } from "@/hooks/useSignupDiscount";
 
 interface NewsletterProps {
   variant?: "card" | "banner";
@@ -11,6 +12,7 @@ interface NewsletterProps {
 
 export const Newsletter = ({ variant = "card", onSubscribed }: NewsletterProps) => {
   const [email, setEmail] = useState("");
+  const { displayPercent } = useSignupDiscount();
   const formStartedRef = useRef(false);
 
   const handleEmailFocus = () => {
@@ -32,7 +34,7 @@ export const Newsletter = ({ variant = "card", onSubscribed }: NewsletterProps) 
         variant,
         subscribed_at: new Date().toISOString()
       });
-      toast.success("Thanks for subscribing! Check your inbox for your 15% discount code.");
+      toast.success(`Thanks for subscribing! Check your inbox for your ${displayPercent}% discount code.`);
       localStorage.setItem("newsletter_subscribed", "true");
       onSubscribed?.(email);
       setEmail("");
@@ -53,7 +55,7 @@ export const Newsletter = ({ variant = "card", onSubscribed }: NewsletterProps) 
             className="flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 h-10"
           />
           <Button type="submit" size="lg" className="rounded-full whitespace-nowrap px-6">
-            🎉 Get 15% Off
+            🎉 Get {displayPercent}% Off
           </Button>
         </form>
       </div>
@@ -63,7 +65,7 @@ export const Newsletter = ({ variant = "card", onSubscribed }: NewsletterProps) 
   return (
     <div className="bg-primary/5 border border-primary/20 rounded-lg p-8 max-w-2xl mx-auto">
       <div className="inline-block bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-semibold mb-3">
-        🎉 15% OFF Your First Order
+        🎉 {displayPercent}% OFF Your First Order
       </div>
       <h3 className="text-2xl font-bold text-center mb-2">
         Join Our Hedgehog Community
