@@ -64,7 +64,7 @@ export const AIChatWidget = () => {
 
   if (!isOpen) {
     return (
-      <div className="fixed bottom-6 right-6 z-50">
+      <div className="fixed bottom-6 right-6 z-[2147483647] pb-[env(safe-area-inset-bottom)]">
         {showTooltip && proactivePrompt && (
           <div className="absolute bottom-16 right-0 bg-primary text-primary-foreground p-3 rounded-lg shadow-lg max-w-xs mb-2 animate-in slide-in-from-bottom-2">
             <p className="text-sm font-medium flex items-center gap-2">
@@ -93,7 +93,7 @@ export const AIChatWidget = () => {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-96 max-w-[calc(100vw-3rem)]">
+    <div className="fixed bottom-6 right-6 z-[2147483647] w-96 max-w-[calc(100vw-3rem)] pb-[env(safe-area-inset-bottom)]">
       <Card className="shadow-2xl border-2">
         <CardHeader className="pb-3 border-b bg-primary text-primary-foreground">
           <div className="flex items-center justify-between">
