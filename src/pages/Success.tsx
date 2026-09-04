@@ -226,6 +226,7 @@ const Success = () => {
         subscription_id: hasSubscriptionItem ? sessionId : null,
         customer_email: userEmail,
         items: basketItems,
+        source: "client_fallback",
       });
 
       trackMetric("count", "hogshop.purchase.completed", 1, {

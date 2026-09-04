@@ -42,6 +42,9 @@ serve(async (req) => {
 
     // HogQL: aggregate historical purchases per email.
     // Uses total_amount (dollars) which has been correct from day one.
+    // Counts only genuine purchases. The server and client paths tag `source`.
+    // The external experiment seeder posts source-less events for `%-shopper-%`
+    // personas. Both filters keep that synthetic traffic out of CLTV.
     const hogql = `
       SELECT
         distinct_id AS email,
@@ -50,6 +53,8 @@ serve(async (req) => {
       FROM events
       WHERE event = 'purchase_completed'
         AND distinct_id LIKE '%@%'
+        AND distinct_id NOT LIKE '%-shopper-%'
+        AND properties.source IN ('edge_function', 'client_fallback')
         AND ifNull(toString(properties.backfilled), '') != 'true'
       GROUP BY distinct_id
       LIMIT 100000
