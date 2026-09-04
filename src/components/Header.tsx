@@ -9,7 +9,8 @@ import { SubscriptionManagementDialog } from "./SubscriptionManagementDialog";
 import { SubscriptionChoiceDialog } from "./SubscriptionChoiceDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { posthog, trackEvent, identifyUser, applyCompanyGroup } from "@/lib/posthog";
-import { useFeatureFlagEnabled, useFeatureFlagVariantKey } from "posthog-js/react";
+import { useFeatureFlagEnabled } from "posthog-js/react";
+import { useSignupDiscount } from "@/hooks/useSignupDiscount";
 import { getUser, clearUser } from "@/lib/auth";
 import {
   DropdownMenu,
@@ -32,7 +33,7 @@ export const Header = () => {
   const [isSubscriber, setIsSubscriber] = useState<boolean | null>(null);
   const [subCheckLoading, setSubCheckLoading] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const signupVariant = useFeatureFlagVariantKey('increase_sales_cta');
+  const { variant: signupVariant, variantPercent } = useSignupDiscount();
   const halloweenMode = useFeatureFlagEnabled('hero_banner_halloween');
   const showLiveNav = useFeatureFlagEnabled('show_live_navbar');
 
@@ -252,7 +253,7 @@ export const Header = () => {
             </div>
           ) : (
             <>
-              {(signupVariant === '10percent' || signupVariant === '15percent') && (
+              {variantPercent !== undefined && (
                 <div className={`hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full border ${
                   halloweenMode 
                     ? 'bg-[hsl(var(--halloween-orange))]/20 border-[hsl(var(--halloween-orange))]/40' 
@@ -261,7 +262,7 @@ export const Header = () => {
                   <span className={`text-xs font-medium ${
                     halloweenMode ? 'text-[hsl(var(--halloween-orange))]' : 'text-primary'
                   }`}>
-                    🎉 {signupVariant === '10percent' ? '10%' : '15%'} off your first order!
+                    🎉 {variantPercent}% off your first order!
                   </span>
                 </div>
               )}
@@ -273,7 +274,7 @@ export const Header = () => {
                   posthog.capture('login_signup_clicked', {
                     source: 'header',
                     discount_variant: signupVariant || 'control',
-                    has_discount_badge: signupVariant === '10percent' || signupVariant === '15percent'
+                    has_discount_badge: variantPercent !== undefined
                   });
                   setShowLoginDialog(true);
                 }}
@@ -306,7 +307,7 @@ export const Header = () => {
           open={showLoginDialog} 
           onOpenChange={setShowLoginDialog}
           onLoginSuccess={handleLoginSuccess}
-          discountPercent={signupVariant === '10percent' ? 10 : signupVariant === '15percent' ? 15 : undefined}
+          discountPercent={variantPercent}
         />
         <SubscriptionManagementDialog
           open={showSubscriptionDialog}

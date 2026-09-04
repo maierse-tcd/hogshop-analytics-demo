@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { LoginDialog } from "@/components/LoginDialog";
 import { getUser } from "@/lib/auth";
+import { useSignupDiscount } from "@/hooks/useSignupDiscount";
 
 export const LoyaltyPrompt = () => {
   const variant = useFeatureFlagVariantKey("exp-loyalty-prompt");
+  const { displayPercent } = useSignupDiscount();
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
 
@@ -17,7 +19,7 @@ export const LoyaltyPrompt = () => {
     if (user) {
       toast({
         title: "You're all set! 🎉",
-        description: "We'll email your 10% off code shortly.",
+        description: `We'll email your ${displayPercent}% off code shortly.`,
       });
       return;
     }
@@ -30,9 +32,9 @@ export const LoyaltyPrompt = () => {
         data-attr="loyalty-prompt"
         className="max-w-md mx-auto mb-8 rounded-xl border-2 border-primary bg-primary/5 p-6 text-left shadow-sm"
       >
-        <h2 className="text-xl font-bold mb-2">🎁 Save 10% on your next order</h2>
+        <h2 className="text-xl font-bold mb-2">🎁 Save {displayPercent}% on your next order</h2>
         <p className="text-sm text-muted-foreground mb-4">
-          Create your HogShop account and we'll email you a code for 10% off your next purchase.
+          Create your HogShop account and we'll email you a code for {displayPercent}% off your next purchase.
         </p>
         <Button
           onClick={handleClick}
@@ -48,10 +50,10 @@ export const LoyaltyPrompt = () => {
           setOpen(false);
           toast({
             title: "You're all set! 🎉",
-            description: "We'll email your 10% off code shortly.",
+            description: `We'll email your ${displayPercent}% off code shortly.`,
           });
         }}
-        discountPercent={10}
+        discountPercent={displayPercent}
       />
     </>
   );
