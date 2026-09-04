@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Trash2, Plus, Minus } from "lucide-react";
@@ -7,6 +8,39 @@ import { trackEvent } from "@/lib/posthog";
 import { useCheckout } from "@/contexts/CheckoutContext";
 import { useFeatureFlagVariantKey } from "posthog-js/react";
 import { useFlashSale } from "@/hooks/useFlashSale";
+
+type CartItem = ReturnType<typeof useCart>["items"][number];
+
+/**
+ * Fires cart_viewed from the cart view itself. It mounts with the drawer
+ * content, so the event is tied to the cart being shown rather than to the
+ * open-toggle callback, which keeps the cart-to-checkout ratio trustworthy.
+ */
+const CartViewedTracker = ({
+  items,
+  totalItems,
+  totalPrice,
+}: {
+  items: CartItem[];
+  totalItems: number;
+  totalPrice: number;
+}) => {
+  useEffect(() => {
+    trackEvent("cart_viewed", {
+      items_count: totalItems,
+      cart_value: totalPrice,
+      items: items.map((item) => ({
+        id: item.id,
+        title: item.title,
+        quantity: item.quantity,
+        price: item.price,
+      })),
+    });
+    // Fire once per cart view. Item edits inside the open drawer are their own events.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return null;
+};
 
 export const CartDrawer = () => {
   const { items, removeFromCart, updateQuantity, totalItems, totalPrice } = useCart();
@@ -24,18 +58,7 @@ export const CartDrawer = () => {
   return (
     <Sheet
       onOpenChange={(open) => {
-        if (open) {
-          trackEvent("cart_viewed", {
-            items_count: totalItems,
-            cart_value: totalPrice,
-            items: items.map((item) => ({
-              id: item.id,
-              title: item.title,
-              quantity: item.quantity,
-              price: item.price,
-            })),
-          });
-        } else if (items.length > 0) {
+        if (!open && items.length > 0) {
           trackEvent("checkout_abandoned", {
             items_count: totalItems,
             cart_value: totalPrice,
@@ -59,6 +82,7 @@ export const CartDrawer = () => {
         </Button>
       </SheetTrigger>
       <SheetContent className="w-full sm:max-w-lg flex flex-col">
+        <CartViewedTracker items={items} totalItems={totalItems} totalPrice={totalPrice} />
         <SheetHeader>
           <SheetTitle className="font-display text-xl">Shopping Cart ({totalItems})</SheetTitle>
         </SheetHeader>

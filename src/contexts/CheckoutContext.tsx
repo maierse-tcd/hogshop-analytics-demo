@@ -67,7 +67,12 @@ export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
     proceedToCheckout(email, name, trimmedCompany);
   };
 
-  const proceedToCheckout = async (email: string, name: string, companyName?: string) => {
+  const proceedToCheckout = async (
+    email: string,
+    name: string,
+    companyName?: string,
+    options?: { isRetry?: boolean },
+  ) => {
     setIsCheckingOut(true);
 
     const trimmedCompany = companyName?.trim() || undefined;
@@ -99,24 +104,28 @@ export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
         is_subscription: item.is_subscription,
       }));
 
-      trackEvent("checkout_started", {
-        items_count: totalItems,
-        basket_value: totalPrice,
-        revenue: totalPrice,
-        currency: "USD",
-        items: basketItems,
-        hashed_example_property: "posthog",
-        icp_type: icpType,
-        ...(trimmedCompany ? { company_name: trimmedCompany, company_key: companyKey } : {}),
-      });
+      // A retry is the same checkout attempt, so only the first pass emits the
+      // "started" signals. Re-emitting them on retry inflates checkout_started.
+      if (!options?.isRetry) {
+        trackEvent("checkout_started", {
+          items_count: totalItems,
+          basket_value: totalPrice,
+          revenue: totalPrice,
+          currency: "USD",
+          items: basketItems,
+          hashed_example_property: "posthog",
+          icp_type: icpType,
+          ...(trimmedCompany ? { company_name: trimmedCompany, company_key: companyKey } : {}),
+        });
 
-      trackMetric("count", "hogshop.checkout.started", 1, {
-        attributes: { device_type: deviceType() },
-      });
-      trackMetric("histogram", "hogshop.checkout.basket_value", totalPrice, {
-        attributes: { currency: "USD" },
-        unit: "USD",
-      });
+        trackMetric("count", "hogshop.checkout.started", 1, {
+          attributes: { device_type: deviceType() },
+        });
+        trackMetric("histogram", "hogshop.checkout.basket_value", totalPrice, {
+          attributes: { currency: "USD" },
+          unit: "USD",
+        });
+      }
 
       // NOTE: a fraction of checkouts fail here before reaching Stripe with a
       // "network timeout". Users hit a dead end unless they use the retry action on
@@ -203,7 +212,7 @@ export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
                 basket_value: totalPrice,
                 items_count: totalItems,
               });
-              void proceedToCheckout(email, name, trimmedCompany);
+              void proceedToCheckout(email, name, trimmedCompany, { isRetry: true });
             }}
           >
             Retry
