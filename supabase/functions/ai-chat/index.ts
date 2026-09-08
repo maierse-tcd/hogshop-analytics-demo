@@ -43,7 +43,7 @@ const RESPONSES: { keywords: string[]; reply: string }[] = [
   },
   {
     keywords: ["ship", "deliver", "shipping", "delivery", "arrive"],
-    reply: "We offer standard shipping on all orders! 📦 Subscription orders always ship free. Most orders arrive within 3-5 business days. Check our Shipping page for full details. 🦔",
+    reply: "We offer standard shipping on all orders! 📦 Standard Hedgehog Express arrives in 5-7 business days, and it's free on orders over $50. Subscription orders always ship free. Need it sooner? Premium Rush (2-3 days) and Overnight Teleportation™ (next day) are available too. We ship to the US, Canada, the UK, the EU, Australia, and New Zealand — check our Shipping page for full details. 🦔",
   },
   {
     keywords: ["hello", "hi", "hey", "help", "start"],
