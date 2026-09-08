@@ -63,10 +63,22 @@ const Shipping = () => {
             <div className="bg-primary/10 p-2 rounded-full h-fit"><MapPin className="h-5 w-5 text-primary flex-shrink-0" /></div>
             <div>
               <h3 className="font-semibold text-lg mb-2">International Shipping</h3>
-              <p className="text-muted-foreground">
-                We ship worldwide! Our international hedgehog couriers are trained in 47 languages and will navigate 
-                any terrain. Delivery times vary by location (hedgehogs swim slower than they run). Customs fees may apply.
-              </p>
+              <div className="space-y-3 text-muted-foreground">
+                <p>
+                  Our international hedgehog couriers are trained in 47 languages. We currently ship to these regions,
+                  with these estimated transit times after your order leaves our warehouse:
+                </p>
+                <ul className="list-disc list-inside space-y-1 ml-4 text-sm">
+                  <li><span className="text-foreground font-medium">United States:</span> 5-7 business days ($9.99, free over $50)</li>
+                  <li><span className="text-foreground font-medium">Canada:</span> 7-12 business days ($14.99)</li>
+                  <li><span className="text-foreground font-medium">United Kingdom &amp; European Union:</span> 8-14 business days ($19.99)</li>
+                  <li><span className="text-foreground font-medium">Australia &amp; New Zealand:</span> 10-16 business days ($24.99)</li>
+                </ul>
+                <p className="text-sm">
+                  We cannot ship outside these regions yet (our hedgehogs are still practicing their paddling).
+                  Import duties and customs fees are set by the destination country and are the buyer's responsibility.
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -78,6 +90,16 @@ const Shipping = () => {
               Once shipped, you'll receive a tracking number and live GPS coordinates of the hedgehog carrying your package. 
               You can watch their journey in real-time via our PostHog-powered tracking system. Fun fact: you can see when 
               they stop for snacks!
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-semibold mb-4">Changing Your Shipping Address</h2>
+            <p className="text-muted-foreground">
+              Need to update the delivery address on an order? Contact our support team through the chat widget before
+              your order ships. We can change the address while the order is still being packed (usually within 24 hours
+              of purchase). Once a hedgehog has left with your package, we can no longer redirect it, so please reach out
+              as soon as possible.
             </p>
           </section>
 
