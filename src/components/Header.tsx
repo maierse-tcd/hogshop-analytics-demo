@@ -18,7 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 export const Header = () => {
   const { theme, setTheme } = useTheme();
@@ -129,8 +129,9 @@ export const Header = () => {
             </SheetTrigger>
             <SheetContent side="left" className="w-72 p-0">
               <div className="px-6 py-5 border-b">
-                <span className="font-display text-xl font-bold text-primary">HogShop</span>
+                <SheetTitle className="font-display text-xl font-bold text-primary">HogShop</SheetTitle>
               </div>
+              <SheetDescription className="sr-only">Browse HogShop pages</SheetDescription>
               <nav className="flex flex-col p-3">
                 {navItems.map(({ to, label }) => (
                   <Link

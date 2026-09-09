@@ -1,4 +1,4 @@
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Trash2, Plus, Minus } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
@@ -61,6 +61,7 @@ export const CartDrawer = () => {
       <SheetContent className="w-full sm:max-w-lg flex flex-col">
         <SheetHeader>
           <SheetTitle className="font-display text-xl">Shopping Cart ({totalItems})</SheetTitle>
+          <SheetDescription className="sr-only">Review your items and proceed to checkout</SheetDescription>
         </SheetHeader>
 
 
