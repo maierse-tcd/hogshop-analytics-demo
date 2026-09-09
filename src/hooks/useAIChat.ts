@@ -41,7 +41,6 @@ export const useAIChat = () => {
   const [isOpen, setIsOpen] = useState(false);
   const traceIdRef = useRef<string | null>(null);
   const conversationStartRef = useRef<number | null>(null);
-  const tokenCountRef = useRef({ input: 0, output: 0 });
 
   useEffect(() => {
     if (isOpen && !traceIdRef.current) {
@@ -73,9 +72,6 @@ export const useAIChat = () => {
       const conversationDuration = Date.now() - conversationStartRef.current;
       trackEvent("$ai_trace", {
         $ai_trace_id: traceIdRef.current,
-        $ai_total_input_tokens: tokenCountRef.current.input,
-        $ai_total_output_tokens: tokenCountRef.current.output,
-        $ai_total_tokens: tokenCountRef.current.input + tokenCountRef.current.output,
         conversation_duration_seconds: Math.floor(conversationDuration / 1000),
         total_messages: messagesLengthRef.current,
         total_user_messages: Math.ceil(messagesLengthRef.current / 2),
@@ -83,7 +79,6 @@ export const useAIChat = () => {
       });
       traceIdRef.current = null;
       conversationStartRef.current = null;
-      tokenCountRef.current = { input: 0, output: 0 };
     };
 
     const onHide = () => {
@@ -168,12 +163,6 @@ export const useAIChat = () => {
 
       const latencyMs = Date.now() - generationStartTime;
 
-      // Simulate realistic token counts
-      const inputTokens = Math.ceil(allMessages.map(m => m.content).join('').length / 4);
-      const outputTokens = Math.ceil(assistantContent.length / 4);
-      tokenCountRef.current.input += inputTokens;
-      tokenCountRef.current.output += outputTokens;
-
       setMessages(prev => [...prev, { role: "assistant", content: assistantContent, timestamp: Date.now() }]);
 
       // Track AI generation with PostHog LLM analytics
@@ -182,18 +171,21 @@ export const useAIChat = () => {
         content: msg.content,
       }));
 
+      // The edge function returns canned replies with no real model call, so
+      // there is no provider token usage to report. We do not publish token
+      // counts here: a client-side length/4 estimate made the AI observability
+      // dashboard show fabricated tokens and cost. We mark the generation as
+      // simulated instead.
       trackEvent("$ai_generation", {
         $ai_trace_id: traceIdRef.current,
         $ai_span_id: spanId,
         $ai_span_name: "chat_response",
         $ai_model: "google/gemini-2.5-flash",
         $ai_provider: "google",
+        $ai_is_simulated: true,
         $ai_input: conversationHistory,
         $ai_output: assistantContent,
         $ai_output_choices: [assistantContent],
-        $ai_input_tokens: inputTokens,
-        $ai_output_tokens: outputTokens,
-        $ai_total_tokens: inputTokens + outputTokens,
         $ai_latency: latencyMs / 1000,
         $ai_stream: false,
         conversation_turn: Math.floor(messages.length / 2) + 1,
@@ -201,8 +193,6 @@ export const useAIChat = () => {
       });
 
       chatSpan.setAttributes({
-        "chat.input_tokens": inputTokens,
-        "chat.output_tokens": outputTokens,
         "chat.latency_ms": latencyMs,
         "http.status_code": response.status,
       });
@@ -228,6 +218,7 @@ export const useAIChat = () => {
         $ai_span_id: spanId,
         $ai_model: "google/gemini-2.5-flash",
         $ai_provider: "google",
+        $ai_is_simulated: true,
         $ai_is_error: true,
         $ai_error: error instanceof Error ? error.message : "Unknown error",
         $ai_input: [...messages, userMsg].map(msg => ({
@@ -280,9 +271,6 @@ export const useAIChat = () => {
       
       trackEvent("$ai_trace", {
         $ai_trace_id: traceIdRef.current,
-        $ai_total_input_tokens: tokenCountRef.current.input,
-        $ai_total_output_tokens: tokenCountRef.current.output,
-        $ai_total_tokens: tokenCountRef.current.input + tokenCountRef.current.output,
         conversation_duration_seconds: Math.floor(conversationDuration / 1000),
         total_messages: messages.length,
         total_user_messages: Math.ceil(messages.length / 2),
@@ -296,9 +284,12 @@ export const useAIChat = () => {
 
       traceIdRef.current = null;
       conversationStartRef.current = null;
-      tokenCountRef.current = { input: 0, output: 0 };
     }
-    
+
+    // Clear the conversation so reopening the widget starts fresh. Without this
+    // the stale history is resent to the edge function and re-captured into
+    // $ai_input on the next message.
+    setMessages([]);
     setIsOpen(false);
   }, [isOpen, messages.length]);
 
