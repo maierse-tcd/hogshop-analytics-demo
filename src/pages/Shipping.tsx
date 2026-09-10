@@ -2,6 +2,7 @@ import { Header } from "@/components/Header";
 import { useEffect } from "react";
 import { trackEvent } from "@/lib/posthog";
 import { Package, Truck, Clock, MapPin } from "lucide-react";
+import { FREE_SHIPPING_THRESHOLD } from "@/lib/shipping";
 
 const Shipping = () => {
   useEffect(() => {
@@ -33,7 +34,7 @@ const Shipping = () => {
               <div className="space-y-3 text-muted-foreground">
                 <div>
                   <p className="font-medium text-foreground">Standard Hedgehog Express (5-7 business days)</p>
-                  <p className="text-sm">Carried by a relay team of enthusiastic hedgehogs. Free on orders over $50.</p>
+                  <p className="text-sm">Carried by a relay team of enthusiastic hedgehogs. Free on orders over ${FREE_SHIPPING_THRESHOLD}.</p>
                 </div>
                 <div>
                   <p className="font-medium text-foreground">Premium Hedgehog Rush (2-3 business days)</p>

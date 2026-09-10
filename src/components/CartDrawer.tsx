@@ -7,6 +7,7 @@ import { trackEvent } from "@/lib/posthog";
 import { useCheckout } from "@/contexts/CheckoutContext";
 import { useFeatureFlagVariantKey } from "posthog-js/react";
 import { useFlashSale } from "@/hooks/useFlashSale";
+import { FREE_SHIPPING_THRESHOLD } from "@/lib/shipping";
 
 export const CartDrawer = () => {
   const { items, removeFromCart, updateQuantity, totalItems, totalPrice } = useCart();
@@ -14,12 +15,12 @@ export const CartDrawer = () => {
   const { flashSaleActive, discountPct, getDiscountedPrice } = useFlashSale();
   const discountAmount = flashSaleActive ? +(totalPrice * (discountPct / 100)).toFixed(2) : 0;
   const discountedTotal = +(totalPrice - discountAmount).toFixed(2);
+  const chargedTotal = flashSaleActive ? discountedTotal : totalPrice;
 
   const freeShippingVariant = useFeatureFlagVariantKey("exp-free-shipping-nudge");
   const showFreeShipping = freeShippingVariant === "test";
-  const FREE_SHIPPING_THRESHOLD = 50;
-  const remaining = Math.max(0, FREE_SHIPPING_THRESHOLD - totalPrice);
-  const progressPct = Math.min(100, (totalPrice / FREE_SHIPPING_THRESHOLD) * 100);
+  const remaining = Math.max(0, FREE_SHIPPING_THRESHOLD - chargedTotal);
+  const progressPct = Math.min(100, (chargedTotal / FREE_SHIPPING_THRESHOLD) * 100);
 
   return (
     <Sheet
@@ -180,7 +181,7 @@ export const CartDrawer = () => {
               )}
               <div className="flex justify-between items-baseline">
                 <span className="text-sm text-muted-foreground">Total</span>
-                <span className="font-display text-2xl font-bold">${(flashSaleActive ? discountedTotal : totalPrice).toFixed(2)}</span>
+                <span className="font-display text-2xl font-bold">${chargedTotal.toFixed(2)}</span>
               </div>
               <Button className="w-full rounded-full font-semibold" size="lg" data-attr="proceed-to-checkout" onClick={startCheckout} disabled={isCheckingOut}>
                 {isCheckingOut ? "Processing..." : "Proceed to Checkout"}

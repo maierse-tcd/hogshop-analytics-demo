@@ -14,6 +14,7 @@ import { useFlashSale } from "@/hooks/useFlashSale";
 import { useTour } from "@/hooks/useTour";
 import { TourTooltip } from "@/components/TourTooltip";
 import { productDetailBuyingSteps } from "@/lib/tours";
+import { FREE_SHIPPING_THRESHOLD } from "@/lib/shipping";
 
 // Import all product images
 import hedgehogFood from "@/assets/hedgehog-food.jpg";
@@ -269,7 +270,7 @@ const ProductDetail = () => {
 
             <ul className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
               {[
-                { icon: "🚚", label: "Free shipping over $50" },
+                { icon: "🚚", label: `Free shipping over $${FREE_SHIPPING_THRESHOLD}` },
                 { icon: "↩️", label: "30-day returns" },
                 { icon: "🔒", label: "Secure checkout" },
               ].map((f) => (
