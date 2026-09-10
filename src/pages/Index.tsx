@@ -17,6 +17,7 @@ import { useNavigate } from "react-router-dom";
 import { useTour } from "@/hooks/useTour";
 import { TourTooltip } from "@/components/TourTooltip";
 import { shopGettingStartedSteps } from "@/lib/tours";
+import { FREE_SHIPPING_THRESHOLD } from "@/lib/shipping";
 
 
 interface Product {
@@ -402,7 +403,7 @@ const Index = () => {
                 }
             </div>
             <ul className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-4 text-sm text-muted-foreground">
-              <li className="flex items-center gap-2"><span aria-hidden="true">🚚</span> Free shipping over $50</li>
+              <li className="flex items-center gap-2"><span aria-hidden="true">🚚</span> Free shipping over ${FREE_SHIPPING_THRESHOLD}</li>
               <li className="flex items-center gap-2"><span aria-hidden="true">↩️</span> 30-day returns</li>
               <li className="flex items-center gap-2"><span aria-hidden="true">🦔</span> Vet-approved supplies</li>
             </ul>
