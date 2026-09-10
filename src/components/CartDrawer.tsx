@@ -58,7 +58,7 @@ export const CartDrawer = () => {
           <span className="sr-only">Shopping cart</span>
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-lg flex flex-col">
+      <SheetContent className="w-full sm:max-w-lg flex flex-col z-[2147483647]">
         <SheetHeader>
           <SheetTitle className="font-display text-xl">Shopping Cart ({totalItems})</SheetTitle>
         </SheetHeader>
@@ -165,7 +165,7 @@ export const CartDrawer = () => {
           </div>
 
           {items.length > 0 && (
-            <div className="border-t pt-4 space-y-3 shrink-0">
+            <div className="border-t pt-4 space-y-3 shrink-0 pb-[env(safe-area-inset-bottom)]">
               {flashSaleActive && (
                 <>
                   <div className="flex justify-between text-sm text-muted-foreground">

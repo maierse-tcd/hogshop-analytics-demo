@@ -16,7 +16,7 @@ export const StickyCheckoutBar = () => {
   return (
     <div
       data-attr="sticky-checkout-bar"
-      className="fixed bottom-0 left-0 right-0 z-40 shadow-lg bg-primary text-primary-foreground"
+      className="fixed bottom-0 left-0 right-0 z-[2147483647] shadow-lg bg-primary text-primary-foreground pb-[env(safe-area-inset-bottom)]"
     >
       <div className="container flex items-center justify-between gap-4 py-3">
         <div className="flex items-center gap-4 text-sm sm:text-base font-medium">
