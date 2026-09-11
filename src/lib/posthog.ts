@@ -50,6 +50,10 @@ export const initPostHog = () => {
         api_host: POSTHOG_HOST,
         ui_host: "https://eu.posthog.com",
         person_profiles: 'always',
+        // The storefront ships only English, so pin survey copy to English.
+        // Without this the SDK selects a translation from the browser locale and
+        // renders a mixed-language modal.
+        override_display_language: "en",
         capture_exceptions: true,
         capture_pageview: false,
         capture_pageleave: true,
