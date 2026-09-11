@@ -82,7 +82,6 @@ export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
       attributes: {
         "cart.item_count": totalItems,
         "cart.value_usd": totalPrice,
-        "customer.email": email,
       },
     });
 
@@ -129,7 +128,6 @@ export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
           checkout_stage: "pre_stripe",
           basket_value: totalPrice,
           items_count: totalItems,
-          customer_email: email,
         });
         throw checkoutError;
       }

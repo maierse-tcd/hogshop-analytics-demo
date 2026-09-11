@@ -50,9 +50,30 @@ function randomHex(bytes: number): string {
   return Array.from(arr, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+// Personal or secret data must never reach a span. Drop any attribute whose key
+// matches one of these fragments — a defensive backstop so a caller cannot leak
+// PII into tracing, even by mistake.
+const SENSITIVE_KEY_FRAGMENTS = [
+  "email",
+  "password",
+  "secret",
+  "token",
+  "authorization",
+  "api_key",
+  "apikey",
+  "phone",
+  "ssn",
+  "credit_card",
+];
+
+function isSensitiveKey(key: string): boolean {
+  const lower = key.toLowerCase();
+  return SENSITIVE_KEY_FRAGMENTS.some((fragment) => lower.includes(fragment));
+}
+
 function toAttrs(obj: SpanAttributes): OtlpAttribute[] {
   return Object.entries(obj)
-    .filter(([, v]) => v !== undefined && v !== null)
+    .filter(([key, v]) => v !== undefined && v !== null && !isSensitiveKey(key))
     .map(([key, value]) => {
       if (typeof value === "number") {
         return Number.isInteger(value)
