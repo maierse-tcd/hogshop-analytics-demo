@@ -10,6 +10,10 @@ const corsHeaders = {
 // Contextual canned responses - keyword matching for realistic chat behavior
 const RESPONSES: { keywords: string[]; reply: string }[] = [
   {
+    keywords: ["return", "refund", "exchange", "send back", "money back"],
+    reply: "Our return policy is simple! 🦔 We accept returns and exchanges on physical merchandise within 30 days of delivery, no questions asked. Items should be unused and in their original Hedgebox™ packaging. Refunds go back to your original payment method within 5-7 business days, and subscriptions can be cancelled anytime. Read the full policy on our **Returns & Exchanges** page at /returns. 📦",
+  },
+  {
     keywords: ["food", "feed", "eat", "diet", "nutrition"],
     reply: "Great question! 🦔 Hedgehogs need high-protein food (30%+). Our **Premium Hedgehog Food** ($29.99/month subscription) is specially formulated with natural ingredients. You can also supplement with our **Freeze-Dried Mealworms** ($12.99) — hedgehogs love them! Avoid dairy, grapes, and sugary foods.",
   },

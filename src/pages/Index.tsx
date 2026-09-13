@@ -600,6 +600,7 @@ const Index = () => {
               <ul className="space-y-3 text-sm">
                 <li><a href="/faq" className="text-muted-foreground hover:text-primary transition-colors">FAQ</a></li>
                 <li><a href="/shipping" className="text-muted-foreground hover:text-primary transition-colors">Shipping Info</a></li>
+                <li><a href="/returns" className="text-muted-foreground hover:text-primary transition-colors">Returns & Exchanges</a></li>
                 <li><a href="/terms" className="text-muted-foreground hover:text-primary transition-colors">Terms & Conditions</a></li>
                 <li><a href="/about" className="text-muted-foreground hover:text-primary transition-colors">About Us</a></li>
                 <li><a href="/readme" className="text-muted-foreground hover:text-primary transition-colors">Demo Info</a></li>

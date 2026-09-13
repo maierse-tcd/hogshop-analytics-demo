@@ -24,6 +24,7 @@ import ProductDetail from "./pages/ProductDetail";
 import About from "./pages/About";
 import FAQ from "./pages/FAQ";
 import Shipping from "./pages/Shipping";
+import Returns from "./pages/Returns";
 import Terms from "./pages/Terms";
 import Readme from "./pages/Readme";
 import Live from "./pages/Live";
@@ -66,6 +67,7 @@ const AppContent = () => {
             <Route path="/about" element={<About />} />
             <Route path="/faq" element={<FAQ />} />
             <Route path="/shipping" element={<Shipping />} />
+            <Route path="/returns" element={<Returns />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/readme" element={<Readme />} />
             <Route path="/live" element={<Live />} />
