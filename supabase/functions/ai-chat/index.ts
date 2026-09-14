@@ -104,35 +104,25 @@ serve(async (req) => {
           "chat.user_message_length": lastUserMessage.content.length,
         });
 
-        // Simulated "Gemini call" — wrapped in a child span with gen_ai.* attributes
-        // so it lines up with PostHog's LLM trace conventions.
+        // The reply comes from findResponse, a local keyword matcher — no model
+        // is called. We keep the child span but label it as simulated, so
+        // PostHog does not read it as a real Gemini generation. We also drop the
+        // character-length token estimate, because there is no model usage to
+        // report.
         const reply = await tracer.withSpan(
-          "ai-chat.gemini_call",
+          "ai-chat.simulated_reply",
           async (genSpan) => {
             genSpan.setAttributes({
-              "gen_ai.system": "google",
-              "gen_ai.request.model": "google/gemini-2.5-flash",
+              "gen_ai.system": "simulated",
+              "gen_ai.request.model": "hogshop-keyword-matcher",
               "gen_ai.operation.name": "chat",
+              "gen_ai.simulated": true,
             });
-            const model = "google/gemini-2.5-flash";
+            const model = "hogshop-keyword-matcher";
             const genStartedAt = Date.now();
             const r = findResponse(lastUserMessage.content);
             // Simulate slight delay for realism
             await new Promise((res) => setTimeout(res, 300 + Math.random() * 700));
-            const inputTokens = Math.ceil(
-              messages.map((m: { content: string }) => m.content).join("").length / 4,
-            );
-            const outputTokens = Math.ceil(r.length / 4);
-            genSpan.setAttributes({
-              "gen_ai.usage.input_tokens": inputTokens,
-              "gen_ai.usage.output_tokens": outputTokens,
-            });
-            metrics.count("hogshop.ai.tokens", inputTokens, {
-              attributes: { model, kind: "input" },
-            });
-            metrics.count("hogshop.ai.tokens", outputTokens, {
-              attributes: { model, kind: "output" },
-            });
             metrics.histogram("hogshop.ai.latency", Date.now() - genStartedAt, {
               unit: "ms",
               attributes: { model },

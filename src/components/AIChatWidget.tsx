@@ -97,10 +97,15 @@ export const AIChatWidget = () => {
       <Card className="shadow-2xl border-2">
         <CardHeader className="pb-3 border-b bg-primary text-primary-foreground">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Sparkles className="h-5 w-5" />
-              Hedgehog Care Assistant
-            </CardTitle>
+            <div className="flex flex-col">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Sparkles className="h-5 w-5" />
+                Hedgehog Care Assistant
+              </CardTitle>
+              <span className="text-xs font-normal text-primary-foreground/80">
+                Demo assistant · scripted replies, not a live AI model
+              </span>
+            </div>
             <Button
               variant="ghost"
               size="icon"

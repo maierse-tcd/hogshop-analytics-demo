@@ -5,6 +5,12 @@ import { startSpan, traceparent, SpanKind, SpanStatus } from "@/lib/otel";
 const TRANSIENT_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504, 529]);
 const MAX_RETRIES = 3;
 
+// The assistant reply comes from a local keyword matcher in the ai-chat edge
+// function, not a hosted model. Report a simulated identity so AI observability
+// does not attribute these generations to Google Gemini.
+const SIMULATED_AI_MODEL = "hogshop-keyword-matcher";
+const SIMULATED_AI_PROVIDER = "simulated";
+
 async function fetchWithRetry(
   url: string,
   init: RequestInit,
@@ -186,8 +192,9 @@ export const useAIChat = () => {
         $ai_trace_id: traceIdRef.current,
         $ai_span_id: spanId,
         $ai_span_name: "chat_response",
-        $ai_model: "google/gemini-2.5-flash",
-        $ai_provider: "google",
+        $ai_model: SIMULATED_AI_MODEL,
+        $ai_provider: SIMULATED_AI_PROVIDER,
+        $ai_is_simulated: true,
         $ai_input: conversationHistory,
         $ai_output: assistantContent,
         $ai_output_choices: [assistantContent],
@@ -226,8 +233,9 @@ export const useAIChat = () => {
       trackEvent("$ai_generation", {
         $ai_trace_id: traceIdRef.current,
         $ai_span_id: spanId,
-        $ai_model: "google/gemini-2.5-flash",
-        $ai_provider: "google",
+        $ai_model: SIMULATED_AI_MODEL,
+        $ai_provider: SIMULATED_AI_PROVIDER,
+        $ai_is_simulated: true,
         $ai_is_error: true,
         $ai_error: error instanceof Error ? error.message : "Unknown error",
         $ai_input: [...messages, userMsg].map(msg => ({
