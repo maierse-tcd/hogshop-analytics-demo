@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useCart } from "@/contexts/CartContext";
 import { ShoppingCart, ArrowLeft, Zap } from "lucide-react";
 import { RelatedProductsCarousel } from "@/components/RelatedProductsCarousel";
+import { productSpecs } from "@/lib/productSpecs";
 import { trackEvent, trackMetric, deviceType } from "@/lib/posthog";
 import { useFlashSale } from "@/hooks/useFlashSale";
 import { useTour } from "@/hooks/useTour";
@@ -166,6 +167,7 @@ const ProductDetail = () => {
   }
 
   const imageSrc = imageMap[product.image_url] || product.image_url;
+  const spec = productSpecs[product.image_url];
 
   return (
     <div className="min-h-screen bg-background">
@@ -294,6 +296,42 @@ const ProductDetail = () => {
           </div>
         </div>
 
+
+        {/* Product Specifications */}
+        {spec && (
+          <div data-attr="product-specifications" className="border-t pt-12 mb-16">
+            <h2 className="font-display text-2xl font-bold mb-6">Product Specifications</h2>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="rounded-2xl border bg-card p-5 shadow-soft">
+                <h3 className="font-display font-semibold mb-3">Guaranteed analysis</h3>
+                <dl className="divide-y">
+                  {spec.analysis.map((row) => (
+                    <div key={row.label} className="flex justify-between py-2 text-sm">
+                      <dt className="text-muted-foreground">{row.label}</dt>
+                      <dd className="font-medium">{row.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+              <div className="rounded-2xl border bg-card p-5 shadow-soft space-y-4">
+                <div>
+                  <h3 className="font-display font-semibold mb-1.5">Ingredients</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{spec.ingredients}</p>
+                </div>
+                <div>
+                  <h3 className="font-display font-semibold mb-1.5">Feeding guidance</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{spec.feeding}</p>
+                </div>
+                {spec.sourcing && (
+                  <div>
+                    <h3 className="font-display font-semibold mb-1.5">Sourcing</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{spec.sourcing}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Product Features */}
         <div data-attr="why-choose" className="border-t pt-12">

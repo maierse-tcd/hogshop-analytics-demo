@@ -7,8 +7,20 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, traceparent",
 };
 
-// Contextual canned responses - keyword matching for realistic chat behavior
+// Contextual canned responses - keyword matching for realistic chat behavior.
+// Comparison and ingredient intents come first, so a question like "what's the
+// difference between your food and the pet store one" answers from the product
+// facts instead of matching the generic "food" pitch below. Keep these facts in
+// sync with src/lib/productSpecs.ts.
 const RESPONSES: { keywords: string[]; reply: string }[] = [
+  {
+    keywords: ["difference", "compare", "comparison", "versus", "vs", "better than", "pet store", "petstore", "other brand", "your brand"],
+    reply: "Happy to help you compare! 🦔 Here is exactly what is in our **Premium Hedgehog Food** ($29.99/month), so you can judge it against any other brand:\n\n- **Protein:** 32% minimum, from named animal sources (chicken meal, dried mealworms, dried egg)\n- **Fat:** 14% · **Fiber:** 6% maximum\n- **Ingredients:** chicken meal, dried mealworms, brown rice, chicken fat, dried egg, salmon oil, dried cranberries, plus added vitamins and minerals\n- **No** dairy, grapes, or added sugar\n- **Feeding:** 1 to 2 tablespoons per adult hedgehog each evening\n\nHedgehogs are insectivores and need 30%+ protein, so check that any food you compare meets that bar. Full specs are on the product page.",
+  },
+  {
+    keywords: ["ingredient", "protein", "what's in", "whats in", "made of", "made from", "contains", "guaranteed analysis"],
+    reply: "Here is what goes into our **Premium Hedgehog Food** ($29.99/month): 🦔\n\n- **Ingredients:** chicken meal, dried mealworms, brown rice, chicken fat, dried egg, salmon oil, dried cranberries, and added vitamins and minerals\n- **Protein:** 32% minimum · **Fat:** 14% · **Fiber:** 6% maximum\n- **No** dairy, grapes, or added sugar\n- **Feeding:** 1 to 2 tablespoons per adult hedgehog each evening, with fresh water always available\n\nWant a treat instead? Our **Freeze-Dried Mealworms** ($12.99) are 100% mealworms at about 53% protein — a supplement, not a full meal.",
+  },
   {
     keywords: ["food", "feed", "eat", "diet", "nutrition"],
     reply: "Great question! 🦔 Hedgehogs need high-protein food (30%+). Our **Premium Hedgehog Food** ($29.99/month subscription) is specially formulated with natural ingredients. You can also supplement with our **Freeze-Dried Mealworms** ($12.99) — hedgehogs love them! Avoid dairy, grapes, and sugary foods.",
