@@ -175,7 +175,7 @@ export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
           "checkout.session.url_received": true,
         });
         checkoutSpan.end({ code: SpanStatus.OK });
-        window.open(data.url, "_blank");
+        window.location.href = data.url;
       } else {
         checkoutSpan.setAttribute("checkout.session.url_received", false);
         checkoutSpan.end({ code: SpanStatus.OK });

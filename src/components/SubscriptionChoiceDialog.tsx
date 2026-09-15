@@ -113,8 +113,8 @@ export const SubscriptionChoiceDialog = ({ open, onOpenChange }: Props) => {
             needs_tracking: true,
           })
         );
-        window.open(data.url, "_blank");
         onOpenChange(false);
+        window.location.href = data.url;
       }
     } catch (err) {
       console.error("Subscription checkout error", err);

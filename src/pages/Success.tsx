@@ -27,6 +27,7 @@ const Success = () => {
       
       // Short-circuit if server-side tracking indicated via URL
       if (trackedParam === "1") {
+        if (trackingComplete) return; // purchase already handled on this page
         if (isDev) console.log("SUCCESS: Server-side tracking confirmed via URL");
         
         // Restore user session from checkout_user before clearing
@@ -64,10 +65,19 @@ const Success = () => {
             if (isDev) console.log("SUCCESS: Feature flags reloaded (no user data)");
           }, 2000);
         }
-        
+
+        // Clear the cart and temporary checkout storage. This runs before the
+        // early return below so a server-tracked purchase (tracked=1) still
+        // empties the cart; the persisted change reaches the shopping tab too.
+        clearCart();
+        localStorage.removeItem("checkout_user");
+        localStorage.removeItem("checkout_basket");
+        sessionStorage.removeItem("checkout_user");
+        sessionStorage.removeItem("checkout_basket");
+
         setTrackingComplete(true);
         setTrackingVerified(true);
-        
+
         setTimeout(() => {
           if (!trackingVerified) {
             if (isDev) console.warn("SUCCESS: Server tracking not verified after 3s");
