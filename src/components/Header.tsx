@@ -101,7 +101,7 @@ export const Header = () => {
   ];
 
   return (
-    <header className={`sticky top-0 z-50 w-full border-b backdrop-blur-xl supports-[backdrop-filter]:bg-background/70 ${
+    <header className={`sticky top-0 z-50 w-full border-b backdrop-blur-xl supports-[backdrop-filter]:bg-background/70 pointer-events-none ${
       halloweenMode 
         ? 'bg-gradient-to-r from-[hsl(var(--halloween-dark))] via-[hsl(var(--halloween-purple))]/40 to-[hsl(var(--halloween-dark))]/95 border-[hsl(var(--halloween-orange))]/30' 
         : 'bg-background/85 shadow-xs'
@@ -114,7 +114,7 @@ export const Header = () => {
         </>
       )}
       <div className="container flex h-16 items-center justify-between gap-3 relative">
-        <div className="flex items-center gap-6 lg:gap-10 min-w-0">
+        <div className="flex items-center gap-6 lg:gap-10 min-w-0 pointer-events-auto">
           {/* Mobile nav */}
           <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
             <SheetTrigger asChild>
@@ -150,7 +150,20 @@ export const Header = () => {
             </SheetContent>
           </Sheet>
 
-          <Link to="/" data-attr="brand-logo" className="flex items-center gap-2 shrink-0">
+          <Link
+            to="/"
+            data-attr="brand-logo"
+            className="flex items-center gap-2 shrink-0"
+            onClick={(e) => {
+              // On the homepage the logo target is the current route. Let the
+              // click scroll to the top instead of re-navigating, which would
+              // reset the view and fire a duplicate $pageview.
+              if (location.pathname === "/") {
+                e.preventDefault();
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }
+            }}
+          >
             <span className={`font-display text-xl sm:text-2xl font-bold tracking-tight ${
               halloweenMode 
                 ? 'bg-gradient-to-r from-[hsl(var(--halloween-orange))] to-[hsl(var(--halloween-purple))] bg-clip-text text-transparent drop-shadow-[0_0_10px_hsl(var(--halloween-orange))]' 
@@ -184,7 +197,7 @@ export const Header = () => {
           </nav>
         </div>
         
-        <div className="flex items-center gap-1 sm:gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 pointer-events-auto">
           {isLoggedIn ? (
             <div className="flex items-center gap-2">
               <DropdownMenu
