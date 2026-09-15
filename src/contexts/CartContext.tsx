@@ -1,5 +1,17 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { trackEvent, trackMetric, deviceType } from "@/lib/posthog";
+
+const CART_STORAGE_KEY = "cart_items";
+
+const readStoredCart = (): CartItem[] => {
+  try {
+    const raw = localStorage.getItem(CART_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
 
 interface Product {
   id: string;
@@ -31,7 +43,26 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
-  const [items, setItems] = useState<CartItem[]>([]);
+  const [items, setItems] = useState<CartItem[]>(readStoredCart);
+
+  // Persist the cart so a purchase that completes in another tab can clear it.
+  useEffect(() => {
+    try {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+    } catch {
+      // ignore storage write failures
+    }
+  }, [items]);
+
+  // React to cart changes made in another tab (e.g. the success page clears it).
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== CART_STORAGE_KEY) return;
+      setItems(readStoredCart());
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
 
   const addToCart = (product: Product, source?: string) => {
     const existing = items.find((item) => item.id === product.id);
