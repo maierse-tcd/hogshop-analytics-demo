@@ -14,10 +14,14 @@ export const StickyCheckoutBar = () => {
   if (location.pathname.startsWith("/success")) return null;
 
   return (
-    <div
-      data-attr="sticky-checkout-bar"
-      className="fixed bottom-0 left-0 right-0 z-40 shadow-lg bg-primary text-primary-foreground"
-    >
+    <>
+      {/* Reserve the bar height so the fixed bar never covers the last row of
+          products, whose clicks it would otherwise eat. */}
+      <div aria-hidden className="h-16" />
+      <div
+        data-attr="sticky-checkout-bar"
+        className="fixed bottom-0 left-0 right-0 z-40 shadow-lg bg-primary text-primary-foreground"
+      >
       <div className="container flex items-center justify-between gap-4 py-3">
         <div className="flex items-center gap-4 text-sm sm:text-base font-medium">
           <span>
@@ -33,7 +37,8 @@ export const StickyCheckoutBar = () => {
         >
           {isCheckingOut ? "Processing..." : "Checkout now →"}
         </button>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
