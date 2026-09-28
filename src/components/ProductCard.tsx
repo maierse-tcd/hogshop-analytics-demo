@@ -144,6 +144,8 @@ export const ProductCard = ({
   if (cardDesignV2) {
     return (
       <Card 
+        data-attr="product-card"
+        data-product-id={id}
         className="overflow-hidden group h-full rounded-xl border bg-card shadow-soft transition-[transform,box-shadow] duration-300 cursor-pointer hover:-translate-y-1 hover:shadow-elevated"
         onClick={handleCardClick}
       >
@@ -206,6 +208,8 @@ export const ProductCard = ({
   // Default vertical card
   return (
     <Card 
+      data-attr="product-card"
+      data-product-id={id}
       className={`overflow-hidden group h-full flex flex-col rounded-xl border bg-card cursor-pointer transition-[transform,box-shadow] duration-300 ease-out hover:-translate-y-1 ${
         seasonalMode 
           ? 'shadow-soft' 
