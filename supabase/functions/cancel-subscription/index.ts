@@ -6,7 +6,7 @@ import { createMetrics } from "../_shared/metrics.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, traceparent",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, traceparent, x-app-version",
 };
 
 const POSTHOG_HOST = Deno.env.get("POSTHOG_HOST") || "https://ph.hogflix.dev";
@@ -113,7 +113,13 @@ serve(async (req) => {
                 fetch(`${POSTHOG_HOST}/capture/`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(payload),
+                  body: JSON.stringify({
+                    ...(payload as Record<string, unknown>),
+                    properties: {
+                      ...((payload as { properties?: Record<string, unknown> }).properties || {}),
+                      version_number: req.headers.get("x-app-version") || "unknown",
+                    },
+                  }),
                 });
 
               await post({

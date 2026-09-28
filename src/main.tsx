@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import "./lib/appVersionHeader";
 import { captureCampaignFromUrl, initPostHog } from "./lib/posthog";
 
 // Initialise PostHog before React renders so descendant components (e.g.

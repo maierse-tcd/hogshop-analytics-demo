@@ -7,7 +7,7 @@ import { createTracer, parseTraceparent, SpanKind } from "../_shared/otel.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, traceparent",
+    "authorization, x-client-info, apikey, content-type, traceparent, x-app-version",
 };
 
 Deno.serve(async (req) => {

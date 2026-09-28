@@ -1,3 +1,4 @@
+import { APP_VERSION } from "@/version";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -58,6 +59,7 @@ export default function CancelSubscription() {
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+              "x-app-version": APP_VERSION,
             },
             body: JSON.stringify({ email: user.email }),
           }
@@ -136,7 +138,7 @@ export default function CancelSubscription() {
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cancel-subscription`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "x-app-version": APP_VERSION },
           body: JSON.stringify({ email: user?.email }),
         }
       );

@@ -1,3 +1,4 @@
+import { APP_VERSION } from "@/version";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { trackEvent, posthog, captureException } from "@/lib/posthog";
 import { startSpan, traceparent, SpanKind, SpanStatus } from "@/lib/otel";
@@ -153,6 +154,7 @@ export const useAIChat = () => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
             traceparent: traceparent(chatSpan),
+            "x-app-version": APP_VERSION,
           },
           body: JSON.stringify({ messages: allMessages }),
         }

@@ -6,7 +6,7 @@ import { createMetrics } from "../_shared/metrics.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, traceparent",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, traceparent, x-app-version",
 };
 
 const PRICE_MAP: Record<string, string> = {
@@ -47,6 +47,7 @@ serve(async (req) => {
         });
         log.info("Function invoked");
 
+        const appVersion = req.headers.get("x-app-version") || "unknown";
         const { items, customer_email, customer_name, ph_session_id, company_name, company_key, icp_type, utm_source, utm_medium, utm_campaign } = await req.json();
 
         rootSpan.setAttributes({
@@ -159,6 +160,7 @@ serve(async (req) => {
             if (utm_source) metadata.utm_source = String(utm_source);
             if (utm_medium) metadata.utm_medium = String(utm_medium);
             if (utm_campaign) metadata.utm_campaign = String(utm_campaign);
+            metadata.version_number = appVersion;
 
             const s = await stripe.checkout.sessions.create({
               line_items: sessionLineItems,

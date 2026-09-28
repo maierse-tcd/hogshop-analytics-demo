@@ -1,4 +1,5 @@
 import posthog from "posthog-js";
+import { APP_VERSION, BUILD_TIME } from "@/version";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -77,6 +78,7 @@ export const initPostHog = () => {
           (window as any).posthog = posthog;
         },
       });
+      posthog.register({ version_number: APP_VERSION, build_time: BUILD_TIME });
       
       if (import.meta.env.DEV) {
         console.log("PostHog initialized", { 
