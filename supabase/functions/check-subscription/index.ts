@@ -64,7 +64,7 @@ serve(async (req) => {
     if (customers.data.length === 0) {
       log.info("No customer found");
       await log.flush();
-      return new Response(JSON.stringify({ subscribed: false, subscription_id: null, subscription_end: null }), {
+      return new Response(JSON.stringify({ subscribed: false, subscription_id: null, subscription_start: null, subscription_end: null, icp_type: "B2C" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
@@ -76,6 +76,8 @@ serve(async (req) => {
     const hasActiveSub = subscriptions.data.length > 0;
     let subscriptionId = null;
     let subscriptionEnd = null;
+    let subscriptionStart: string | null = null;
+    let icpType: string | null = null;
 
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
@@ -87,14 +89,20 @@ serve(async (req) => {
         typeof periodEndRaw === "number" && !Number.isNaN(periodEndRaw)
           ? new Date(periodEndRaw * 1000).toISOString()
           : null;
-      log.info("Active subscription found", { subscriptionId });
+      const startDateRaw = (subscription as any).start_date;
+      subscriptionStart =
+        typeof startDateRaw === "number" && !Number.isNaN(startDateRaw)
+          ? new Date(startDateRaw * 1000).toISOString()
+          : null;
+      icpType = (subscription as any).metadata?.icp_type || "B2C";
+      log.info("Active subscription found", { subscriptionId, subscriptionStart, icpType });
     } else {
       log.info("No active subscription found");
     }
 
     await log.flush();
 
-    return new Response(JSON.stringify({ subscribed: hasActiveSub, subscription_id: subscriptionId, subscription_end: subscriptionEnd }), {
+    return new Response(JSON.stringify({ subscribed: hasActiveSub, subscription_id: subscriptionId, subscription_start: subscriptionStart, subscription_end: subscriptionEnd, icp_type: icpType ?? "B2C" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });

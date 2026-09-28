@@ -68,7 +68,7 @@ serve(async (req) => {
           "stripe.subscriptions.list_active",
           async (span) => {
             span.setAttribute("stripe.api", "subscriptions.list");
-            const subs = await stripe.subscriptions.list({ customer: customerId, status: "active", limit: 100 });
+            const subs = await stripe.subscriptions.list({ customer: customerId, status: "active", limit: 100, expand: ["data.items.data.price", "data.items.data.product"] });
             if (subs.data.length === 0) throw new Error("No active subscription found to cancel");
             span.setAttribute("subscription.count", subs.data.length);
             return subs.data;
@@ -101,6 +101,55 @@ serve(async (req) => {
         log.info("Subscriptions cancelled", {
           count: cancelledSubscriptions.length,
           ids: cancelledIds,
+        });
+
+        const primary = subscriptions.data[0];
+        const subMetadata = (primary as any).metadata ?? {};
+        const icpType = subMetadata.icp_type || "B2C";
+        const companyKey = subMetadata.company_key || undefined;
+        const companyName = subMetadata.company_name || undefined;
+
+        let monthlyValue: number | null = null;
+        let currency: string | null = null;
+        const planNames: string[] = [];
+        for (const item of primary.items.data) {
+          const price = (item as any).price ?? {};
+          const unitAmount = typeof price.unit_amount === "number" ? price.unit_amount : 0;
+          const quantity = typeof (item as any).quantity === "number" ? (item as any).quantity : 1;
+          const amount = (unitAmount * quantity) / 100;
+          if (amount > 0) {
+            const interval = price.recurring?.interval;
+            const normalized = interval === "year" ? amount / 12 : interval === "week" ? amount * 4.33 : amount;
+            monthlyValue = (monthlyValue ?? 0) + normalized;
+          }
+          if (!currency && price.currency) currency = price.currency;
+          const product = price.product;
+          if (product && typeof product === "object" && product.name) {
+            planNames.push(product.name);
+          } else {
+            planNames.push(price.nickname || price.id);
+          }
+        }
+        monthlyValue = monthlyValue === null ? null : Math.round(monthlyValue * 100) / 100;
+
+        const startedAt = (primary as any).start_date;
+        const startedIso =
+          typeof startedAt === "number" && !Number.isNaN(startedAt)
+            ? new Date(startedAt * 1000).toISOString()
+            : null;
+        const subscriptionAgeDays =
+          typeof startedAt === "number" && !Number.isNaN(startedAt)
+            ? Math.max(0, Math.floor((Date.now() - startedAt * 1000) / 86400000))
+            : null;
+
+        log.info("Churn context from Stripe subscription", {
+          icp_type: icpType,
+          company_key: companyKey,
+          company_name: companyName,
+          monthly_value: monthlyValue,
+          currency,
+          plan_name: planNames.join(", "),
+          subscription_age_days: subscriptionAgeDays,
         });
 
         // ---------- PostHog updates ----------
@@ -142,8 +191,18 @@ serve(async (req) => {
                   cancelled_subscription_ids: cancelledIds,
                   cancelled_count: cancelledIds.length,
                   cancelled_at: firstIso,
+                  icp_type: icpType,
+                  ...(companyKey ? { company_key: companyKey } : {}),
+                  ...(companyName ? { company_name: companyName } : {}),
+                  monthly_value: monthlyValue,
+                  currency,
+                  subscription_started_at: startedIso,
+                  subscription_age_days: subscriptionAgeDays,
+                  plan_name: planNames.join(", "),
                   hashed_example_property: "posthog",
-                  $groups: { customer_lifecycle: "Churned Subscriber" },
+                  $groups: companyKey
+                    ? { customer_lifecycle: "Churned Subscriber", company: companyKey }
+                    : { customer_lifecycle: "Churned Subscriber" },
                 },
               });
 
@@ -157,6 +216,8 @@ serve(async (req) => {
                     subscription_cancelled: true,
                     subscription_cancelled_at: firstIso,
                     customer_lifecycle: "Churned Subscriber",
+                    icp_type: icpType,
+                    ...(companyKey ? { company_key: companyKey } : {}),
                   },
                 },
               });
