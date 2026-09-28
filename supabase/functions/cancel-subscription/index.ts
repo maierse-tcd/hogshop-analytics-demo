@@ -68,7 +68,7 @@ serve(async (req) => {
           "stripe.subscriptions.list_active",
           async (span) => {
             span.setAttribute("stripe.api", "subscriptions.list");
-            const subs = await stripe.subscriptions.list({ customer: customerId, status: "active", limit: 100 });
+            const subs = await stripe.subscriptions.list({ customer: customerId, status: "active", limit: 100, expand: ["data.items.data.price", "data.items.data.product"] });
             if (subs.data.length === 0) throw new Error("No active subscription found to cancel");
             span.setAttribute("subscription.count", subs.data.length);
             return subs.data;
@@ -142,8 +142,18 @@ serve(async (req) => {
                   cancelled_subscription_ids: cancelledIds,
                   cancelled_count: cancelledIds.length,
                   cancelled_at: firstIso,
+                  icp_type: icpType,
+                  ...(companyKey ? { company_key: companyKey } : {}),
+                  ...(companyName ? { company_name: companyName } : {}),
+                  monthly_value: monthlyValue,
+                  currency,
+                  subscription_started_at: startedIso,
+                  subscription_age_days: subscriptionAgeDays,
+                  plan_name: planNames.join(", "),
                   hashed_example_property: "posthog",
-                  $groups: { customer_lifecycle: "Churned Subscriber" },
+                  $groups: companyKey
+                    ? { customer_lifecycle: "Churned Subscriber", company: companyKey }
+                    : { customer_lifecycle: "Churned Subscriber" },
                 },
               });
 
@@ -157,6 +167,8 @@ serve(async (req) => {
                     subscription_cancelled: true,
                     subscription_cancelled_at: firstIso,
                     customer_lifecycle: "Churned Subscriber",
+                    icp_type: icpType,
+                    ...(companyKey ? { company_key: companyKey } : {}),
                   },
                 },
               });
