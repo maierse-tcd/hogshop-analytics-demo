@@ -1,3 +1,4 @@
+import { AppVersion } from "@/components/AppVersion";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
@@ -617,6 +618,7 @@ const Index = () => {
               </a>
             </p>
           </div>
+          <AppVersion className="mt-6" />
         </div>
       </footer>
 

@@ -1,3 +1,4 @@
+import { APP_VERSION } from "@/version";
 import { useState } from "react";
 import {
   Dialog,
@@ -51,7 +52,7 @@ export const SubscriptionManagementDialog = ({
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const response = await fetch(`${supabaseUrl}/functions/v1/cancel-subscription`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-app-version": APP_VERSION },
         body: JSON.stringify({ email: user.email }),
       });
 

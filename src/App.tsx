@@ -17,6 +17,14 @@ import { StickyCheckoutBar } from "@/components/StickyCheckoutBar";
 import { FlashSaleBanner } from "@/components/FlashSaleBanner";
 import { TracingDemoBadge } from "@/components/TracingDemoBadge";
 import { CustomSurvey } from "@/components/CustomSurvey";
+import { AppVersion } from "@/components/AppVersion";
+import { useLocation } from "react-router-dom";
+
+const GlobalVersion = () => {
+  const { pathname } = useLocation();
+  if (pathname === "/") return null; // home renders it inside its footer
+  return <footer className="border-t py-4"><AppVersion /></footer>;
+};
 
 import Index from "./pages/Index";
 import Success from "./pages/Success";
@@ -76,6 +84,7 @@ const AppContent = () => {
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <GlobalVersion />
           <StickyCheckoutBar />
         </CheckoutProvider>
       </BrowserRouter>

@@ -6,7 +6,7 @@ import { createMetrics } from "../_shared/metrics.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, traceparent",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, traceparent, x-app-version",
 };
 
 const POSTHOG_HOST = Deno.env.get("POSTHOG_HOST") || "https://ph.hogflix.dev";
@@ -123,6 +123,11 @@ serve(async (req) => {
         const companyName = meta.company_name || "";
         const companyKey = meta.company_key || "";
         const icpType = meta.icp_type === "B2B" ? "B2B" : "B2C";
+        const versionNumber =
+          req.headers.get("x-app-version") ||
+          url.searchParams.get("version_number") ||
+          meta.version_number ||
+          "unknown";
 
         // Marketing attribution: request body / query params (direct invocation)
         // win, then Stripe metadata set by create-checkout. Only non-empty
@@ -203,6 +208,8 @@ serve(async (req) => {
 
         const postJson = async (span: Span, event: string, payload: unknown) => {
           span.setAttribute("posthog.event", event);
+          const p = payload as { properties?: Record<string, unknown> };
+          p.properties = { ...(p.properties || {}), version_number: versionNumber };
           const res = await fetch(`${POSTHOG_HOST}/capture/`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },

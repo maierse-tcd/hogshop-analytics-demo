@@ -4,7 +4,7 @@ import { createMetrics } from "../_shared/metrics.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-app-version",
 };
 
 const ENDPOINT_BASE = "https://eu.posthog.com/api/projects/97205/endpoints";

@@ -4,7 +4,7 @@ import { createMetrics } from "../_shared/metrics.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, traceparent",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, traceparent, x-app-version",
 };
 
 // Contextual canned responses - keyword matching for realistic chat behavior
