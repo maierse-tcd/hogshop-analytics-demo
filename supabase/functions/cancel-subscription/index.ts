@@ -103,43 +103,57 @@ serve(async (req) => {
           ids: cancelledIds,
         });
 
-        const primary = subscriptions.data[0];
-        const subMetadata = (primary as any).metadata ?? {};
-        const icpType = subMetadata.icp_type || "B2C";
-        const companyKey = subMetadata.company_key || undefined;
-        const companyName = subMetadata.company_name || undefined;
+        // Take icp_type / company_key / company_name from the first subscription that has them
+        let icpType: string = "B2C";
+        let icpTypeFound = false;
+        let companyKey: string | undefined = undefined;
+        let companyName: string | undefined = undefined;
+        for (const sub of subscriptions.data) {
+          const meta = (sub as any).metadata ?? {};
+          if (!icpTypeFound && meta.icp_type) {
+            icpType = meta.icp_type;
+            icpTypeFound = true;
+          }
+          if (!companyKey && meta.company_key) companyKey = meta.company_key;
+          if (!companyName && meta.company_name) companyName = meta.company_name;
+        }
 
+        // Sum normalised monthly value and plan names across ALL cancelled subscriptions
         let monthlyValue: number | null = null;
         let currency: string | null = null;
-        const planNames: string[] = [];
-        for (const item of primary.items.data) {
-          const price = (item as any).price ?? {};
-          const unitAmount = typeof price.unit_amount === "number" ? price.unit_amount : 0;
-          const quantity = typeof (item as any).quantity === "number" ? (item as any).quantity : 1;
-          const amount = (unitAmount * quantity) / 100;
-          if (amount > 0) {
-            const interval = price.recurring?.interval;
-            const normalized = interval === "year" ? amount / 12 : interval === "week" ? amount * 4.33 : amount;
-            monthlyValue = (monthlyValue ?? 0) + normalized;
+        const planNameSet = new Set<string>();
+        let oldestStartTs: number | null = null;
+        for (const sub of subscriptions.data) {
+          for (const item of sub.items.data) {
+            const price = (item as any).price ?? {};
+            const unitAmount = typeof price.unit_amount === "number" ? price.unit_amount : 0;
+            const quantity = typeof (item as any).quantity === "number" ? (item as any).quantity : 1;
+            const amount = (unitAmount * quantity) / 100;
+            if (amount > 0) {
+              const interval = price.recurring?.interval;
+              const normalized = interval === "year" ? amount / 12 : interval === "week" ? amount * 4.33 : amount;
+              monthlyValue = (monthlyValue ?? 0) + normalized;
+            }
+            if (!currency && price.currency) currency = price.currency;
+            const product = price.product;
+            if (product && typeof product === "object" && product.name) {
+              planNameSet.add(product.name);
+            } else {
+              planNameSet.add(price.nickname || price.id || "unknown");
+            }
           }
-          if (!currency && price.currency) currency = price.currency;
-          const product = price.product;
-          if (product && typeof product === "object" && product.name) {
-            planNames.push(product.name);
-          } else {
-            planNames.push(price.nickname || price.id);
+          const startedAt = (sub as any).start_date;
+          if (typeof startedAt === "number" && !Number.isNaN(startedAt) && (oldestStartTs === null || startedAt < oldestStartTs)) {
+            oldestStartTs = startedAt;
           }
         }
         monthlyValue = monthlyValue === null ? null : Math.round(monthlyValue * 100) / 100;
+        const planNames = Array.from(planNameSet);
 
-        const startedAt = (primary as any).start_date;
-        const startedIso =
-          typeof startedAt === "number" && !Number.isNaN(startedAt)
-            ? new Date(startedAt * 1000).toISOString()
-            : null;
+        const startedIso = oldestStartTs !== null ? new Date(oldestStartTs * 1000).toISOString() : null;
         const subscriptionAgeDays =
-          typeof startedAt === "number" && !Number.isNaN(startedAt)
-            ? Math.max(0, Math.floor((Date.now() - startedAt * 1000) / 86400000))
+          oldestStartTs !== null
+            ? Math.max(0, Math.floor((Date.now() - oldestStartTs * 1000) / 86400000))
             : null;
 
         log.info("Churn context from Stripe subscription", {
