@@ -139,7 +139,7 @@ serve(async (req) => {
             if (product && typeof product === "object" && product.name) {
               planNameSet.add(product.name);
             } else {
-              planNameSet.add(price.nickname || price.id);
+              planNameSet.add(price.nickname || price.id || "unknown");
             }
           }
           const startedAt = (sub as any).start_date;
