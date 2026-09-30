@@ -1,10 +1,28 @@
 import { APP_VERSION } from "@/version";
 import { useState, useCallback, useRef, useEffect } from "react";
+import { useFeatureFlagVariantKey } from "posthog-js/react";
 import { trackEvent, posthog, captureException } from "@/lib/posthog";
 import { startSpan, traceparent, SpanKind, SpanStatus } from "@/lib/otel";
 
 const TRANSIENT_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504, 529]);
 const MAX_RETRIES = 3;
+
+const AI_MODEL = "gemini-2.5-flash";
+const AI_PROVIDER = "google";
+const PROMPT_NAME = "hogshop-assistant-system";
+
+declare global {
+  interface Window {
+    __HOGSHOP_EXTERNAL_LLM_TRACING__?: boolean;
+  }
+}
+
+/** Read at emit time — bots may set the flag after mount. */
+const isExternalTracing = () =>
+  typeof window !== "undefined" && window.__HOGSHOP_EXTERNAL_LLM_TRACING__ === true;
+
+const randId = (prefix: string) =>
+  `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
 async function fetchWithRetry(
   url: string,
@@ -30,8 +48,8 @@ async function fetchWithRetry(
   }
 }
 
-type Message = { 
-  role: "user" | "assistant"; 
+type Message = {
+  role: "user" | "assistant";
   content: string;
   timestamp?: number;
 };
@@ -40,112 +58,93 @@ export const useAIChat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const traceIdRef = useRef<string | null>(null);
+  const conversationIdRef = useRef<string | null>(null);
   const conversationStartRef = useRef<number | null>(null);
-  const tokenCountRef = useRef({ input: 0, output: 0 });
+
+  const promptVariant = useFeatureFlagVariantKey("assistant-prompt-version");
+  const promptVersion = promptVariant === "v2" ? 2 : 1;
+  const promptVersionRef = useRef(promptVersion);
+  promptVersionRef.current = promptVersion;
 
   useEffect(() => {
-    if (isOpen && !traceIdRef.current) {
-      traceIdRef.current = `trace_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    if (isOpen && !conversationIdRef.current) {
+      conversationIdRef.current = randId("conv");
       conversationStartRef.current = Date.now();
-      
-      trackEvent("chat_opened", {
-        trace_id: traceIdRef.current,
-        timestamp: new Date().toISOString(),
-      });
-      
-      posthog.capture('$set', {
-        $set: { ai_interaction: true }
-      });
+
+      if (!isExternalTracing()) {
+        trackEvent("chat_opened", {
+          conversation_id: conversationIdRef.current,
+          timestamp: new Date().toISOString(),
+        });
+        posthog.capture("$set", { $set: { ai_interaction: true } });
+      }
     }
   }, [isOpen]);
-
-  const messagesLengthRef = useRef(0);
-  useEffect(() => {
-    messagesLengthRef.current = messages.length;
-  });
-
-  // Flush $ai_trace when the hook unmounts or page becomes hidden, so the
-  // conversation summary isn't lost when users navigate away without
-  // explicitly closing the widget.
-  useEffect(() => {
-    const flushTrace = () => {
-      if (!traceIdRef.current || !conversationStartRef.current) return;
-      const conversationDuration = Date.now() - conversationStartRef.current;
-      trackEvent("$ai_trace", {
-        $ai_trace_id: traceIdRef.current,
-        $ai_total_input_tokens: tokenCountRef.current.input,
-        $ai_total_output_tokens: tokenCountRef.current.output,
-        $ai_total_tokens: tokenCountRef.current.input + tokenCountRef.current.output,
-        conversation_duration_seconds: Math.floor(conversationDuration / 1000),
-        total_messages: messagesLengthRef.current,
-        total_user_messages: Math.ceil(messagesLengthRef.current / 2),
-        flush_reason: "unmount_or_pagehide",
-      });
-      traceIdRef.current = null;
-      conversationStartRef.current = null;
-      tokenCountRef.current = { input: 0, output: 0 };
-    };
-
-    const onHide = () => {
-      if (document.visibilityState === "hidden") flushTrace();
-    };
-    window.addEventListener("pagehide", flushTrace);
-    document.addEventListener("visibilitychange", onHide);
-
-    return () => {
-      window.removeEventListener("pagehide", flushTrace);
-      document.removeEventListener("visibilitychange", onHide);
-      flushTrace();
-    };
-  }, []);
 
   const sendMessage = useCallback(async (userMessage: string) => {
     if (!userMessage.trim()) return;
 
-    // If the trace was flushed (pagehide/visibility) but the chat is still
-    // open, re-mint a trace_id so subsequent $ai_generation events aren't
-    // orphaned with trace_id=null.
-    if (traceIdRef.current === null) {
-      const newTraceId = `trace_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      traceIdRef.current = newTraceId;
+    // Conversation may have been reset; re-mint so events aren't orphaned.
+    if (conversationIdRef.current === null) {
+      conversationIdRef.current = randId("conv");
       conversationStartRef.current = Date.now();
-      trackEvent("chat_resumed", { trace_id: newTraceId });
+      if (!isExternalTracing()) {
+        trackEvent("chat_resumed", { conversation_id: conversationIdRef.current });
+      }
     }
 
-    const userMsg: Message = { 
-      role: "user", 
-      content: userMessage,
-      timestamp: Date.now(),
+    const conversationId = conversationIdRef.current;
+    const traceId = randId("trace");
+    const spanId = randId("span");
+    const turn = Math.floor(messages.length / 2) + 1;
+    const promptProps = {
+      $ai_prompt_name: PROMPT_NAME,
+      $ai_prompt_version: promptVersionRef.current,
     };
-    
+
+    const userMsg: Message = { role: "user", content: userMessage, timestamp: Date.now() };
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
 
-    const spanId = `span_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-    trackEvent("chat_message_sent", {
-      trace_id: traceIdRef.current,
-      span_id: spanId,
-      message_length: userMessage.length,
-      message_number: Math.floor(messages.length / 2) + 1,
-    });
+    if (!isExternalTracing()) {
+      trackEvent("chat_message_sent", {
+        conversation_id: conversationId,
+        trace_id: traceId,
+        span_id: spanId,
+        message_length: userMessage.length,
+        message_number: turn,
+      });
+    }
 
     const generationStartTime = Date.now();
 
-    // Start a browser-side root span for this chat round-trip. The traceparent
-    // header propagates to the ai-chat edge function so PostHog stitches
-    // browser → edge → "Gemini" spans into one distributed trace.
     const chatSpan = startSpan("chat.send_message", {
       kind: SpanKind.CLIENT,
       attributes: {
         "chat.message_length": userMessage.length,
-        "chat.message_number": Math.floor(messages.length / 2) + 1,
+        "chat.message_number": turn,
       },
     });
 
+    const allMessages = [...messages, userMsg];
+    const aiInput = allMessages.map(m => ({ role: m.role, content: m.content }));
+
+    const emitTurnTrace = (reply: string, isError: boolean) => {
+      if (isExternalTracing()) return;
+      trackEvent("$ai_trace", {
+        $ai_trace_id: traceId,
+        $ai_session_id: conversationId,
+        $ai_span_name: "hogshop-assistant",
+        $ai_input_state: { message: userMessage },
+        $ai_output_state: { reply },
+        $ai_latency: (Date.now() - generationStartTime) / 1000,
+        $ai_is_error: isError,
+        ...promptProps,
+        conversation_turn: turn,
+      });
+    };
+
     try {
-      const allMessages = [...messages, userMsg];
       const response = await fetchWithRetry(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`,
         {
@@ -167,40 +166,36 @@ export const useAIChat = () => {
 
       const data = await response.json();
       const assistantContent = data.reply || "Sorry, I didn't understand that.";
-
       const latencyMs = Date.now() - generationStartTime;
 
-      // Simulate realistic token counts
       const inputTokens = Math.ceil(allMessages.map(m => m.content).join('').length / 4);
       const outputTokens = Math.ceil(assistantContent.length / 4);
-      tokenCountRef.current.input += inputTokens;
-      tokenCountRef.current.output += outputTokens;
 
       setMessages(prev => [...prev, { role: "assistant", content: assistantContent, timestamp: Date.now() }]);
 
-      // Track AI generation with PostHog LLM analytics
-      const conversationHistory = allMessages.map(msg => ({
-        role: msg.role,
-        content: msg.content,
-      }));
-
-      trackEvent("$ai_generation", {
-        $ai_trace_id: traceIdRef.current,
-        $ai_span_id: spanId,
-        $ai_span_name: "chat_response",
-        $ai_model: "google/gemini-2.5-flash",
-        $ai_provider: "google",
-        $ai_input: conversationHistory,
-        $ai_output: assistantContent,
-        $ai_output_choices: [assistantContent],
-        $ai_input_tokens: inputTokens,
-        $ai_output_tokens: outputTokens,
-        $ai_total_tokens: inputTokens + outputTokens,
-        $ai_latency: latencyMs / 1000,
-        $ai_stream: false,
-        conversation_turn: Math.floor(messages.length / 2) + 1,
-        response_length: assistantContent.length,
-      });
+      if (!isExternalTracing()) {
+        trackEvent("$ai_generation", {
+          $ai_trace_id: traceId,
+          $ai_session_id: conversationId,
+          $ai_span_id: spanId,
+          $ai_parent_id: traceId,
+          $ai_span_name: "chat_response",
+          $ai_model: AI_MODEL,
+          $ai_provider: AI_PROVIDER,
+          ...promptProps,
+          $ai_input: aiInput,
+          $ai_output_choices: [{ role: "assistant", content: assistantContent }],
+          $ai_input_tokens: inputTokens,
+          $ai_output_tokens: outputTokens,
+          $ai_total_tokens: inputTokens + outputTokens,
+          $ai_latency: latencyMs / 1000,
+          $ai_stream: false,
+          $ai_stop_reason: "stop",
+          conversation_turn: turn,
+          response_length: assistantContent.length,
+        });
+      }
+      emitTurnTrace(assistantContent, false);
 
       chatSpan.setAttributes({
         "chat.input_tokens": inputTokens,
@@ -225,21 +220,28 @@ export const useAIChat = () => {
               ? "The assistant is overloaded right now. Please try again in a few seconds."
               : "Sorry, I encountered an error. Please try again.";
 
-      trackEvent("$ai_generation", {
-        $ai_trace_id: traceIdRef.current,
-        $ai_span_id: spanId,
-        $ai_model: "google/gemini-2.5-flash",
-        $ai_provider: "google",
-        $ai_is_error: true,
-        $ai_error: error instanceof Error ? error.message : "Unknown error",
-        $ai_input: [...messages, userMsg].map(msg => ({
-          role: msg.role,
-          content: msg.content,
-        })),
-      });
+      if (!isExternalTracing()) {
+        trackEvent("$ai_generation", {
+          $ai_trace_id: traceId,
+          $ai_session_id: conversationId,
+          $ai_span_id: spanId,
+          $ai_parent_id: traceId,
+          $ai_span_name: "chat_response",
+          $ai_model: AI_MODEL,
+          $ai_provider: AI_PROVIDER,
+          ...promptProps,
+          $ai_is_error: true,
+          $ai_error: error instanceof Error ? error.message : "Unknown error",
+          ...(status !== null ? { $ai_http_status: status } : {}),
+          $ai_input: aiInput,
+          $ai_latency: (Date.now() - generationStartTime) / 1000,
+          conversation_turn: turn,
+        });
+      }
+      emitTurnTrace(fallback, true);
 
       trackEvent("ai_error", {
-        trace_id: traceIdRef.current,
+        trace_id: traceId,
         span_id: spanId,
         error_message: error instanceof Error ? error.message : "Unknown error",
         error_type: "chat_generation_failed",
@@ -249,13 +251,13 @@ export const useAIChat = () => {
         error instanceof Error ? error : new Error(String(error)),
         "chat_request_failed",
         {
-          trace_id: traceIdRef.current,
+          trace_id: traceId,
           span_id: spanId,
           http_status:
             error instanceof Error && /HTTP (\d+)/.exec(error.message)?.[1]
               ? Number(/HTTP (\d+)/.exec(error.message)![1])
               : undefined,
-          message_number: Math.floor(messages.length / 2) + 1,
+          message_number: turn,
         }
       );
 
@@ -277,30 +279,21 @@ export const useAIChat = () => {
   }, [messages]);
 
   const closeChat = useCallback(() => {
-    if (isOpen && traceIdRef.current && conversationStartRef.current) {
+    if (isOpen && conversationIdRef.current && conversationStartRef.current) {
       const conversationDuration = Date.now() - conversationStartRef.current;
-      
-      trackEvent("$ai_trace", {
-        $ai_trace_id: traceIdRef.current,
-        $ai_total_input_tokens: tokenCountRef.current.input,
-        $ai_total_output_tokens: tokenCountRef.current.output,
-        $ai_total_tokens: tokenCountRef.current.input + tokenCountRef.current.output,
-        conversation_duration_seconds: Math.floor(conversationDuration / 1000),
-        total_messages: messages.length,
-        total_user_messages: Math.ceil(messages.length / 2),
-      });
 
-      trackEvent("chat_closed", {
-        trace_id: traceIdRef.current,
-        duration_seconds: Math.floor(conversationDuration / 1000),
-        messages_count: messages.length,
-      });
+      if (!isExternalTracing()) {
+        trackEvent("chat_closed", {
+          conversation_id: conversationIdRef.current,
+          duration_seconds: Math.floor(conversationDuration / 1000),
+          messages_count: messages.length,
+        });
+      }
 
-      traceIdRef.current = null;
+      conversationIdRef.current = null;
       conversationStartRef.current = null;
-      tokenCountRef.current = { input: 0, output: 0 };
     }
-    
+
     setIsOpen(false);
   }, [isOpen, messages.length]);
 
