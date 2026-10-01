@@ -8,6 +8,14 @@ export const RouteTracker = () => {
   const prevPathRef = useRef<string | null>(null);
 
   useEffect(() => {
+    // React Router makes a new location object for every navigation, also when
+    // the URL does not change. Skip those so we do not emit a duplicate
+    // $pageview that makes posthog-js re-render the hosted popover survey.
+    const currentPath = location.pathname + location.search;
+    if (prevPathRef.current === currentPath) {
+      return;
+    }
+
     // Scroll to top on route change
     window.scrollTo({ top: 0, behavior: "smooth" });
 
@@ -39,7 +47,7 @@ export const RouteTracker = () => {
       // first paint after the route change.
       requestAnimationFrame(() => navSpan.end({ code: SpanStatus.OK }));
 
-      prevPathRef.current = location.pathname;
+      prevPathRef.current = currentPath;
 
       if (import.meta.env.DEV) {
         console.log("PostHog: Route tracked", location.pathname);
