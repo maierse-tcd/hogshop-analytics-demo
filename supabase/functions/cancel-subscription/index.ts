@@ -104,18 +104,28 @@ serve(async (req) => {
         });
 
         // Take icp_type / company_key / company_name from the first subscription that has them
+        // (`subscriptions` is already the array of subscriptions). Defensive: nothing after the
+        // Stripe cancel may ever fail the request.
         let icpType: string = "B2C";
         let icpTypeFound = false;
         let companyKey: string | undefined = undefined;
         let companyName: string | undefined = undefined;
-        for (const sub of subscriptions.data) {
-          const meta = (sub as any).metadata ?? {};
-          if (!icpTypeFound && meta.icp_type) {
-            icpType = meta.icp_type;
-            icpTypeFound = true;
+        try {
+          for (const sub of subscriptions) {
+            const meta = (sub as any).metadata ?? {};
+            if (!icpTypeFound && meta.icp_type) {
+              icpType = meta.icp_type;
+              icpTypeFound = true;
+            }
+            if (!companyKey && meta.company_key) companyKey = meta.company_key;
+            if (!companyName && meta.company_name) companyName = meta.company_name;
           }
-          if (!companyKey && meta.company_key) companyKey = meta.company_key;
-          if (!companyName && meta.company_name) companyName = meta.company_name;
+        } catch (metaErr) {
+          log.warn("Subscription metadata extraction failed (non-critical)", { error: String(metaErr) });
+          icpType = "B2C";
+          icpTypeFound = false;
+          companyKey = undefined;
+          companyName = undefined;
         }
 
         // Churn context (monthly_value, plan_name, started_at, age) — defensive:
@@ -130,7 +140,7 @@ serve(async (req) => {
           const productIds = new Set<string>();
           const priceFallbackName = new Map<string, string>(); // productId -> nickname/price id fallback
           let oldestStartTs: number | null = null;
-          for (const sub of subscriptions.data) {
+          for (const sub of subscriptions) {
             for (const item of sub.items.data) {
               const price = (item as any).price ?? {};
               const unitAmount = typeof price.unit_amount === "number" ? price.unit_amount : 0;
