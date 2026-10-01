@@ -68,7 +68,7 @@ serve(async (req) => {
           "stripe.subscriptions.list_active",
           async (span) => {
             span.setAttribute("stripe.api", "subscriptions.list");
-            const subs = await stripe.subscriptions.list({ customer: customerId, status: "active", limit: 100, expand: ["data.items.data.price", "data.items.data.product"] });
+            const subs = await stripe.subscriptions.list({ customer: customerId, status: "active", limit: 100 });
             if (subs.data.length === 0) throw new Error("No active subscription found to cancel");
             span.setAttribute("subscription.count", subs.data.length);
             return subs.data;
