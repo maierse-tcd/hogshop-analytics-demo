@@ -68,7 +68,7 @@ serve(async (req) => {
           "stripe.subscriptions.list_active",
           async (span) => {
             span.setAttribute("stripe.api", "subscriptions.list");
-            const subs = await stripe.subscriptions.list({ customer: customerId, status: "active", limit: 100, expand: ["data.items.data.price", "data.items.data.product"] });
+            const subs = await stripe.subscriptions.list({ customer: customerId, status: "active", limit: 100 });
             if (subs.data.length === 0) throw new Error("No active subscription found to cancel");
             span.setAttribute("subscription.count", subs.data.length);
             return subs.data;
@@ -118,43 +118,71 @@ serve(async (req) => {
           if (!companyName && meta.company_name) companyName = meta.company_name;
         }
 
-        // Sum normalised monthly value and plan names across ALL cancelled subscriptions
+        // Churn context (monthly_value, plan_name, started_at, age) — defensive:
+        // any failure here must NEVER fail the cancellation; properties just become null.
         let monthlyValue: number | null = null;
         let currency: string | null = null;
-        const planNameSet = new Set<string>();
-        let oldestStartTs: number | null = null;
-        for (const sub of subscriptions.data) {
-          for (const item of sub.items.data) {
-            const price = (item as any).price ?? {};
-            const unitAmount = typeof price.unit_amount === "number" ? price.unit_amount : 0;
-            const quantity = typeof (item as any).quantity === "number" ? (item as any).quantity : 1;
-            const amount = (unitAmount * quantity) / 100;
-            if (amount > 0) {
-              const interval = price.recurring?.interval;
-              const normalized = interval === "year" ? amount / 12 : interval === "week" ? amount * 4.33 : amount;
-              monthlyValue = (monthlyValue ?? 0) + normalized;
+        let planNames: string[] = [];
+        let startedIso: string | null = null;
+        let subscriptionAgeDays: number | null = null;
+        try {
+          // Collect unique product ids across all cancelled subscriptions
+          const productIds = new Set<string>();
+          const priceFallbackName = new Map<string, string>(); // productId -> nickname/price id fallback
+          let oldestStartTs: number | null = null;
+          for (const sub of subscriptions.data) {
+            for (const item of sub.items.data) {
+              const price = (item as any).price ?? {};
+              const unitAmount = typeof price.unit_amount === "number" ? price.unit_amount : 0;
+              const quantity = typeof (item as any).quantity === "number" ? (item as any).quantity : 1;
+              const amount = (unitAmount * quantity) / 100;
+              if (amount > 0) {
+                const interval = price.recurring?.interval;
+                const normalized = interval === "year" ? amount / 12 : interval === "week" ? amount * 4.33 : amount;
+                monthlyValue = (monthlyValue ?? 0) + normalized;
+              }
+              if (!currency && price.currency) currency = price.currency;
+              const productId = typeof price.product === "string" ? price.product : price.product?.id;
+              if (productId) {
+                productIds.add(productId);
+                if (!priceFallbackName.has(productId)) {
+                  priceFallbackName.set(productId, price.nickname || price.id || "unknown");
+                }
+              }
             }
-            if (!currency && price.currency) currency = price.currency;
-            const product = price.product;
-            if (product && typeof product === "object" && product.name) {
-              planNameSet.add(product.name);
-            } else {
-              planNameSet.add(price.nickname || price.id || "unknown");
+            const startedAt = (sub as any).start_date;
+            if (typeof startedAt === "number" && !Number.isNaN(startedAt) && (oldestStartTs === null || startedAt < oldestStartTs)) {
+              oldestStartTs = startedAt;
             }
           }
-          const startedAt = (sub as any).start_date;
-          if (typeof startedAt === "number" && !Number.isNaN(startedAt) && (oldestStartTs === null || startedAt < oldestStartTs)) {
-            oldestStartTs = startedAt;
-          }
-        }
-        monthlyValue = monthlyValue === null ? null : Math.round(monthlyValue * 100) / 100;
-        const planNames = Array.from(planNameSet);
+          monthlyValue = monthlyValue === null ? null : Math.round(monthlyValue * 100) / 100;
 
-        const startedIso = oldestStartTs !== null ? new Date(oldestStartTs * 1000).toISOString() : null;
-        const subscriptionAgeDays =
-          oldestStartTs !== null
-            ? Math.max(0, Math.floor((Date.now() - oldestStartTs * 1000) / 86400000))
-            : null;
+          // Resolve product names AFTER cancellation; failures fall back to nickname/price id
+          const planNameSet = new Set<string>();
+          for (const productId of productIds) {
+            try {
+              const product = await stripe.products.retrieve(productId);
+              planNameSet.add(product.name || priceFallbackName.get(productId) || "unknown");
+            } catch (prodErr) {
+              log.warn("Product name lookup failed, using fallback", { productId, error: String(prodErr) });
+              planNameSet.add(priceFallbackName.get(productId) || "unknown");
+            }
+          }
+          planNames = Array.from(planNameSet);
+
+          startedIso = oldestStartTs !== null ? new Date(oldestStartTs * 1000).toISOString() : null;
+          subscriptionAgeDays =
+            oldestStartTs !== null
+              ? Math.max(0, Math.floor((Date.now() - oldestStartTs * 1000) / 86400000))
+              : null;
+        } catch (churnErr) {
+          log.warn("Churn context computation failed (non-critical)", { error: String(churnErr) });
+          monthlyValue = null;
+          currency = null;
+          planNames = [];
+          startedIso = null;
+          subscriptionAgeDays = null;
+        }
 
         log.info("Churn context from Stripe subscription", {
           icp_type: icpType,
