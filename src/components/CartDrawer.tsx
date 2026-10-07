@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ShoppingCart, Trash2, Plus, Minus } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { Badge } from "@/components/ui/badge";
-import { trackEvent } from "@/lib/posthog";
+import { trackEvent, setCartDrawerOpen } from "@/lib/posthog";
 import { useCheckout } from "@/contexts/CheckoutContext";
 import { useFeatureFlagVariantKey } from "posthog-js/react";
 import { useFlashSale } from "@/hooks/useFlashSale";
@@ -24,6 +24,7 @@ export const CartDrawer = () => {
   return (
     <Sheet
       onOpenChange={(open) => {
+        setCartDrawerOpen(open);
         if (open) {
           trackEvent("cart_viewed", {
             items_count: totalItems,
