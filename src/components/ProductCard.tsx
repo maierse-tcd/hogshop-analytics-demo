@@ -129,12 +129,8 @@ export const ProductCard = ({
   };
 
   const handleCardClick = () => {
-    navigate(`/product/${id}`);
-    trackEvent("product_viewed", {
-      product_id: id,
-      product_name: title,
-      category,
-    });
+    // product_viewed fires once on the detail page; pass where the click came from.
+    navigate(`/product/${id}`, { state: { entry_source: "product_card" } });
   };
 
   const imageSrc = imageMap[image_url] || image_url;
