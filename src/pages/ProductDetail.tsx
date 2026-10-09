@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -59,6 +59,9 @@ const imageMap: Record<string, string> = {
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const entrySource = (location.state as { entry_source?: string } | null)?.entry_source || "direct";
+  const viewedIdRef = useRef<string | null>(null);
   const { addToCart } = useCart();
   const { flashSaleActive, discountPct, getDiscountedPrice } = useFlashSale();
   const enterTimeRef = useRef(Date.now());
@@ -93,26 +96,28 @@ const ProductDetail = () => {
         .single();
       
       if (error) throw error;
-      
-      // Track product view
-      if (data) {
-        trackEvent("product_viewed", {
-          product_id: data.id,
-          product_name: data.title,
-          price: data.price,
-          category: data.category,
-          is_subscription: data.is_subscription,
-          source: "product_detail_page"
-        });
-
-        trackMetric("count", "hogshop.product.viewed", 1, {
-          attributes: { device_type: deviceType() },
-        });
-      }
-      
       return data;
     },
   });
+
+  // Track product view once per loaded product id per mount (not on refetch).
+  useEffect(() => {
+    if (!product || viewedIdRef.current === product.id) return;
+    viewedIdRef.current = product.id;
+    trackEvent("product_viewed", {
+      product_id: product.id,
+      product_name: product.title,
+      price: product.price,
+      category: product.category,
+      is_subscription: product.is_subscription,
+      source: "product_detail_page",
+      entry_source: entrySource,
+    });
+    trackMetric("count", "hogshop.product.viewed", 1, {
+      attributes: { device_type: deviceType() },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product]);
 
   const handleAddToCart = () => {
     if (!product) return;
