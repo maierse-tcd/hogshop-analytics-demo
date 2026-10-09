@@ -99,7 +99,7 @@ serve(async (req) => {
   const metrics = createMetrics("hogshop-edge");
   const requestStartedAt = Date.now();
   let requestStatus: "ok" | "error" = "ok";
-  let log: ReturnType<typeof createLogger> | null = null;
+  let logRef: ReturnType<typeof createLogger> | null = null;
   const appVersion = req.headers.get("x-app-version") || "unknown";
   let customerEmailForErrors: string | undefined;
 
@@ -113,10 +113,11 @@ serve(async (req) => {
           "trace.distributed": incoming !== null,
         });
 
-        log = createLogger("create-checkout", {
+        const log = createLogger("create-checkout", {
           traceId: rootSpan.traceId,
           spanId: rootSpan.spanId,
         });
+        logRef = log;
         log.info("Function invoked");
 
         const { items, customer_email, customer_name, ph_session_id, company_name, company_key, icp_type, utm_source, utm_medium, utm_campaign, ph_distinct_id, discount_percent } = await req.json();
@@ -329,7 +330,7 @@ serve(async (req) => {
     requestStatus = "error";
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error("[create-checkout] error:", errorMessage);
-    try { log?.error("Request failed", { error: errorMessage }); await log?.flush(); } catch (_) { /* ignore */ }
+    try { logRef?.error("Request failed", { error: errorMessage }); await logRef?.flush(); } catch (_) { /* ignore */ }
     await reportException(error, "create-checkout", appVersion, customerEmailForErrors);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

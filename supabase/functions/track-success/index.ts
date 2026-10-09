@@ -69,7 +69,7 @@ serve(async (req) => {
   const metrics = createMetrics("hogshop-edge");
   const requestStartedAt = Date.now();
   let requestStatus: "ok" | "error" = "ok";
-  let log: ReturnType<typeof createLogger> | null = null;
+  let logRef: ReturnType<typeof createLogger> | null = null;
   // Set once the Stripe session is retrieved, so failures after that point
   // still send the buyer to the success page (with tracked=0).
   let errorRedirect: URL | null = null;
@@ -87,10 +87,11 @@ serve(async (req) => {
           "trace.distributed": incoming !== null,
         });
 
-        log = createLogger("track-success", {
+        const log = createLogger("track-success", {
           traceId: rootSpan.traceId,
           spanId: rootSpan.spanId,
         });
+        logRef = log;
         log.info("Function invoked", { method: req.method, url: req.url });
 
         const url = new URL(req.url);
@@ -323,11 +324,11 @@ serve(async (req) => {
               body: JSON.stringify(payload),
             });
           } catch (err) {
-            log!.warn("PostHog capture failed", { event, error: String(err) });
+            log.warn("PostHog capture failed", { event, error: String(err) });
             span.setAttribute("http.response.ok", false);
             return new Response(null, { status: 599 });
           }
-          if (!res.ok) log!.warn("PostHog capture non-OK", { event, status: res.status });
+          if (!res.ok) log.warn("PostHog capture non-OK", { event, status: res.status });
           span.setAttributes({
             "http.status_code": res.status,
             "http.response.ok": res.ok,
@@ -528,7 +529,7 @@ serve(async (req) => {
     requestStatus = "error";
     const message = error instanceof Error ? error.message : String(error);
     console.error("[track-success] error:", message);
-    try { log?.error("Request failed", { error: message }); await log?.flush(); } catch (_) { /* ignore */ }
+    try { logRef?.error("Request failed", { error: message }); await logRef?.flush(); } catch (_) { /* ignore */ }
     await reportException(error, "track-success", errorVersion, errorDistinctId);
     if (errorRedirect) {
       const redirectUrl = new URL(errorRedirect.toString());
