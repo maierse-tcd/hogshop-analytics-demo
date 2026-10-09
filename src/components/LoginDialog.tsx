@@ -16,7 +16,7 @@ interface LoginDialogProps {
 }
 
 export const LoginDialog = ({ open, onOpenChange, onLoginSuccess, discountPercent }: LoginDialogProps) => {
-  const [email, setEmail] = useState("");
+  const [emailInput, setEmail] = useState("");
   const [name, setName] = useState("");
   const [isCompanyPurchase, setIsCompanyPurchase] = useState(false);
   const [companyName, setCompanyName] = useState("");
@@ -28,6 +28,8 @@ export const LoginDialog = ({ open, onOpenChange, onLoginSuccess, discountPercen
   };
 
   const handleLogin = () => {
+    // Trim (not lowercase) so the PostHog distinct id matches RegistrationDialog.
+    const email = emailInput.trim();
     if (email && name) {
       // Preserve any previously stored companyName for this device so we can
       // re-apply the company group after saveUser. Do NOT write icp_type on
@@ -55,6 +57,7 @@ export const LoginDialog = ({ open, onOpenChange, onLoginSuccess, discountPercen
   };
 
   const handleSignup = () => {
+    const email = emailInput.trim();
     if (!email || !name) return;
     if (isCompanyPurchase && companyName.trim().length < 2) return;
 
