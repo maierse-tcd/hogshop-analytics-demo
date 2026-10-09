@@ -147,6 +147,31 @@ export const CustomSurvey = () => {
 
   const seenKey = survey ? `hasInteractedWithSurvey_${survey.id}` : "";
 
+  /* ---- PostHog survey bookkeeping (mirrors posthog-js renderer) */
+  const submissionIdRef = useRef<string | null>(null);
+  const iterationProps = useCallback((): Record<string, unknown> => {
+    const s = survey as (ApiSurvey & { current_iteration?: number | null; current_iteration_start_date?: string | null }) | null;
+    const out: Record<string, unknown> = {};
+    if (s?.current_iteration) out.$survey_iteration = s.current_iteration;
+    if (s?.current_iteration_start_date) out.$survey_iteration_start_date = s.current_iteration_start_date;
+    return out;
+  }, [survey]);
+  const interactionKey = useCallback((action: "responded" | "dismissed") => {
+    const s = survey as (ApiSurvey & { current_iteration?: number | null }) | null;
+    if (!s) return "";
+    const iter = s.current_iteration && s.current_iteration > 0 ? `/${s.current_iteration}` : "";
+    return `$survey_${action}/${s.id}${iter}`;
+  }, [survey]);
+  const getSubmissionId = useCallback(() => {
+    if (!submissionIdRef.current) {
+      submissionIdRef.current =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+    return submissionIdRef.current;
+  }, []);
+
   /* ---- fetch survey + rules */
   useEffect(() => {
     let cancelled = false;
@@ -164,7 +189,7 @@ export const CustomSurvey = () => {
             } catch {
               /* silent */
             }
-          }, true);
+          }, false); // use the SDK's cached survey list; only matching is re-evaluated
         } catch {
           /* silent */
         }
@@ -200,11 +225,15 @@ export const CustomSurvey = () => {
     if (!visible || !survey || shownRef.current) return;
     shownRef.current = true;
     try {
-      posthog.capture("survey shown", { $survey_id: survey.id });
+      // Once per survey per browser session; the UI itself still shows.
+      const shownKey = `survey_shown_${survey.id}`;
+      if (window.sessionStorage.getItem(shownKey) === "1") return;
+      window.sessionStorage.setItem(shownKey, "1");
+      posthog.capture("survey shown", { $survey_id: survey.id, ...iterationProps() });
     } catch {
       /* silent */
     }
-  }, [visible, survey]);
+  }, [visible, survey, iterationProps]);
 
   /* ---- prune answers that dropped out of the path */
   useEffect(() => {
@@ -239,14 +268,19 @@ export const CustomSurvey = () => {
   const handleDismiss = useCallback(() => {
     if (survey) {
       try {
-        posthog.capture("survey dismissed", { $survey_id: survey.id });
+        posthog.capture("survey dismissed", {
+          $survey_id: survey.id,
+          ...iterationProps(),
+          $survey_submission_id: getSubmissionId(),
+          $set: { [interactionKey("dismissed")]: true },
+        });
       } catch {
         /* silent */
       }
     }
     markSeen();
     setVisible(false);
-  }, [survey, markSeen]);
+  }, [survey, markSeen, iterationProps, interactionKey, getSubmissionId]);
 
   const handleSubmit = useCallback(() => {
     if (!survey) return;
@@ -254,13 +288,16 @@ export const CustomSurvey = () => {
       const props: Record<string, unknown> = {
         $survey_id: survey.id,
         $survey_questions: questions.map((q) => ({ id: q.id, question: q.question })),
+        ...iterationProps(),
+        $survey_submission_id: getSubmissionId(),
+        $set: { [interactionKey("responded")]: true },
       };
       visibleIndexes.forEach((qi) => {
         const q = questions[qi];
         const value = answers[qi];
         if (value === undefined || value === "" || (Array.isArray(value) && value.length === 0)) return;
-        props[`$survey_response_${q.id}`] =
-          typeof value === "number" ? String(value) : value;
+        // Ratings stay numeric, as in PostHog's own renderer.
+        props[`$survey_response_${q.id}`] = value;
       });
       posthog.capture("survey sent", props);
     } catch {
@@ -269,7 +306,7 @@ export const CustomSurvey = () => {
     markSeen();
     setSubmitted(true);
     window.setTimeout(() => setVisible(false), 2500);
-  }, [survey, questions, visibleIndexes, answers, markSeen]);
+  }, [survey, questions, visibleIndexes, answers, markSeen, iterationProps, interactionKey, getSubmissionId]);
 
   /* ---- debug handle */
   useEffect(() => {
