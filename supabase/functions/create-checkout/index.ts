@@ -177,7 +177,7 @@ serve(async (req) => {
             price_data: {
               currency: "usd",
               unit_amount: Math.round(item.price * 100),
-              product_data: { name: item.title, description: item.description || "" },
+              product_data: { name: item.title, ...(item.description ? { description: item.description } : {}) },
               recurring: item.is_subscription ? { interval: item.subscription_interval || "month" } : undefined,
             },
             quantity: item.quantity || 1,

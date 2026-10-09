@@ -31,6 +31,11 @@ export const applyPostHogIdentityHash = async (distinctId: string) => {
   }
 };
 
+/** Super properties every event must carry. Call again after posthog.reset(). */
+export const registerSuperProperties = () => {
+  posthog.register({ version_number: APP_VERSION, build_time: BUILD_TIME });
+};
+
 export const initPostHog = () => {
   if (typeof window !== "undefined") {
     const POSTHOG_KEY = 
@@ -78,7 +83,7 @@ export const initPostHog = () => {
           (window as any).posthog = posthog;
         },
       });
-      posthog.register({ version_number: APP_VERSION, build_time: BUILD_TIME });
+      registerSuperProperties();
       
       if (import.meta.env.DEV) {
         console.log("PostHog initialized", { 
@@ -293,26 +298,19 @@ export const ensureIdentified = async (email: string, properties?: Record<string
  * Captures an exception to PostHog with rich metadata
  */
 export const captureException = (
-  error: Error, 
+  error: unknown,
   context?: string,
   additionalProperties?: Record<string, any>
 ) => {
   if (typeof window !== "undefined") {
     try {
-      posthog.capture('$exception', {
-        $exception_list: [
-          {
-            type: error.name,
-            value: error.message,
-            mechanism: { handled: false, synthetic: false },
-          }
-        ],
-        $exception_personURL: posthog.get_session_replay_url(),
+      const err = error instanceof Error ? error : new Error(String(error));
+      posthog.captureException(err, {
         context: context || 'unknown',
         timestamp: new Date().toISOString(),
         ...additionalProperties,
       });
-      if (import.meta.env.DEV) console.log("PostHog exception captured:", error.message, context);
+      if (import.meta.env.DEV) console.log("PostHog exception captured:", err.message, context);
     } catch (captureError) {
       console.error("PostHog exception capture failed:", captureError);
     }

@@ -146,12 +146,7 @@ export const CartDrawer = () => {
                       size="icon"
                       className="h-8 w-8 rounded-full text-muted-foreground hover:text-destructive"
                       onClick={() => {
-                        trackEvent("remove_from_cart", {
-                          product_id: item.id,
-                          product_name: item.title,
-                          price: item.price,
-                          quantity: item.quantity,
-                        });
+                        // remove_from_cart is emitted by CartContext.removeFromCart.
                         removeFromCart(item.id);
                       }}
                     >
