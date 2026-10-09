@@ -8,7 +8,7 @@ import { LoginDialog } from "./LoginDialog";
 import { SubscriptionManagementDialog } from "./SubscriptionManagementDialog";
 import { SubscriptionChoiceDialog } from "./SubscriptionChoiceDialog";
 import { supabase } from "@/integrations/supabase/client";
-import { posthog, trackEvent, identifyUser, applyCompanyGroup } from "@/lib/posthog";
+import { posthog, trackEvent, identifyUser, applyCompanyGroup, registerSuperProperties } from "@/lib/posthog";
 import { useFeatureFlagEnabled, useFeatureFlagVariantKey } from "posthog-js/react";
 import { getUser, clearUser } from "@/lib/auth";
 import {
@@ -19,6 +19,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+
+// Header remounts on every page, so remember what was last applied at module
+// level: identify / group / flag-reload only run when identity actually changes.
+let lastAppliedIdentity: string | null = null;
+let lastAppliedTheme: string | null = null;
 
 export const Header = () => {
   const { theme, setTheme } = useTheme();
@@ -47,7 +52,10 @@ export const Header = () => {
       const resolvedTheme = theme === "system" 
         ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
         : theme;
-      posthog.group("ux_choice", `${resolvedTheme}_mode`, { theme: resolvedTheme });
+      if (lastAppliedTheme !== resolvedTheme) {
+        lastAppliedTheme = resolvedTheme;
+        posthog.group("ux_choice", `${resolvedTheme}_mode`, { theme: resolvedTheme });
+      }
     }
   }, [theme]);
 
@@ -56,6 +64,10 @@ export const Header = () => {
     if (user) {
       setIsLoggedIn(true);
       setUserName(user.name);
+
+      const identityKey = `${user.email}|${user.companyName || ""}`;
+      if (lastAppliedIdentity === identityKey) return;
+      lastAppliedIdentity = identityKey;
 
       // Identify returning user in PostHog so events link to their profile
       identifyUser(user.email, { name: user.name, email: user.email });
@@ -70,6 +82,7 @@ export const Header = () => {
     } else {
       setIsLoggedIn(false);
       setUserName("");
+      lastAppliedIdentity = null;
     }
   }, [location, isLoggedIn]);
 
@@ -80,6 +93,10 @@ export const Header = () => {
     });
     clearUser();
     posthog.reset();
+    registerSuperProperties();
+    lastAppliedIdentity = null;
+    // reset() clears group membership, so re-apply the theme group next time.
+    lastAppliedTheme = null;
     posthog.reloadFeatureFlags();
     setIsLoggedIn(false);
     setUserName("");
