@@ -529,10 +529,11 @@ serve(async (req) => {
     requestStatus = "error";
     const message = error instanceof Error ? error.message : String(error);
     console.error("[track-success] error:", message);
-    try { logRef?.error("Request failed", { error: message }); await logRef?.flush(); } catch (_) { /* ignore */ }
+    try { const l = logRef as ReturnType<typeof createLogger> | null; l?.error("Request failed", { error: message }); await l?.flush(); } catch (_) { /* ignore */ }
     await reportException(error, "track-success", errorVersion, errorDistinctId);
-    if (errorRedirect) {
-      const redirectUrl = new URL(errorRedirect.toString());
+    const errRedirect = errorRedirect as URL | null;
+    if (errRedirect) {
+      const redirectUrl = new URL(errRedirect.toString());
       redirectUrl.searchParams.set("session_id", errorSessionId);
       redirectUrl.searchParams.set("tracked", "0");
       return new Response(null, {

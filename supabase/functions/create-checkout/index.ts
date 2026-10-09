@@ -330,7 +330,7 @@ serve(async (req) => {
     requestStatus = "error";
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error("[create-checkout] error:", errorMessage);
-    try { logRef?.error("Request failed", { error: errorMessage }); await logRef?.flush(); } catch (_) { /* ignore */ }
+    try { const l = logRef as ReturnType<typeof createLogger> | null; l?.error("Request failed", { error: errorMessage }); await l?.flush(); } catch (_) { /* ignore */ }
     await reportException(error, "create-checkout", appVersion, customerEmailForErrors);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
