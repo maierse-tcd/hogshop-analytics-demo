@@ -6,6 +6,15 @@
 All colors MUST be HSL.
 */
 
+/* Workaround for a PostHog toolbar bug: with "PII masking" enabled the toolbar
+   injects `.ph-no-capture { position: relative !important; }`, which also hits
+   its own host element (#__POSTHOG_TOOLBAR__ has class ph-no-capture). The
+   toolbar's element-highlight layer then anchors to the host at the bottom of
+   the page, so no-code experiment / inspect highlights are drawn off-screen. */
+#__POSTHOG_TOOLBAR__ {
+  position: static !important;
+}
+
 @layer base {
   :root {
     /* PostHog Design System - Light Mode */
