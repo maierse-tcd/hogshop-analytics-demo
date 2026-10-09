@@ -143,11 +143,11 @@ export const LoginDialog = ({ open, onOpenChange, onLoginSuccess, discountPercen
                 id="login-email"
                 type="email"
                 placeholder="you@example.com"
-                value={email}
+                value={emailInput}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
-            <Button onClick={handleLogin} className="w-full" disabled={!email || !name}>
+            <Button onClick={handleLogin} className="w-full" disabled={!emailInput.trim() || !name}>
               Login
             </Button>
           </TabsContent>
@@ -175,7 +175,7 @@ export const LoginDialog = ({ open, onOpenChange, onLoginSuccess, discountPercen
                 id="signup-email"
                 type="email"
                 placeholder="you@example.com"
-                value={email}
+                value={emailInput}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
@@ -206,7 +206,7 @@ export const LoginDialog = ({ open, onOpenChange, onLoginSuccess, discountPercen
             <Button
               onClick={handleSignup}
               className="w-full"
-              disabled={!email || !name || (isCompanyPurchase && companyName.trim().length < 2)}
+              disabled={!emailInput.trim() || !name || (isCompanyPurchase && companyName.trim().length < 2)}
             >
               Sign Up {discountPercent && `& Get ${discountPercent}% Off`}
             </Button>
