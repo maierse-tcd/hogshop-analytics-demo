@@ -20,6 +20,75 @@ const PRICE_MAP: Record<string, string> = {
   "Hedgehog Lover T-Shirt": "price_1TEsUvLVW76jxQhlUX20Txyz",
 };
 
+const POSTHOG_HOST = Deno.env.get("POSTHOG_HOST") || "https://ph.hogflix.dev";
+const POSTHOG_KEY = Deno.env.get("POSTHOG_KEY") || "phc_mCl11WvLPwmqyjG7FlivcsSbTfSEY1J3TWcEnnR0CJa";
+
+// Mirrors the cart UI (useFlashSale + CartDrawer): the only discount the cart
+// displays is the flash sale, 20% off every line item (one-time and recurring),
+// no stacking. The increase_sales_cta variants only change sign-up copy; the
+// cart never shows or applies them, so they are not billed here either.
+const FLASH_SALE_FLAG = "promo-flash-sale";
+const FLASH_SALE_PERCENT = 20;
+const UI_DISCOUNT_VALUES = [0, FLASH_SALE_PERCENT];
+
+// Returns the flash-sale percent from server-side flag evaluation, or null if
+// evaluation failed/timed out.
+async function evaluateFlashSale(distinctId: string): Promise<number | null> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 2000);
+  try {
+    const res = await fetch(`${POSTHOG_HOST}/flags?v=2`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ api_key: POSTHOG_KEY, distinct_id: distinctId }),
+      signal: ctrl.signal,
+    });
+    if (!res.ok) return null;
+    const j = await res.json();
+    if (j?.errorsWhileComputingFlags) return null;
+    const flag = j?.flags?.[FLASH_SALE_FLAG];
+    const enabled = flag ? flag.enabled === true : j?.featureFlags?.[FLASH_SALE_FLAG] === true;
+    return enabled ? FLASH_SALE_PERCENT : 0;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function parseStackFrames(stack?: string) {
+  if (!stack) return undefined;
+  const frames = stack.split("\n").slice(1).map((line) => {
+    const m = line.trim().match(/^at (?:(.+?) \()?(.+?):(\d+):(\d+)\)?$/);
+    if (!m) return null;
+    return { function: m[1] || "<anonymous>", filename: m[2], lineno: Number(m[3]), colno: Number(m[4]), platform: "custom", lang: "javascript", in_app: true };
+  }).filter(Boolean).reverse();
+  return frames.length ? { type: "raw", frames } : undefined;
+}
+
+async function reportException(error: unknown, fn: string, versionNumber: string, distinctId?: string) {
+  try {
+    const err = error instanceof Error ? error : new Error(String(error));
+    await fetch(`${POSTHOG_HOST}/capture/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        api_key: POSTHOG_KEY,
+        event: "$exception",
+        distinct_id: distinctId || "hogshop-edge",
+        properties: {
+          $exception_list: [{ type: err.name || "Error", value: err.message, mechanism: { handled: true, synthetic: false }, stacktrace: parseStackFrames(err.stack) }],
+          $exception_level: "error",
+          function: fn,
+          source: "edge_function",
+          version_number: versionNumber,
+          $geoip_disable: true,
+        },
+      }),
+    });
+  } catch (_) { /* never throw from reporting */ }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -30,6 +99,9 @@ serve(async (req) => {
   const metrics = createMetrics("hogshop-edge");
   const requestStartedAt = Date.now();
   let requestStatus: "ok" | "error" = "ok";
+  let log: ReturnType<typeof createLogger> | null = null;
+  const appVersion = req.headers.get("x-app-version") || "unknown";
+  let customerEmailForErrors: string | undefined;
 
   try {
     return await tracer.withSpan(
@@ -41,14 +113,14 @@ serve(async (req) => {
           "trace.distributed": incoming !== null,
         });
 
-        const log = createLogger("create-checkout", {
+        log = createLogger("create-checkout", {
           traceId: rootSpan.traceId,
           spanId: rootSpan.spanId,
         });
         log.info("Function invoked");
 
-        const appVersion = req.headers.get("x-app-version") || "unknown";
-        const { items, customer_email, customer_name, ph_session_id, company_name, company_key, icp_type, utm_source, utm_medium, utm_campaign } = await req.json();
+        const { items, customer_email, customer_name, ph_session_id, company_name, company_key, icp_type, utm_source, utm_medium, utm_campaign, ph_distinct_id, discount_percent } = await req.json();
+        if (typeof customer_email === "string" && customer_email) customerEmailForErrors = customer_email;
 
         rootSpan.setAttributes({
           "cart.item_count": items?.length ?? 0,
@@ -61,7 +133,6 @@ serve(async (req) => {
         if (!items || items.length === 0) {
           log.error("No items in cart");
           rootSpan.setAttribute("error.kind", "empty_cart");
-          await log.flush();
           throw new Error("No items in cart");
         }
 
@@ -118,18 +189,62 @@ serve(async (req) => {
         const hasOneTime = oneTimeItems.length > 0;
 
         if (hasSubscription && hasOneTime) {
-          log.warn("Mixed cart: subscription + one-time items.", {
+          log.info("Mixed cart: subscription + one-time items.", {
             subscriptionCount: subscriptionItems.length,
             oneTimeCount: oneTimeItems.length,
           });
         }
 
         const mode = hasSubscription ? "subscription" : "payment";
-        const sessionLineItems = hasSubscription ? subscriptionItems : lineItems;
+        // Subscription mode accepts one-time prices alongside recurring ones
+        // (they are billed on the first invoice), so always send everything.
+        const sessionLineItems = lineItems;
+
+        // ---------- Discount (server-authoritative) ----------
+        const clientPct = typeof discount_percent === "number" && UI_DISCOUNT_VALUES.includes(discount_percent)
+          ? discount_percent
+          : null;
+        const flagDistinctId = (typeof ph_distinct_id === "string" && ph_distinct_id) || customer_email || "";
+        const serverPct = flagDistinctId ? await evaluateFlashSale(flagDistinctId) : null;
+        let discountPercent: number;
+        if (serverPct !== null) {
+          // Flags decide eligibility. A client that shows a lower (valid) price
+          // than the flag allows — e.g. the subscription picker, which never
+          // displays the sale — is charged what it showed.
+          discountPercent = clientPct !== null ? Math.min(serverPct, clientPct) : serverPct;
+        } else {
+          discountPercent = clientPct ?? 0;
+        }
+        const discountSource = discountPercent > 0 ? FLASH_SALE_FLAG : "";
+        log.info("Discount resolved", { serverPct, clientPct, discountPercent, flagDistinctId: !!flagDistinctId });
+
+        let couponId: string | undefined;
+        if (discountPercent > 0) {
+          couponId = `hogshop-flash-${discountPercent}`;
+          try {
+            await stripe.coupons.retrieve(couponId);
+          } catch (e: any) {
+            if (e?.statusCode !== 404 && e?.code !== "resource_missing") throw e;
+            try {
+              await stripe.coupons.create({
+                id: couponId,
+                percent_off: discountPercent,
+                // The cart shows the sale price on recurring items without a
+                // "first month" qualifier, so the discount applies forever.
+                duration: "forever",
+                name: `Flash Sale −${discountPercent}%`,
+              });
+            } catch (ce: any) {
+              // Concurrent create — id already exists, which is fine.
+              if (ce?.code !== "resource_already_exists") throw ce;
+            }
+          }
+        }
 
         rootSpan.setAttributes({
           "checkout.mode": mode,
           "checkout.has_subscription": hasSubscription,
+          "checkout.discount_percent": discountPercent,
         });
 
         const origin = req.headers.get("origin") || "http://localhost:3000";
@@ -161,13 +276,15 @@ serve(async (req) => {
             if (utm_medium) metadata.utm_medium = String(utm_medium);
             if (utm_campaign) metadata.utm_campaign = String(utm_campaign);
             metadata.version_number = appVersion;
+            metadata.discount_percent = String(discountPercent);
+            if (discountSource) metadata.discount_source = discountSource;
 
             const s = await stripe.checkout.sessions.create({
               line_items: sessionLineItems,
               mode,
               success_url: successUrl,
               cancel_url: `${origin}/`,
-              allow_promotion_codes: true,
+              ...(couponId ? { discounts: [{ coupon: couponId }] } : { allow_promotion_codes: true }),
               billing_address_collection: "required",
               customer: customerId,
               customer_email: customerId ? undefined : customer_email || undefined,
@@ -212,6 +329,8 @@ serve(async (req) => {
     requestStatus = "error";
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error("[create-checkout] error:", errorMessage);
+    try { log?.error("Request failed", { error: errorMessage }); await log?.flush(); } catch (_) { /* ignore */ }
+    await reportException(error, "create-checkout", appVersion, customerEmailForErrors);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
