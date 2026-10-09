@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { RegistrationDialog } from "@/components/RegistrationDialog";
 import { posthog, trackEvent, trackMetric, deviceType, setUserProperties, initializeCLTV, ensureIdentified, applyCompanyGroup, slugifyCompany, getCampaignContext } from "@/lib/posthog";
 import { getUser, saveUser } from "@/lib/auth";
+import { useFlashSale } from "@/hooks/useFlashSale";
 import { startSpan, traceparent, SpanKind, SpanStatus } from "@/lib/otel";
 
 interface CheckoutContextType {
@@ -20,6 +21,11 @@ export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [showRegistration, setShowRegistration] = useState(false);
   const { toast } = useToast();
+  const { flashSaleActive, discountPct } = useFlashSale();
+  // Same math as CartDrawer's displayed total.
+  const discountPercent = flashSaleActive ? discountPct : 0;
+  const discountAmount = flashSaleActive ? +(totalPrice * (discountPct / 100)).toFixed(2) : 0;
+  const displayedTotal = flashSaleActive ? +(totalPrice - discountAmount).toFixed(2) : totalPrice;
 
   const startCheckout = () => {
     if (items.length === 0) return;
@@ -101,8 +107,10 @@ export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
 
       trackEvent("checkout_started", {
         items_count: totalItems,
-        basket_value: totalPrice,
-        revenue: totalPrice,
+        basket_value: displayedTotal,
+        revenue: displayedTotal,
+        list_value: totalPrice,
+        discount_percent: discountPercent,
         currency: "USD",
         items: basketItems,
         hashed_example_property: "posthog",
@@ -146,6 +154,8 @@ export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
           customer_email: email,
           customer_name: name,
           ph_session_id: posthog.get_session_id(),
+          ph_distinct_id: posthog.get_distinct_id(),
+          discount_percent: discountPercent,
           company_name: trimmedCompany,
           company_key: companyKey,
           icp_type: icpType,
@@ -165,7 +175,7 @@ export const CheckoutProvider = ({ children }: { children: ReactNode }) => {
           "checkout_basket",
           JSON.stringify({
             items: basketItems,
-            total: totalPrice,
+            total: displayedTotal,
             timestamp: Date.now(),
             expiresAt,
             needs_tracking: true,
