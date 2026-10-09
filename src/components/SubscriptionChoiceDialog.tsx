@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { posthog, trackEvent } from "@/lib/posthog";
+import { posthog, trackEvent, slugifyCompany, getCampaignContext } from "@/lib/posthog";
 import { getUser } from "@/lib/auth";
 
 interface SubscriptionProduct {
@@ -80,12 +80,23 @@ export const SubscriptionChoiceDialog = ({ open, onOpenChange }: Props) => {
         subscription_interval: plan.subscription_interval || "month",
       };
 
+      // Same B2B / attribution context as CheckoutContext's main checkout path.
+      const trimmedCompany = user.companyName?.trim() || undefined;
+      const companyKey = trimmedCompany ? slugifyCompany(trimmedCompany) : undefined;
+      const icpType = trimmedCompany ? "B2B" : "B2C";
+      const companyProps = trimmedCompany ? { company_name: trimmedCompany, company_key: companyKey } : {};
+
       trackEvent("checkout_started", {
         items_count: 1,
         basket_value: plan.price,
         revenue: plan.price,
         list_value: plan.price,
         discount_percent: 0,
+        currency: "USD",
+        items: [{ id: item.id, title: item.title, price: item.price, quantity: item.quantity, is_subscription: true }],
+        hashed_example_property: "posthog",
+        icp_type: icpType,
+        ...companyProps,
         is_subscription: true,
         plan_name: plan.title,
       });
@@ -99,6 +110,10 @@ export const SubscriptionChoiceDialog = ({ open, onOpenChange }: Props) => {
           ph_distinct_id: posthog.get_distinct_id(),
           // This picker always shows list price, so request no discount.
           discount_percent: 0,
+          company_name: trimmedCompany,
+          company_key: companyKey,
+          icp_type: icpType,
+          ...getCampaignContext(),
         },
       });
       if (error) throw error;
@@ -107,7 +122,7 @@ export const SubscriptionChoiceDialog = ({ open, onOpenChange }: Props) => {
         const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
         localStorage.setItem(
           "checkout_user",
-          JSON.stringify({ email: user.email, name: user.name, expiresAt })
+          JSON.stringify({ email: user.email, name: user.name, companyName: trimmedCompany, expiresAt })
         );
         localStorage.setItem(
           "checkout_basket",
