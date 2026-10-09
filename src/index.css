@@ -15,6 +15,15 @@ All colors MUST be HSL.
   position: static !important;
 }
 
+/* The same PII-masking stylesheet gives every .ph-no-capture element a shimmering
+   ::before overlay. With the host static (above), that overlay would anchor to the
+   page instead of the zero-size host and cover the first viewport, so remove it. */
+#__POSTHOG_TOOLBAR__::before,
+#__POSTHOG_TOOLBAR__::after {
+  content: none !important;
+  display: none !important;
+}
+
 @layer base {
   :root {
     /* PostHog Design System - Light Mode */
