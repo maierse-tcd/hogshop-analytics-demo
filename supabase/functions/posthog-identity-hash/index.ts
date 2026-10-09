@@ -4,13 +4,36 @@
 
 import { createTracer, parseTraceparent, SpanKind } from "../_shared/otel.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, traceparent, x-app-version",
-};
+const ALLOW_HEADERS = "authorization, x-client-info, apikey, content-type, traceparent, x-app-version";
+
+// Same allow-list as track-success redirects.
+function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return false;
+  try {
+    const u = new URL(origin);
+    const host = u.hostname;
+    if (u.protocol === "https:" && (host === "shop.hogflix.dev" || host.endsWith(".lovable.app") || host.endsWith(".lovableproject.com"))) return true;
+    if ((u.protocol === "http:" || u.protocol === "https:") && (host === "localhost" || host === "127.0.0.1")) return true;
+    return false;
+  } catch {
+    return false;
+  }
+}
 
 Deno.serve(async (req) => {
+  const origin = req.headers.get("origin");
+  if (!isAllowedOrigin(origin)) {
+    return new Response(JSON.stringify({ error: "Origin not allowed" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": origin!,
+    "Access-Control-Allow-Headers": ALLOW_HEADERS,
+    "Vary": "Origin",
+  };
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }

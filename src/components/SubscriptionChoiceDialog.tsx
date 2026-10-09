@@ -83,6 +83,9 @@ export const SubscriptionChoiceDialog = ({ open, onOpenChange }: Props) => {
       trackEvent("checkout_started", {
         items_count: 1,
         basket_value: plan.price,
+        revenue: plan.price,
+        list_value: plan.price,
+        discount_percent: 0,
         is_subscription: true,
         plan_name: plan.title,
       });
@@ -93,6 +96,9 @@ export const SubscriptionChoiceDialog = ({ open, onOpenChange }: Props) => {
           customer_email: user.email,
           customer_name: user.name,
           ph_session_id: posthog.get_session_id(),
+          ph_distinct_id: posthog.get_distinct_id(),
+          // This picker always shows list price, so request no discount.
+          discount_percent: 0,
         },
       });
       if (error) throw error;

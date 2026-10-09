@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ const Success = () => {
   const trackedParam = searchParams.get("tracked");
   const [trackingComplete, setTrackingComplete] = useState(false);
   const [trackingVerified, setTrackingVerified] = useState(false);
+  const fallbackStartedRef = useRef(false);
 
   useEffect(() => {
     const identifyUser = async () => {
@@ -28,6 +29,10 @@ const Success = () => {
       // Short-circuit if server-side tracking indicated via URL
       if (trackedParam === "1") {
         if (isDev) console.log("SUCCESS: Server-side tracking confirmed via URL");
+        // Server already recorded the purchase — drop the pending basket so a
+        // later visit can never fire a client-side purchase_completed too.
+        localStorage.removeItem("checkout_basket");
+        sessionStorage.removeItem("checkout_basket");
         
         // Restore user session from checkout_user before clearing
         const storedUserData = localStorage.getItem("checkout_user");
@@ -93,6 +98,10 @@ const Success = () => {
         if (isDev) console.log("SUCCESS: Skipping tracking", { sessionId, hasPending, trackingComplete });
         return;
       }
+
+      // Guard against the effect re-running (deps change) and firing twice.
+      if (fallbackStartedRef.current) return;
+      fallbackStartedRef.current = true;
 
       if (isDev) console.log("SUCCESS: Starting CLIENT-SIDE purchase tracking for session:", sessionId || "no-session");
 

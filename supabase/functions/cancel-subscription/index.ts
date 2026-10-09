@@ -12,6 +12,39 @@ const corsHeaders = {
 const POSTHOG_HOST = Deno.env.get("POSTHOG_HOST") || "https://ph.hogflix.dev";
 const POSTHOG_KEY = Deno.env.get("POSTHOG_KEY") || "phc_mCl11WvLPwmqyjG7FlivcsSbTfSEY1J3TWcEnnR0CJa";
 
+function parseStackFrames(stack?: string) {
+  if (!stack) return undefined;
+  const frames = stack.split("\n").slice(1).map((line) => {
+    const m = line.trim().match(/^at (?:(.+?) \()?(.+?):(\d+):(\d+)\)?$/);
+    if (!m) return null;
+    return { function: m[1] || "<anonymous>", filename: m[2], lineno: Number(m[3]), colno: Number(m[4]), platform: "custom", lang: "javascript", in_app: true };
+  }).filter(Boolean).reverse();
+  return frames.length ? { type: "raw", frames } : undefined;
+}
+
+async function reportException(error: unknown, fn: string, versionNumber: string, distinctId?: string) {
+  try {
+    const err = error instanceof Error ? error : new Error(String(error));
+    await fetch(`${POSTHOG_HOST}/capture/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        api_key: POSTHOG_KEY,
+        event: "$exception",
+        distinct_id: distinctId || "hogshop-edge",
+        properties: {
+          $exception_list: [{ type: err.name || "Error", value: err.message, mechanism: { handled: true, synthetic: false }, stacktrace: parseStackFrames(err.stack) }],
+          $exception_level: "error",
+          function: fn,
+          source: "edge_function",
+          version_number: versionNumber,
+          $geoip_disable: true,
+        },
+      }),
+    });
+  } catch (_) { /* never throw from reporting */ }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -22,6 +55,8 @@ serve(async (req) => {
   const metrics = createMetrics("hogshop-edge");
   const requestStartedAt = Date.now();
   let requestStatus: "ok" | "error" = "ok";
+  let logRef: ReturnType<typeof createLogger> | null = null;
+  let errorDistinctId: string | undefined;
 
   try {
     return await tracer.withSpan(
@@ -37,6 +72,7 @@ serve(async (req) => {
           traceId: rootSpan.traceId,
           spanId: rootSpan.spanId,
         });
+        logRef = log;
         log.info("Function started");
 
         const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
@@ -46,6 +82,7 @@ serve(async (req) => {
         if (!email || typeof email !== "string") {
           throw new Error("Email is required in request body");
         }
+        errorDistinctId = email;
         rootSpan.setAttribute("customer.email", email);
         log.info("Email received", { email });
 
@@ -298,6 +335,8 @@ serve(async (req) => {
     requestStatus = "error";
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error("[cancel-subscription] error:", errorMessage);
+    try { const l = logRef as ReturnType<typeof createLogger> | null; l?.error("Request failed", { error: errorMessage }); await l?.flush(); } catch (_) { /* ignore */ }
+    await reportException(error, "cancel-subscription", req.headers.get("x-app-version") || "unknown", errorDistinctId as string | undefined);
     return new Response(JSON.stringify({ success: false, error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
